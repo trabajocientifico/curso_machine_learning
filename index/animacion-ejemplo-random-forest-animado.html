@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Random Forest Animado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Manrope:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Escenario 16:9 único (SVG escalado), fondo blanco fijo por elección: tema claro deliberado */
+:root{
+  --bg:#FFFFFF; --ink:#1A1D24; --mute:#8A90A0; --line:#DDE1E8; --edge:#C3C8D2;
+  --c0:#2F6BDB; --c1:#F28C28;
+  --display:'Bricolage Grotesque','Manrope',system-ui,sans-serif;
+  --body:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;box-sizing:border-box;overflow:hidden;user-select:none;-webkit-user-select:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#stage{width:100%;height:100%;display:block}
+#pg{position:fixed;right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));font:500 13px var(--mono);color:var(--mute);letter-spacing:.06em;font-variant-numeric:tabular-nums}
+svg text{font-family:var(--body);fill:var(--ink)}
+svg .disp{font-family:var(--display)}
+svg .mono{font-family:var(--mono)}
+svg .mute{fill:var(--mute)}
+.halo{transform-box:fill-box;transform-origin:center;animation:halo 1.6s ease-out infinite}
+@keyframes halo{from{transform:scale(1);opacity:.45}to{transform:scale(2.6);opacity:0}}
+@media (prefers-reduced-motion:reduce){.halo{animation:none;opacity:0}}
+</style>
+</head>
+<body>
+
+<svg id="stage" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Animación de Random Forest"></svg>
+<div id="pg">1 / 7</div>
+
+<script>
+/*PURE*/
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+
+// ---------- Datos genéricos: dos grupos, uno forma una "isla" en el centro ----------
+const RD=mulberry32(7), N=70, DATA=[];
+while(DATA.length<N){
+  const x=.05+.9*RD(), y=.05+.9*RD();
+  let c=Math.hypot(x-.52,(y-.5)*1.1)<.3?1:0;
+  if(RD()<.07)c=1-c;
+  DATA.push({x,y,c});
+}
+const val=(i,f)=>f?DATA[i].y:DATA[i].x;
+const gini=(a,n)=>{if(!n)return 0;const p=a/n;return 1-p*p-(1-p)*(1-p);};
+
+// ---------- Árbol de decisión (CART, 1 variable al azar por nodo) ----------
+let NID=0;
+function bestSplit(idx,f){
+  const s=idx.slice().sort((a,b)=>val(a,f)-val(b,f)), n=s.length, n1=s.reduce((q,i)=>q+DATA[i].c,0);
+  const parent=gini(n1,n); let best=null, l=0, l1=0;
+  for(let k=0;k<n-1;k++){
+    l++; l1+=DATA[s[k]].c;
+    const a=val(s[k],f), b=val(s[k+1],f); if(a===b)continue;
+    const w=(l*gini(l1,l)+(n-l)*gini(n1-l1,n-l))/n, gain=parent-w;
+    if(gain>1e-9&&(!best||gain>best.gain))best={t:(a+b)/2,gain};
+  }
+  return best;
+}
+function build(idx,depth,maxD,rng,b=[0,1,0,1]){
+  const n=idx.length, n1=idx.reduce((q,i)=>q+DATA[i].c,0);
+  const node={id:NID++,depth,b,n,n1,cls:n1*2>n?1:n1*2<n?0:(rng()<.5?1:0)};
+  if(depth>=maxD||n1===0||n1===n||n<4){node.leaf=true;return node;}
+  const f0=rng()<.5?0:1;
+  for(const f of[f0,1-f0]){
+    const sp=bestSplit(idx,f); if(!sp)continue;
+    node.f=f; node.t=sp.t;
+    const bl=b.slice(), br=b.slice();
+    if(f===0){bl[1]=sp.t;br[0]=sp.t}else{bl[3]=sp.t;br[2]=sp.t}
+    node.left=build(idx.filter(i=>val(i,f)<=sp.t),depth+1,maxD,rng,bl);
+    node.right=build(idx.filter(i=>val(i,f)>sp.t),depth+1,maxD,rng,br);
+    return node;
+  }
+  node.leaf=true; return node;
+}
+function pathTo(nd,x,y){const p=[nd];while(!nd.leaf){nd=((nd.f?y:x)<=nd.t)?nd.left:nd.right;p.push(nd);}return p;}
+const predict=(nd,x,y)=>{const p=pathTo(nd,x,y);return p[p.length-1];};
+function walk(nd,out=[]){out.push(nd);if(!nd.leaf){walk(nd.left,out);walk(nd.right,out);}return out;}
+function boot(seed){const r=mulberry32(seed);return Array.from({length:N},()=>Math.floor(r()*N));}
+
+// Tres árboles que se muestran (profundidad 3)
+const SAMPLES=[0,1,2].map(i=>boot(211+i*31));
+const TREES=SAMPLES.map((s,i)=>build(s,0,3,mulberry32(401+i*13)));
+const LV=76;
+function place(nd,lo,hi){nd.x=(lo+hi)/2;nd.y=nd.depth*LV;if(!nd.leaf){place(nd.left,lo,nd.x);place(nd.right,nd.x,hi);}}
+TREES.forEach(t=>place(t,-110,110));
+const ALLN=TREES.map(t=>walk(t));
+
+// Caso nuevo: un punto donde los árboles no están de acuerdo (2 contra 1)
+let Q=null,bestD=1e9;
+for(let gx=.08;gx<.93;gx+=.02)for(let gy=.08;gy<.93;gy+=.02){
+  const v=TREES.map(t=>predict(t,gx,gy).cls), s=v[0]+v[1]+v[2];
+  if(s!==1&&s!==2)continue;
+  const truth=Math.hypot(gx-.52,(gy-.5)*1.1)<.3?1:0; if((s>=2?1:0)!==truth)continue;
+  if(Math.min(...DATA.map(d=>Math.hypot(d.x-gx,d.y-gy)))<.04)continue;
+  const dd=Math.hypot(gx-.72,gy-.62); if(dd<bestD){bestD=dd;Q={x:gx,y:gy};}
+}
+if(!Q)Q={x:.7,y:.6};
+
+// Bosque completo para el mapa de calor
+const T=100, G=40;
+const FOREST=Array.from({length:T},(_,t)=>build(boot(1000+t*7),0,6,mulberry32(5000+t*11)));
+const CUM=[];
+for(let t=0;t<T;t++){
+  const a=new Uint8Array(G*G);
+  for(let gy=0;gy<G;gy++)for(let gx=0;gx<G;gx++){
+    const k=gy*G+gx; a[k]=(t?CUM[t-1][k]:0)+predict(FOREST[t],(gx+.5)/G,1-(gy+.5)/G).cls;
+  }
+  CUM.push(a);
+}
+
+// Árbolitos de portada y muestras del resumen
+const RP=mulberry32(9);
+function ptree(x){const nodes=[],edges=[];(function rec(px,py,d,off){const leaf=d===3||RP()>[.97,.78,.5][d];nodes.push({x:px,y:py,d,leaf,c:RP()<.5?0:1});if(leaf)return;for(const s of[-1,1]){const cx=px+s*off,cy=py+48;edges.push({x1:px,y1:py,x2:cx,y2:cy,d});rec(cx,cy,d+1,off/2);}})(x,392,0,30);return{nodes,edges};}
+const PORT=Array.from({length:9},(_,i)=>ptree(160+i*120));
+const RR=mulberry32(77);
+const REC=[0,1,2].map(()=>Array.from({length:7},()=>Math.floor(RR()*N)));
+/*ENDPURE*/
+
+// ================= Motor de animación =================
+const NS='http://www.w3.org/2000/svg', svg=document.getElementById('stage'), pg=document.getElementById('pg');
+const css=getComputedStyle(document.documentElement), tok=n=>css.getPropertyValue(n).trim();
+const C={ink:tok('--ink'),mute:tok('--mute'),line:tok('--line'),edge:tok('--edge'),bg:tok('--bg'),c0:tok('--c0'),c1:tok('--c1')};
+const CLS=[C.c0,C.c1];
+const hex=h=>{h=h.replace('#','');return[0,2,4].map(i=>parseInt(h.substr(i,2),16));};
+const RGB=[hex(C.c0),hex(C.c1)];
+const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let GEN=0, INSTANT=false, S={};
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const back=t=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);};
+function mk(tag,attrs={},parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function tf(el,tx,ty,s=1){el.__tf={tx,ty,s};el.setAttribute('transform',`translate(${tx},${ty}) scale(${s})`);return el;}
+const TFK={tx:1,ty:1,s:1};
+function getA(el,k){if(TFK[k])return el.__tf[k];const v=el.getAttribute(k);return v==null?(k==='opacity'?1:0):parseFloat(v);}
+function setA(el,k,v){if(TFK[k]){el.__tf[k]=v;el.setAttribute('transform',`translate(${el.__tf.tx},${el.__tf.ty}) scale(${el.__tf.s})`);}else el.setAttribute(k,v);}
+function tw(el,to,dur=600,delay=0,fn=ease,done){
+  if(INSTANT){for(const k in to)setA(el,k,to[k]);done&&done();return;}
+  const g=GEN;
+  const go=()=>{
+    if(g!==GEN)return;
+    el.__tok=el.__tok||{};const from={},tk={};
+    for(const k in to){from[k]=getA(el,k);tk[k]={};el.__tok[k]=tk[k];}
+    const t0=performance.now();
+    const step=now=>{
+      if(g!==GEN)return;
+      const t=Math.min(1,(now-t0)/dur),e=fn(t);let any=false;
+      for(const k in to){if(el.__tok[k]!==tk[k])continue;any=true;setA(el,k,from[k]+(to[k]-from[k])*e);}
+      if(t<1){if(any)requestAnimationFrame(step);}else done&&done();
+    };
+    requestAnimationFrame(step);
+  };
+  delay>0?setTimeout(go,delay):go();
+}
+function later(fn,ms){if(INSTANT||ms<=0){fn();return;}const g=GEN;setTimeout(()=>{if(g===GEN)fn();},ms);}
+function drawLine(parent,x1,y1,x2,y2,attrs,dur=600,delay=0){
+  const L=Math.hypot(x2-x1,y2-y1)||1;
+  const l=mk('line',Object.assign({x1,y1,x2,y2,'stroke-dasharray':L,'stroke-dashoffset':L},attrs),parent);
+  tw(l,{'stroke-dashoffset':0},dur,delay);return l;
+}
+function txt(parent,x,y,s,attrs={}){const t=mk('text',Object.assign({x,y},attrs),parent);t.textContent=s;return t;}
+
+// ================= Geometría =================
+const SZ=400, P=190, PX=[560,800,1040], PY=120, DGY=372;
+const M2={tx:440,ty:170}, M3={tx:70,ty:150}, M6={tx:140,ty:170}, R6={tx:740,ty:170};
+const rad=c=>3.4+1.5*(c-1);
+const featL=['A','B'];
+
+function axes(g,dur){
+  const a=mk('g',{},g);
+  drawLine(a,0,0,0,SZ,{stroke:C.line,'stroke-width':1.5},dur,0);
+  drawLine(a,0,SZ,SZ,SZ,{stroke:C.line,'stroke-width':1.5},dur,0);
+  const l=mk('g',{opacity:0},a);
+  txt(l,SZ/2,SZ+36,'Variable A',{'text-anchor':'middle','font-size':15,'font-weight':600,class:'mute'});
+  txt(l,0,0,'Variable B',{'text-anchor':'middle','font-size':15,'font-weight':600,class:'mute',transform:`translate(-26,${SZ/2}) rotate(-90)`});
+  tw(l,{opacity:1},500,dur*.6);
+}
+const HC=document.createElement('canvas');HC.width=HC.height=SZ;const HX=HC.getContext('2d');
+function makeHeat(g){return mk('image',{x:0,y:0,width:SZ,height:SZ,preserveAspectRatio:'none'},g);}
+function setHeat(img,n){
+  const cum=CUM[n-1],cs=SZ/G;
+  HX.fillStyle=C.bg;HX.fillRect(0,0,SZ,SZ);
+  for(let k=0;k<G*G;k++){
+    const p=cum[k]/n,a=.06+.36*Math.abs(2*p-1);
+    const m=[0,1,2].map(j=>Math.round(255*(1-a)+(RGB[0][j]*(1-p)+RGB[1][j]*p)*a));
+    HX.fillStyle=`rgb(${m})`;HX.fillRect((k%G)*cs,Math.floor(k/G)*cs,cs,cs);
+  }
+  img.setAttribute('href',HC.toDataURL());
+}
+function setLabel(t){S.lab.textContent=t;tf(S.labG,-16,0);S.labG.setAttribute('opacity',0);tw(S.labG,{tx:0,opacity:1},650,150);}
+function qMarker(parent,x,y,r){
+  const g=tf(mk('g',{},parent),x,y,1);
+  mk('circle',{r,fill:C.bg,stroke:C.ink,'stroke-width':2},g);
+  const t=txt(g,0,r*.42,'?',{'text-anchor':'middle','font-size':r*1.25,'font-weight':700});
+  g.__t=t;return g;
+}
+
+// ================= Pasos =================
+function portada(){
+  const g=S.port;
+  const tg=tf(mk('g',{opacity:0},g),0,26);
+  txt(tg,640,250,'Random Forest',{'text-anchor':'middle',class:'disp','font-size':96,'font-weight':700,'letter-spacing':'-2'});
+  txt(tg,640,304,'de un árbol a un bosque',{'text-anchor':'middle','font-size':23,'font-weight':500,class:'mute'});
+  tw(tg,{ty:0,opacity:1},1000,100);
+  PORT.forEach((tr,ti)=>{
+    const base=500+ti*110;
+    tr.edges.forEach(e=>drawLine(g,e.x1,e.y1,e.x2,e.y2,{stroke:C.edge,'stroke-width':1.6},300,base+e.d*230+120));
+    tr.nodes.forEach(n=>{const c=mk('circle',{cx:n.x,cy:n.y,r:0,fill:n.leaf?CLS[n.c]:C.ink},g);tw(c,{r:n.leaf?6.5:4.5},450,base+n.d*230,back);});
+  });
+}
+function datos(){
+  tw(S.port,{opacity:0},400);
+  setLabel('Los datos');
+  S.main.setAttribute('opacity',1);
+  axes(S.mAxes,700);
+  const lg=S.mLeg;lg.setAttribute('opacity',0);
+  mk('circle',{cx:SZ-176,cy:-26,r:6,fill:C.c0},lg);txt(lg,SZ-164,-21,'Grupo 1',{'font-size':14,'font-weight':600});
+  mk('circle',{cx:SZ-76,cy:-26,r:6,fill:C.c1},lg);txt(lg,SZ-64,-21,'Grupo 2',{'font-size':14,'font-weight':600});
+  tw(lg,{opacity:1},500,1300);
+  S.mp=DATA.map((d,i)=>{
+    const c=mk('circle',{cx:d.x*SZ,cy:(1-d.y)*SZ,r:0,fill:CLS[d.c],stroke:C.bg,'stroke-width':1.5},S.mPts);
+    tw(c,{r:5.5},500,350+d.x*1000+(i%5)*25,back);return c;
+  });
+}
+function layout3(){
+  setLabel('Muestras con reemplazo');
+  tw(S.main,{tx:M3.tx,ty:M3.ty},950);
+  S.P=[];S.D=[];
+  for(let i=0;i<3;i++){
+    const g=tf(mk('g',{opacity:0},S.pan),PX[i],PY+22);
+    mk('rect',{x:0,y:0,width:P,height:P,rx:6,fill:'none',stroke:C.line,'stroke-width':1.5},g);
+    txt(g,0,-14,`Árbol ${i+1}`,{'font-size':16,'font-weight':700});
+    const reg=mk('g',{},g),lin=mk('g',{},g),pts=mk('g',{},g);
+    S.P.push({g,reg,lin,pts,dots:{},cnt:{},rects:{}});
+    tw(g,{ty:PY,opacity:1},750,350+i*140);
+    const dg=tf(mk('g',{},S.diag),PX[i]+95,DGY);
+    S.D.push({g:dg,eg:mk('g',{},dg),hl:mk('g',{},dg),ng:mk('g',{},dg),el:{}});
+  }
+}
+function sampleAnim(ti,stagger,dur,d0){
+  const pan=S.P[ti];
+  SAMPLES[ti].forEach((i,k)=>later(()=>{
+    const d=DATA[i],sx=M3.tx+d.x*SZ,sy=M3.ty+(1-d.y)*SZ,ex=PX[ti]+d.x*P,ey=PY+(1-d.y)*P;
+    const ring=mk('circle',{cx:sx,cy:sy,r:5.5,fill:'none',stroke:CLS[d.c],'stroke-width':2,opacity:.9},S.fly);
+    tw(ring,{r:15,opacity:0},520,0,ease,()=>ring.remove());
+    const f=mk('circle',{cx:sx,cy:sy,r:5,fill:CLS[d.c]},S.fly);
+    tw(f,{cx:ex,cy:ey,r:3.4},dur,0,ease,()=>{
+      f.remove();
+      const c=pan.cnt[i]=(pan.cnt[i]||0)+1;
+      let dot=pan.dots[i];
+      if(!dot)dot=pan.dots[i]=mk('circle',{cx:d.x*P,cy:(1-d.y)*P,r:0,fill:CLS[d.c],stroke:C.bg,'stroke-width':1},pan.pts);
+      if(c>1){dot.setAttribute('stroke',C.ink);dot.setAttribute('stroke-width',1.3);}
+      tw(dot,{r:rad(c)},420,0,back);
+    });
+  },d0+k*stagger));
+}
+function makePill(D,n,delay){
+  const g=tf(mk('g',{opacity:0},D.ng),n.x,n.y,.6);
+  const r=mk('rect',{x:-23,y:-10,width:46,height:20,rx:10,fill:C.bg,stroke:C.ink,'stroke-width':1.2},g);
+  const t=txt(g,0,4,'',{'text-anchor':'middle','font-size':11.5,'font-weight':600,class:'mono'});
+  const fin=`${featL[n.f]}≤${n.t.toFixed(2).slice(1)}`;
+  if(INSTANT)t.textContent=fin;
+  else{
+    t.textContent='?≤···';
+    later(()=>{const g0=GEN;let k=0;const iv=setInterval(()=>{
+      if(g0!==GEN){clearInterval(iv);return;}
+      if(k>=8){clearInterval(iv);t.textContent=fin;return;}
+      t.textContent=`${featL[k%2]}≤···`;k++;
+    },85);},delay);
+  }
+  tw(g,{opacity:1,s:1},420,delay,back);
+  g.__rect=r;return g;
+}
+function growDepth(dep){
+  TREES.forEach((tr,ti)=>{
+    const pan=S.P[ti],D=S.D[ti],base=ti*160;
+    ALLN[ti].filter(n=>n.depth===dep-1&&!n.leaf).forEach(n=>{
+      const b=n.b;let x1,y1,x2,y2;
+      if(n.f===0){x1=x2=n.t*P;y1=(1-b[3])*P;y2=(1-b[2])*P;}else{y1=y2=(1-n.t)*P;x1=b[0]*P;x2=b[1]*P;}
+      const old=D.el[n.id];
+      if(old)tw(old,{r:0,opacity:0},250,base,ease,()=>old.remove());
+      D.el[n.id]=makePill(D,n,base+150);
+      drawLine(pan.lin,x1,y1,x2,y2,{stroke:C.ink,'stroke-width':1.7,'stroke-linecap':'round'},650,base+900);
+      const oldR=pan.rects[n.id];
+      if(oldR){tw(oldR,{opacity:0},450,base+1300,ease,()=>oldR.remove());delete pan.rects[n.id];}
+      [n.left,n.right].forEach(ch=>{
+        const r=mk('rect',{x:ch.b[0]*P,y:(1-ch.b[3])*P,width:(ch.b[1]-ch.b[0])*P,height:(ch.b[3]-ch.b[2])*P,fill:CLS[ch.cls],opacity:0},pan.reg);
+        pan.rects[ch.id]=r;tw(r,{opacity:.17},550,base+1300);
+        drawLine(D.eg,n.x,n.y+10,ch.x,ch.y-8,{stroke:C.edge,'stroke-width':1.5},420,base+950);
+        const c=mk('circle',{cx:ch.x,cy:ch.y,r:0,fill:CLS[ch.cls]},D.ng);
+        D.el[ch.id]=c;tw(c,{r:7},450,base+1300,back);
+      });
+    });
+  });
+}
+function newPt(){
+  setLabel('Un caso nuevo');
+  const lx=Q.x*SZ,ly=(1-Q.y)*SZ,g=S.mQ;
+  const gl=mk('g',{opacity:0},g);
+  mk('line',{x1:lx,y1:ly,x2:lx,y2:SZ,stroke:C.mute,'stroke-width':1.2,'stroke-dasharray':'3 5'},gl);
+  mk('line',{x1:0,y1:ly,x2:lx,y2:ly,stroke:C.mute,'stroke-width':1.2,'stroke-dasharray':'3 5'},gl);
+  tw(gl,{opacity:1},500,500);
+  const halo=mk('circle',{cx:lx,cy:ly,r:10,fill:C.ink,opacity:.15,class:'halo'},g);
+  S.qg=qMarker(g,lx,ly,10);tf(S.qg,lx,ly,0);
+  tw(S.qg,{s:1},600,100,back);
+}
+function route(){
+  TREES.forEach((tr,ti)=>{
+    const path=pathTo(tr,Q.x,Q.y),leaf=path[path.length-1],D=S.D[ti];
+    later(()=>{
+      const f=qMarker(S.fly,M3.tx+Q.x*SZ,M3.ty+(1-Q.y)*SZ,10);
+      tw(f,{tx:PX[ti]+Q.x*P,ty:PY+(1-Q.y)*P,s:.7},800,0,ease,()=>{
+        const r=S.P[ti].rects[leaf.id];
+        if(r){r.setAttribute('stroke',C.ink);r.setAttribute('stroke-width',0);tw(r,{opacity:.36,'stroke-width':2},450);}
+        path.forEach((n,j)=>later(()=>{
+          if(j>0){const pn=path[j-1];drawLine(D.hl,pn.x,pn.y+10,n.x,n.y-8,{stroke:C.ink,'stroke-width':3,'stroke-linecap':'round'},260,0);}
+          const el=D.el[n.id];
+          if(n.leaf)tw(el,{r:11},450,220,back);else tw(el.__rect,{'stroke-width':2.8},250,0);
+        },200+j*300));
+      });
+    },ti*320);
+  });
+}
+function vote(){
+  const votes=TREES.map(t=>predict(t,Q.x,Q.y).cls),win=votes[0]+votes[1]+votes[2]>=2?1:0;
+  const bx=M3.tx+SZ/2,by=M3.ty+SZ+80;
+  const lb=txt(S.ballot,bx-68,by+5,'Votos',{'text-anchor':'end','font-size':15,'font-weight':700,class:'mute',opacity:0});
+  tw(lb,{opacity:1},400);
+  S.tok=[];
+  TREES.forEach((t,ti)=>{
+    const leaf=predict(t,Q.x,Q.y);
+    later(()=>{
+      const k=mk('circle',{cx:PX[ti]+95+leaf.x,cy:DGY+leaf.y,r:10,fill:CLS[leaf.cls],stroke:C.bg,'stroke-width':2},S.fly);
+      S.tok[ti]=k;tw(k,{cx:bx+(ti-1)*34,cy:by},850,0,ease);
+    },ti*240);
+  });
+  later(()=>{
+    TREES.forEach((t,ti)=>{if(votes[ti]!==win)tw(S.tok[ti],{opacity:.22},450);else tw(S.tok[ti],{r:12},450,0,back);});
+    const c=mk('circle',{r:0,fill:CLS[win],stroke:C.bg,'stroke-width':2},S.qg);
+    tw(S.qg.__t,{opacity:0},200,300);tw(c,{r:10},550,300,back);
+    const ring=mk('circle',{r:10,fill:'none',stroke:CLS[win],'stroke-width':2.5},S.qg);
+    tw(ring,{r:30,opacity:0},800,400,ease);
+  },1700);
+}
+function compare(){
+  setLabel('Un árbol vs. el bosque');
+  [S.pan,S.diag,S.fly,S.ballot,S.mQ,S.mLeg].forEach(g=>tw(g,{opacity:0},450));
+  tw(S.main,{tx:M6.tx,ty:M6.ty},950,250);
+  S.mHeat.setAttribute('opacity',0);
+  S.hL=makeHeat(S.mHeat);setHeat(S.hL,1);
+  tw(S.mHeat,{opacity:1},800,1100);
+  const lt=txt(S.mTitle,SZ/2,-24,'1 árbol',{'text-anchor':'middle','font-size':19,'font-weight':700,opacity:0});
+  tw(lt,{opacity:1},500,1100);
+  const r=S.right;tf(r,R6.tx,R6.ty+24);r.setAttribute('opacity',0);
+  const heat=mk('g',{},r);S.hR=makeHeat(heat);setHeat(S.hR,1);
+  const ax=mk('g',{},r);const keep=INSTANT;INSTANT=true;axes(ax,0);INSTANT=keep;
+  const pts=mk('g',{},r);
+  DATA.forEach(d=>mk('circle',{cx:d.x*SZ,cy:(1-d.y)*SZ,r:5.5,fill:CLS[d.c],stroke:C.bg,'stroke-width':1.5},pts));
+  S.cnt=txt(r,SZ/2,-24,'Bosque · 1 árbol',{'text-anchor':'middle','font-size':19,'font-weight':700});
+  tw(r,{ty:R6.ty,opacity:1},850,1300);
+}
+const cntTxt=n=>`Bosque · ${n} ${n===1?'árbol':'árboles'}`;
+function grow(){
+  const seq=[1,2,3,4,5,6,8,10,13,16,20,25,30,40,50,60,75,90,100];
+  seq.forEach((n,k)=>later(()=>{setHeat(S.hR,n);S.cnt.textContent=cntTxt(n);},k*180));
+}
+const Y0=300,CX=[300,640,980];
+function arrow(x1,x2,delay){
+  const g=S.recap,y=Y0+34;
+  drawLine(g,x1,y,x2,y,{stroke:C.edge,'stroke-width':2,'stroke-linecap':'round'},450,delay);
+  const h=mk('path',{d:`M${x2-9},${y-7} L${x2},${y} L${x2-9},${y+7}`,fill:'none',stroke:C.edge,'stroke-width':2,'stroke-linecap':'round','stroke-linejoin':'round',opacity:0},g);
+  tw(h,{opacity:1},200,delay+400);
+}
+function rec1(){
+  setLabel('La idea');
+  tw(S.main,{opacity:0},450);tw(S.right,{opacity:0},450);
+  const g=mk('g',{},S.recap),cx=CX[0];
+  REC.forEach((sm,j)=>{
+    const x0=cx-110+j*78,sq=tf(mk('g',{opacity:0},g),x0,Y0+14);
+    mk('rect',{width:64,height:64,rx:6,fill:'none',stroke:C.line,'stroke-width':1.5},sq);
+    tw(sq,{ty:Y0,opacity:1},550,500+j*150);
+    sm.forEach((i,k)=>{const d=DATA[i];const c=mk('circle',{cx:8+d.x*48,cy:8+(1-d.y)*48,r:0,fill:CLS[d.c]},sq);tw(c,{r:3.6},380,800+j*150+k*60,back);});
+  });
+  const l=txt(g,cx,Y0+130,'Muestras distintas',{'text-anchor':'middle','font-size':19,'font-weight':700,opacity:0});
+  tw(l,{opacity:1},500,1200);
+}
+function rec2(){
+  arrow(CX[0]+140,CX[1]-110,0);
+  const g=mk('g',{},S.recap),cx=CX[1];
+  const nodes=[{x:cx,y:Y0+6,f:0},{x:cx-48,y:Y0+72,f:1},{x:cx+48,y:Y0+72,f:0}];
+  [[0,1],[0,2]].forEach(([a,b])=>drawLine(g,nodes[a].x,nodes[a].y+12,nodes[b].x,nodes[b].y-12,{stroke:C.edge,'stroke-width':1.6},350,500));
+  nodes.forEach((n,j)=>{
+    const p=tf(mk('g',{opacity:0},g),n.x,n.y,.6);
+    mk('rect',{x:-22,y:-12,width:44,height:24,rx:12,fill:C.bg,stroke:C.ink,'stroke-width':1.3},p);
+    const t=txt(p,0,5,featL[n.f],{'text-anchor':'middle','font-size':14,'font-weight':600,class:'mono'});
+    tw(p,{opacity:1,s:1},420,300+j*120,back);
+    if(!INSTANT)later(()=>{const g0=GEN;let k=0;const iv=setInterval(()=>{if(g0!==GEN||k>=9+j*3){clearInterval(iv);if(g0===GEN)t.textContent=featL[n.f];return;}t.textContent=featL[k%2];k++;},90);},400+j*120);
+  });
+  const l=txt(g,cx,Y0+130,'Variables al azar',{'text-anchor':'middle','font-size':19,'font-weight':700,opacity:0});
+  tw(l,{opacity:1},500,1100);
+}
+function rec3(){
+  arrow(CX[1]+110,CX[2]-110,0);
+  const g=mk('g',{},S.recap),cx=CX[2],cols=[0,1,1];
+  cols.forEach((c,j)=>{
+    const k=mk('circle',{cx:cx-60+j*60,cy:Y0+8,r:0,fill:CLS[c],stroke:C.bg,'stroke-width':2},g);
+    tw(k,{r:11},400,300+j*140,back);
+    tw(k,{cx:cx,cy:Y0+62,opacity:.0},700,1200+j*60,ease);
+  });
+  const big=mk('circle',{cx:cx,cy:Y0+62,r:0,fill:C.c1},g);
+  tw(big,{r:26},600,1750,back);
+  const ring=mk('circle',{cx:cx,cy:Y0+62,r:26,fill:'none',stroke:C.c1,'stroke-width':2.5,opacity:0},g);
+  later(()=>{ring.setAttribute('opacity',1);tw(ring,{r:54,opacity:0},900);},1950);
+  const l=txt(g,cx,Y0+130,'Votación',{'text-anchor':'middle','font-size':19,'font-weight':700,opacity:0});
+  tw(l,{opacity:1},500,1500);
+}
+
+const STEPS=[
+  [0,portada],
+  [1,datos],
+  [2,layout3],[2,()=>sampleAnim(0,34,560,0)],[2,()=>{sampleAnim(1,17,480,0);sampleAnim(2,17,480,160);}],
+  [3,()=>{setLabel('Cada árbol divide el espacio');growDepth(1);}],[3,()=>growDepth(2)],[3,()=>growDepth(3)],
+  [4,newPt],[4,route],[4,vote],
+  [5,compare],[5,grow],
+  [6,rec1],[6,rec2],[6,rec3]
+];
+const NSL=7;
+
+function setup(){
+  svg.innerHTML='';S={};
+  S.labG=tf(mk('g',{opacity:0},svg),0,0);
+  S.lab=txt(S.labG,60,70,'',{class:'disp','font-size':32,'font-weight':700,'letter-spacing':'-.5'});
+  S.port=mk('g',{},svg);
+  S.main=tf(mk('g',{opacity:0},svg),M2.tx,M2.ty);
+  S.mHeat=mk('g',{},S.main);S.mAxes=mk('g',{},S.main);S.mPts=mk('g',{},S.main);
+  S.mLeg=mk('g',{},S.main);S.mQ=mk('g',{},S.main);S.mTitle=mk('g',{},S.main);
+  S.right=tf(mk('g',{opacity:0},svg),R6.tx,R6.ty);
+  S.pan=mk('g',{},svg);S.diag=mk('g',{},svg);S.ballot=mk('g',{},svg);S.recap=mk('g',{},svg);
+  S.fly=mk('g',{},svg);
+}
+let cur=0;
+function render(target){
+  GEN++;cur=target;setup();
+  INSTANT=true;for(let i=0;i<target;i++)STEPS[i][1]();
+  INSTANT=REDUCED;STEPS[target][1]();INSTANT=false;
+  pg.textContent=`${STEPS[target][0]+1} / ${NSL}`;
+}
+const next=()=>{if(cur<STEPS.length-1)render(cur+1);};
+const prev=()=>{if(cur>0)render(cur-1);};
+addEventListener('keydown',e=>{
+  if(['ArrowRight','ArrowDown',' ','PageDown','Enter'].includes(e.key)){e.preventDefault();next();}
+  else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)){e.preventDefault();prev();}
+  else if(e.key==='Home')render(0);
+  else if(e.key==='End')render(STEPS.length-1);
+  else if(e.key==='f'||e.key==='F'){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{});}catch(_){}}
+});
+document.addEventListener('click',next);
+document.addEventListener('contextmenu',e=>{e.preventDefault();prev();});
+render(0);
+</script>
+
+</body>
+</html>

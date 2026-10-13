@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Machine Learning para la Investigación · Módulo 2</title>
+<meta name="description" content="Módulo 2 del Diplomado en Inteligencia Artificial para la Investigación (CENES, UPTC): fundamentos, aprendizaje supervisado y no supervisado, series de tiempo y redes neuronales.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<style>
+/* ==========================================================================
+   RESET + VARIABLES · misma paleta que index/FUNDAMENTOS.html
+   ========================================================================== */
+*{ margin:0; padding:0; box-sizing:border-box; }
+button{ font:inherit; color:inherit; }
+:root{
+  --bg:#ffffff;
+  --ink:#15181f;
+  --sub:#565c6b;
+  --muted:#9aa0ad;
+  --line:#e8eaef;
+  --soft:#f5f6f8;
+  --st:#2f5bea;          /* azul */
+  --ml:#ea7317;          /* naranja */
+  --ok:#1b9a68;
+  --st-soft:rgba(47,91,234,.07);
+  --ml-soft:rgba(234,115,23,.08);
+  --disp:"Schibsted Grotesk","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+html,body{ height:100%; width:100%; overflow:hidden; background:var(--bg); color:var(--ink);
+  font-family:var(--disp); -webkit-font-smoothing:antialiased; }
+#net{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5; }
+
+/* ==========================================================================
+   ESCENARIO Y TRANSICIONES
+   ========================================================================== */
+#stage{ position:relative; width:100vw; height:100vh; height:100dvh; overflow:hidden; z-index:1; }
+.slide{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:10vh 5vw 9vh;
+  opacity:0; transform:translateX(60px) scale(.98);
+  transition:opacity .6s ease, transform .7s cubic-bezier(.2,.8,.2,1); pointer-events:none;
+}
+.slide.active{ opacity:1; transform:none; pointer-events:auto; }
+.slide.prev{ transform:translateX(-60px) scale(.98); }
+.slide-scroll{ width:100%; max-height:100%; overflow-y:auto; overflow-x:hidden;
+  scrollbar-width:none; -ms-overflow-style:none; }
+.slide-scroll::-webkit-scrollbar{ display:none; }
+
+#progress{ position:fixed; top:0; left:0; height:3px; width:0; background:linear-gradient(90deg,var(--st),var(--ml)); z-index:60; transition:width .6s ease; }
+.progress-num{ position:fixed; top:26px; left:28px; z-index:50; font-family:var(--mono); font-size:12px; font-weight:600; color:var(--muted); letter-spacing:.12em; }
+.progress-num b{ color:var(--st); font-size:15px; }
+.block-tag{ position:fixed; top:22px; left:50%; transform:translateX(-50%); z-index:50; font-family:var(--mono); font-size:10.5px;
+  letter-spacing:.2em; text-transform:uppercase; font-weight:600; color:var(--sub);
+  background:rgba(255,255,255,.85); border:1px solid var(--line); padding:6px 16px; border-radius:99px; backdrop-filter:blur(8px); }
+
+.nav-btn{ position:fixed; bottom:26px; z-index:45; width:46px; height:46px; border-radius:50%; background:#fff;
+  border:1px solid var(--line); color:var(--ink); cursor:pointer; font-size:18px; transition:all .25s ease; }
+.nav-btn:hover{ background:var(--st); color:#fff; border-color:var(--st); transform:translateY(-2px); }
+.nav-btn.is-disabled{ opacity:.3; pointer-events:none; }
+#prev{ left:28px; } #next{ right:28px; }
+
+/* ==========================================================================
+   TIPOGRAFÍA BASE
+   ========================================================================== */
+.eyebrow{ display:inline-block; font-family:var(--mono); font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--st);
+  padding:6px 14px; border:1px solid rgba(47,91,234,.3); border-radius:99px; margin-bottom:16px; font-weight:600; }
+h1,h2,h3{ font-family:var(--disp); }
+h2{ font-size:clamp(28px,3.8vw,50px); font-weight:700; line-height:1.08; letter-spacing:-.02em; }
+.hl{ color:var(--st); }
+.hl2{ color:var(--ml); }
+.slide-head{ text-align:center; }
+.slide-head .lead{ margin:12px auto 0; color:var(--sub); font-size:15px; max-width:760px; line-height:1.55; }
+.slide-head .lead b{ color:var(--ink); font-weight:600; }
+.wrapA{ width:100%; max-width:1180px; }
+.note-foot{ text-align:center; margin-top:20px; font-size:13.5px; color:var(--sub); }
+.note-foot b{ color:var(--ml); }
+@keyframes reveal{ from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:none;} }
+
+/* ==========================================================================
+   PORTADA
+   ========================================================================== */
+.hero{ text-align:center; }
+.hero-top{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:26px; flex-wrap:wrap;
+  opacity:0; animation:reveal .8s .15s forwards; }
+.hero-top .badge{ font-family:var(--mono); padding:7px 15px; border-radius:99px; background:var(--st-soft);
+  border:1px solid rgba(47,91,234,.28); color:var(--st); font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; }
+.hero-top .badge.alt{ background:var(--ml-soft); border-color:rgba(234,115,23,.32); color:var(--ml); }
+.mc-name{ opacity:0; animation:reveal 1s .35s forwards; }
+.mc-name h1{ font-size:clamp(46px,min(10vw,21vh),168px); line-height:.92; font-weight:800; letter-spacing:-.04em; }
+.mc-name .ln1{ display:block; font-family:var(--mono); font-size:clamp(10px,1.05vw,14px); font-weight:600; color:var(--sub);
+  letter-spacing:.22em; text-transform:uppercase; margin-bottom:22px; line-height:1.5; }
+.mc-name .ln2{ display:block; }
+.grad{ background:linear-gradient(100deg,var(--st),var(--ml),var(--st)); background-size:200% 100%;
+  -webkit-background-clip:text; background-clip:text; color:transparent; animation:shimmer 9s linear infinite; }
+@keyframes shimmer{ to{ background-position:200% 0;} }
+.mc-name .ln3{ display:block; font-size:.26em; font-weight:500; margin-top:14px; color:var(--sub); letter-spacing:-.01em; line-height:1.1; }
+.hero-author{ display:flex; flex-direction:column; align-items:center; gap:7px; margin-top:26px;
+  opacity:0; animation:reveal .8s .7s forwards; }
+.hero-author .ha-name{ font-weight:700; font-size:clamp(17px,1.7vw,22px); }
+.hero-author .ha-role{ font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--ml); }
+
+/* portada · el código se escribe y la gráfica responde */
+.hero-demo{ display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr); gap:16px;
+  width:min(820px,90vw); margin:30px auto 0; text-align:left; opacity:0; animation:reveal .8s 1s forwards; }
+.hd-code{ background:var(--ink); border-radius:14px; overflow:hidden; box-shadow:0 18px 40px -22px rgba(21,24,31,.45); }
+.hd-top{ display:flex; align-items:center; gap:6px; padding:9px 12px; border-bottom:1px solid rgba(255,255,255,.08); }
+.hd-top i{ width:9px; height:9px; border-radius:50%; background:#ff5f56; }
+.hd-top i:nth-child(2){ background:#ffbd2e; } .hd-top i:nth-child(3){ background:#27c93f; }
+.hd-top em{ margin-left:6px; font-family:var(--mono); font-style:normal; font-size:10px; color:#8a90a0; }
+.hd-code pre{ margin:0; padding:14px 15px; font-family:var(--mono); font-size:12px; line-height:1.65;
+  color:#e6e9f0; min-height:148px; white-space:pre-wrap; }
+.hd-code .k{ color:#ff9d4d; } .hd-code .s{ color:#8fd6a8; } .hd-code .f{ color:#8eaaff; }
+.hd-cur{ display:inline-block; width:7px; background:#8eaaff; animation:hdBlink 1s steps(1) infinite; }
+@keyframes hdBlink{ 0%,50%{opacity:1} 51%,100%{opacity:0} }
+.hd-chart{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 15px;
+  display:flex; flex-direction:column; justify-content:center; gap:9px; }
+.hd-cap{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+.hd-row{ display:grid; grid-template-columns:108px 1fr; align-items:center; gap:9px; }
+.hd-row i{ font-style:normal; font-size:10.5px; color:var(--sub); text-align:right; }
+.hd-track{ height:11px; background:var(--soft); border-radius:99px; overflow:hidden; }
+.hd-track b{ display:block; height:100%; width:0; border-radius:99px; background:var(--st); transition:width 1s cubic-bezier(.2,.8,.2,1); }
+
+/* ==========================================================================
+   PERFIL DEL DOCENTE
+   ========================================================================== */
+.pf{ width:100%; max-width:1240px; }
+.pf-grid{ display:grid; grid-template-columns:300px 1fr; gap:32px; align-items:start; }
+.pf-frame{ border-radius:22px; overflow:hidden; border:1px solid var(--line); aspect-ratio:1/1.05; background:var(--soft);
+  box-shadow:0 22px 46px -28px rgba(21,24,31,.4); }
+.pf-frame img{ width:100%; height:100%; object-fit:cover; display:block; }
+.pf-edu,.pf-social,.pf-box,.pf-stat{ background:#fff; border:1px solid var(--line); border-radius:18px; }
+.pf-edu{ margin-top:18px; padding:16px 16px 14px; }
+.pf-edu-t{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--st); margin-bottom:11px; }
+.pf-edu-row{ display:grid; grid-template-columns:24px 1fr; gap:2px 10px; padding:7px 0; border-top:1px solid var(--line); }
+.pf-edu-row:first-of-type{ border-top:none; }
+.pf-edu-row .n{ grid-row:span 2; font-family:var(--mono); font-size:10.5px; color:var(--muted); padding-top:3px; }
+.pf-edu-row .lv{ font-family:var(--mono); font-size:9.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ml); }
+.pf-edu-row .dg{ font-size:12.5px; color:var(--ink); line-height:1.3; }
+.pf-edu-row.phd .dg{ color:var(--st); font-weight:700; }
+.pf-social{ margin-top:14px; padding:16px 16px 14px; }
+.pf-soc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.pf-social .soc{ display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:12px; background:var(--soft);
+  border:1px solid transparent; color:var(--sub); text-decoration:none; font-size:12px; font-weight:600; transition:all .2s; }
+.pf-social .soc svg{ width:17px; height:17px; flex:none; }
+.pf-social .soc:hover{ transform:translateY(-2px); background:#fff; }
+.pf-social .soc.yt:hover{ color:#e62117; border-color:rgba(230,33,23,.4); }
+.pf-social .soc.li:hover{ color:#0a66c2; border-color:rgba(10,102,194,.4); }
+.pf-social .soc.ig:hover{ color:#d6297b; border-color:rgba(214,41,123,.4); }
+.pf-social .soc.wa:hover{ color:#128c4b; border-color:rgba(18,140,75,.4); }
+.pf-name{ font-size:clamp(30px,4vw,50px); line-height:1.02; font-weight:800; letter-spacing:-.03em; margin-top:6px; }
+.pf-phd{ display:inline-block; vertical-align:super; margin-left:10px; font-family:var(--mono); font-size:.3em; font-weight:600;
+  letter-spacing:.1em; color:var(--ml); border:1px solid rgba(234,115,23,.4); border-radius:8px; padding:3px 8px; }
+.pf-bio{ margin-top:12px; font-size:14.5px; line-height:1.65; color:var(--sub); max-width:72ch; }
+.pf-bio b{ color:var(--ink); font-weight:700; }
+.pf-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:20px; }
+.pf-stat{ padding:14px 14px 12px; border-radius:16px; }
+.pf-stat .v{ font-size:30px; font-weight:800; color:var(--st); line-height:1; letter-spacing:-.03em; }
+.pf-stat .k{ margin-top:6px; font-size:11px; color:var(--sub); line-height:1.35; }
+.pf-cols{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
+.pf-box{ padding:16px 16px 14px; }
+.pf-box-t{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--ml); margin-bottom:10px; }
+.pf-list{ list-style:none; display:flex; flex-direction:column; gap:9px; }
+.pf-list li{ font-size:13px; line-height:1.3; padding-left:13px; position:relative; color:var(--ink); }
+.pf-list li::before{ content:""; position:absolute; left:0; top:6px; width:5px; height:5px; border-radius:50%; background:var(--st); }
+.pf-list li b{ font-weight:700; }
+.pf-list li span{ display:block; font-size:11.5px; color:var(--sub); margin-top:2px; }
+.pf-now{ display:inline-block; margin-left:6px; font-style:normal; font-family:var(--mono); font-size:9px; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--ok); background:rgba(27,154,104,.1); border-radius:99px; padding:2px 7px; }
+.pf-inv{ margin-top:11px; padding-top:10px; border-top:1px solid var(--line); font-size:11.5px; line-height:1.45; color:var(--sub); }
+.pf-inv b{ color:var(--ink); font-weight:700; }
+.pf-skills{ display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+.pf-sk{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.pf-sk .c{ min-width:112px; font-family:var(--mono); font-size:9.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.pf-sk .s{ font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:99px; background:var(--soft); border:1px solid var(--line); color:var(--ink); }
+.pf-links{ display:flex; align-items:center; gap:10px 18px; flex-wrap:wrap; margin-top:20px; }
+.pf-links a{ font-size:12.5px; font-weight:600; color:var(--sub); text-decoration:none; transition:color .2s; }
+.pf-links a:hover{ color:var(--st); }
+
+/* ==========================================================================
+   EL MÓDULO · dos preguntas + resultados de aprendizaje
+   ========================================================================== */
+.duo{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; align-items:stretch; }
+.pane{ padding:22px 24px; border-radius:20px; background:#fff; border:1px solid var(--line); border-top:3px solid var(--st); }
+.pane.ml{ border-top-color:var(--ml); }
+.pane .tag{ font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; font-weight:600; color:var(--st); }
+.pane.ml .tag{ color:var(--ml); }
+.pane h3{ font-size:22px; font-weight:700; letter-spacing:-.02em; margin-top:8px; line-height:1.15; }
+.pane p{ font-size:13.5px; color:var(--sub); line-height:1.6; margin-top:8px; }
+.ra-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:16px; }
+.ra{ padding:14px 16px; border-radius:16px; background:var(--soft); }
+.ra b{ display:block; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.16em; color:var(--muted); margin-bottom:6px; }
+.ra span{ font-size:12.5px; line-height:1.45; color:var(--ink); }
+
+/* ==========================================================================
+   LA RUTA · temas del módulo
+   ========================================================================== */
+.slide.ruta{ padding-top:9vh; padding-bottom:8vh; }
+.ruta .eyebrow{ margin-bottom:10px; }
+.mod-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:20px; }
+.mod-card{ position:relative; display:flex; flex-direction:column; padding:15px 16px 14px 20px; border-radius:18px;
+  background:#fff; border:1px solid var(--line); overflow:hidden; transition:transform .25s, border-color .25s, box-shadow .25s; }
+.mod-card::before{ content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--st); }
+.mod-card:hover{ transform:translateY(-3px); border-color:rgba(47,91,234,.35); box-shadow:0 18px 36px -26px rgba(21,24,31,.4); }
+.mod-card .mod-n{ font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--st); }
+.mod-card h3{ font-size:17px; font-weight:700; letter-spacing:-.01em; line-height:1.2; margin-top:6px; }
+.mod-card p{ flex:1; font-size:12.5px; color:var(--sub); margin-top:7px; line-height:1.45; }
+.mod-card p code{ font-family:var(--mono); font-size:.92em; color:var(--ink); }
+.mod-temas{ display:flex; flex-direction:column; gap:5px; margin-top:10px; }
+.mod-tema{ display:flex; align-items:center; gap:10px; text-decoration:none; padding:6px 11px; border-radius:10px;
+  background:var(--soft); border:1px solid transparent; transition:border-color .2s, background .2s; }
+.mod-tema b{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.06em; color:var(--st); white-space:nowrap; }
+.mod-tema span{ flex:1; font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.25; }
+.mod-tema i{ font-style:normal; color:var(--st); opacity:.5; transition:transform .25s, opacity .25s; }
+a.mod-tema:hover{ border-color:var(--st); background:var(--st-soft); }
+a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
+.mod-go{ margin-top:12px; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.mod-card.soon::before{ background:var(--line); }
+.mod-card.soon .mod-n{ color:var(--muted); }
+.mod-card.soon:hover{ transform:none; border-color:var(--line); box-shadow:none; }
+/* ejercicios prácticos: notebooks, no mazos */
+.mod-card.lab::before{ background:var(--ml); }
+.mod-card.lab .mod-n, .mod-card.lab .mod-tema b{ color:var(--ml); }
+.mod-card.lab:hover{ border-color:rgba(234,115,23,.4); }
+
+/* ==========================================================================
+   ÍNDICE / MENÚ
+   ========================================================================== */
+.topbar{ position:fixed; top:0; left:0; right:0; z-index:55; display:flex; justify-content:flex-end; padding:18px 28px; pointer-events:none; }
+.menu-btn{ pointer-events:auto; background:var(--ink); color:#fff; border:none; cursor:pointer; font-family:var(--mono);
+  font-size:11px; font-weight:600; letter-spacing:.12em; padding:10px 16px; border-radius:99px; transition:background .2s, transform .2s; }
+.menu-btn:hover{ background:var(--st); transform:translateY(-2px); }
+.menu-overlay{ position:fixed; inset:0; z-index:90; background:rgba(21,24,31,.35); backdrop-filter:blur(5px);
+  opacity:0; visibility:hidden; transition:opacity .3s, visibility .3s; }
+.menu-overlay.open{ opacity:1; visibility:visible; }
+.menu-panel{ position:absolute; top:0; right:0; height:100%; width:min(420px,92vw); background:#fff; border-left:1px solid var(--line);
+  padding:26px 22px; overflow-y:auto; transform:translateX(100%); transition:transform .4s cubic-bezier(.2,.8,.2,1); }
+.menu-overlay.open .menu-panel{ transform:none; }
+.menu-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.menu-head .mk{ font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--st); font-weight:600; }
+.menu-close{ background:var(--soft); color:var(--ink); border:none; width:36px; height:36px; border-radius:50%; cursor:pointer; transition:background .2s, color .2s; }
+.menu-close:hover{ background:var(--ml); color:#fff; }
+.menu-group{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin:14px 0 6px; }
+.menu-list{ list-style:none; }
+.menu-list li{ padding:10px 12px; border-radius:12px; cursor:pointer; display:flex; align-items:baseline; gap:12px; transition:background .2s; }
+.menu-list li .mn{ font-family:var(--mono); font-size:11.5px; color:var(--ml); font-weight:600; flex-shrink:0; }
+.menu-list li:hover{ background:var(--soft); }
+.menu-list li.current{ background:var(--st); color:#fff; }
+.menu-list li.current .mn{ color:#fff; opacity:.75; }
+.menu-list li .mt{ font-weight:700; font-size:15px; line-height:1.15; display:block; }
+.menu-list li .md{ font-size:12px; color:var(--sub); display:block; margin-top:2px; }
+.menu-list li.current .md{ color:rgba(255,255,255,.8); }
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width:1080px){
+  .pf-grid{ grid-template-columns:230px 1fr; gap:24px; }
+  .pf-stats,.ra-grid{ grid-template-columns:repeat(2,1fr); }
+  .mod-grid{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:820px){
+  .slide{ padding:9vh 5vw 11vh; align-items:flex-start; }
+  .block-tag{ display:none; }
+  .pf-grid,.pf-cols,.duo,.mod-grid,.hero-demo{ grid-template-columns:1fr; }
+  .pf-frame{ max-width:240px; margin:0 auto; }
+  .pf-sk .c{ min-width:0; width:100%; }
+  .hd-code pre{ min-height:0; }
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; animation-delay:0s !important; transition-duration:.001ms !important; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="net"></canvas>
+
+<div id="progress"></div>
+<div class="progress-num"><b id="curNum">1</b> / <span id="totNum">1</span></div>
+<div class="block-tag" id="blockTag">Presentación</div>
+
+<div class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Índice de secciones">☰ Índice</button>
+</div>
+
+<div class="menu-overlay" id="menuOverlay">
+  <div class="menu-panel">
+    <div class="menu-head">
+      <span class="mk">Saltar a una sección</span>
+      <button class="menu-close" id="menuClose" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="menuBody"></div>
+  </div>
+</div>
+
+<button class="nav-btn" id="prev" aria-label="Anterior">&larr;</button>
+<button class="nav-btn" id="next" aria-label="Siguiente">&rarr;</button>
+
+<div id="stage">
+
+<!-- 01 · PORTADA -->
+<section class="slide hero active" data-block="Presentación" data-title="Portada" data-sub="Machine Learning para la Investigación">
+  <div class="slide-scroll">
+    <div class="hero-top">
+      <span class="badge">Módulo 2</span>
+      <span class="badge alt">30 horas · 100 % virtual</span>
+      <span class="badge">CENES · UPTC</span>
+    </div>
+    <div class="mc-name">
+      <h1>
+        <span class="ln1">Diplomado en Inteligencia Artificial para la Investigación</span>
+        <span class="ln2">Machine <span class="grad">Learning</span></span>
+        <span class="ln3">para la Investigación</span>
+      </h1>
+    </div>
+    <div class="hero-author">
+      <span class="ha-name">Oscar Iván Vargas Pineda</span>
+      <span class="ha-role">Docente</span>
+    </div>
+    <div class="hero-demo">
+      <div class="hd-code">
+        <div class="hd-top"><i></i><i></i><i></i><em>pobreza_municipal.py</em></div>
+        <pre id="hdCode"></pre>
+      </div>
+      <!-- cifras del ejercicio 1: importancia por permutación (0,426 · 0,346 · 0,076 · 0,043 · 0,022) -->
+      <div class="hd-chart" id="hdChart">
+        <div class="hd-cap">pérdida de R² al permutar</div>
+        <div class="hd-row"><i>Régimen subsidiado</i><div class="hd-track"><b></b></div></div>
+        <div class="hd-row"><i>Educación media</i><div class="hd-track"><b></b></div></div>
+        <div class="hd-row"><i>Luces nocturnas</i><div class="hd-track"><b></b></div></div>
+        <div class="hd-row"><i>Región Caribe</i><div class="hd-track"><b></b></div></div>
+        <div class="hd-row"><i>Aseguramiento</i><div class="hd-track"><b></b></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 · PERFIL DEL DOCENTE -->
+<section class="slide" data-block="Presentación" data-title="Quién dicta el módulo" data-sub="Oscar Iván Vargas Pineda, PhD">
+  <div class="slide-scroll pf">
+    <div class="pf-grid">
+
+      <!-- columna izquierda: foto + formación -->
+      <aside class="pf-side">
+        <div class="pf-frame">
+          <img src="oscar-vargas.png" alt="Oscar Iván Vargas Pineda" loading="lazy">
+        </div>
+        <div class="pf-edu">
+          <div class="pf-edu-t">Formación académica</div>
+          <div class="pf-edu-row"><span class="n">01</span><span class="lv">Pregrado</span><span class="dg">Ingeniero Agroindustrial</span></div>
+          <div class="pf-edu-row"><span class="n">02</span><span class="lv">Especialista</span><span class="dg">Gestión del Agua</span></div>
+          <div class="pf-edu-row"><span class="n">03</span><span class="lv">Magíster</span><span class="dg">Gestión Ambiental Sostenible</span></div>
+          <div class="pf-edu-row"><span class="n">04</span><span class="lv">Magíster</span><span class="dg">Inteligencia Artificial Aplicada</span></div>
+          <div class="pf-edu-row phd"><span class="n">05</span><span class="lv">Doctor</span><span class="dg">Ciencias Agrarias</span></div>
+        </div>
+
+        <div class="pf-social">
+          <div class="pf-edu-t">Sígueme</div>
+          <div class="pf-soc-grid">
+            <a class="soc yt" href="https://www.youtube.com/@TCientifico" target="_blank" rel="noopener" title="YouTube · @TCientifico">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814ZM9.545 15.568V8.432L15.818 12l-6.273 3.568Z"/></svg>
+              <span>YouTube</span>
+            </a>
+            <a class="soc li" href="https://www.linkedin.com/in/oscar-ivan-vargas-pineda-2aa543240/" target="_blank" rel="noopener" title="LinkedIn">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43A2.06 2.06 0 113.27 5.37a2.06 2.06 0 012.07 2.06zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45C23.2 24 24 23.23 24 22.28V1.72C24 .77 23.2 0 22.22 0z"/></svg>
+              <span>LinkedIn</span>
+            </a>
+            <a class="soc ig" href="https://www.instagram.com/trabajocientifico/" target="_blank" rel="noopener" title="Instagram · @trabajocientifico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/></svg>
+              <span>Instagram</span>
+            </a>
+            <a class="soc wa" href="https://wa.me/573184280112" target="_blank" rel="noopener" title="WhatsApp · +57 318 428 0112">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884a9.82 9.82 0 0 1 6.988 2.896 9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.359.101 11.945c0 2.096.547 4.142 1.588 5.945L0 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.585 0 11.946-5.359 11.949-11.945a11.87 11.87 0 0 0-3.497-8.4"/></svg>
+              <span>WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- columna derecha: identidad + trayectoria -->
+      <div class="pf-main">
+        <span class="eyebrow">Científico de datos · Docente investigador</span>
+        <h2 class="pf-name">Oscar Iván <span class="hl">Vargas Pineda</span><span class="pf-phd">PhD</span></h2>
+        <p class="pf-bio">Más de diez años transformando datos en decisiones. Conecto la <b>academia, la consultoría internacional y la divulgación</b> para enseñar ciencia de datos a investigadores, docentes y profesionales que nunca han programado.</p>
+
+        <div class="pf-stats">
+          <div class="pf-stat"><div class="v">10+</div><div class="k">Años de experiencia profesional</div></div>
+          <div class="pf-stat"><div class="v">7</div><div class="k">Años como docente universitario</div></div>
+          <div class="pf-stat"><div class="v">5</div><div class="k">Años como consultor de datos</div></div>
+          <div class="pf-stat"><div class="v">9</div><div class="k">Publicaciones como primer autor</div></div>
+        </div>
+
+        <div class="pf-cols">
+          <div class="pf-box">
+            <div class="pf-box-t">Docencia universitaria</div>
+            <ul class="pf-list">
+              <li><b>Universidad de los Llanos</b><span>Ingeniería Agroindustrial</span></li>
+              <li><b>Universidad Santo Tomás</b><span>Ingeniería Industrial</span></li>
+              <li><b>Universidad Jorge Tadeo Lozano</b><span>Posgrado · Diseño y Creación con IA</span></li>
+              <li><b>Universidad Central</b><span>Pregrado y posgrado</span></li>
+            </ul>
+            <div class="pf-inv">Invitado: <b>Politécnica de Madrid</b> (España) · <b>Montpellier</b> (Francia) · <b>El Bosque</b> (Colombia)</div>
+          </div>
+
+          <div class="pf-box">
+            <div class="pf-box-t">Consultoría en datos</div>
+            <ul class="pf-list">
+              <li><b>Earth Innovation Institute</b><span>Científico de datos · IA aplicada a sostenibilidad <em class="pf-now">Actual</em></span></li>
+              <li><b>Banco Mundial</b><span>Análisis de datos</span></li>
+              <li><b>Banco Interamericano de Desarrollo</b><span>Análisis de datos</span></li>
+              <li><b>ECOPETROL</b> · <b>Fundación ALISOS</b><span>Datos para industria y modelamiento</span></li>
+            </ul>
+            <div class="pf-inv">Creador del <b>Diplomado en Ciencia de Datos y Machine Learning</b> y de 6 cursos de profundización.</div>
+          </div>
+        </div>
+
+        <div class="pf-skills">
+          <div class="pf-sk"><span class="c">Lenguajes</span><span class="s">Python</span><span class="s">R</span><span class="s">SQL</span></div>
+          <div class="pf-sk"><span class="c">Análisis</span><span class="s">Machine Learning</span><span class="s">Visualización</span><span class="s">Automatización</span></div>
+          <div class="pf-sk"><span class="c">IA · Asistentes</span><span class="s">Claude Code</span><span class="s">Codex</span><span class="s">Antigravity</span></div>
+          <div class="pf-sk"><span class="c">Software</span><span class="s">ArcGIS Pro</span><span class="s">VENSIM</span><span class="s">Power BI</span></div>
+        </div>
+
+        <div class="pf-links">
+          <a href="https://trabajocientifico.org/" target="_blank" rel="noopener">trabajocientifico.org</a>
+          <a href="mailto:oscarvargas@trabajocientifico.org">oscarvargas@trabajocientifico.org</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 03 · EL MÓDULO -->
+<section class="slide" data-block="Presentación" data-title="El punto de partida" data-sub="Objetivo y resultados de aprendizaje">
+  <div class="slide-scroll wrapA">
+    <div class="slide-head">
+      <span class="eyebrow">El punto de partida</span>
+      <h2>No viene a memorizar algoritmos.<br>Viene a <span class="hl">responder preguntas</span> de investigación</h2>
+      <p class="lead">El objetivo del módulo es <b>implementar y evaluar modelos de aprendizaje supervisado y no supervisado</b> para predecir, clasificar y segmentar, e interpretar y comunicar sus resultados en lenguaje científico y de política pública.</p>
+    </div>
+    <div class="duo">
+      <div class="pane">
+        <span class="tag">Estadística tradicional</span>
+        <h3>¿Por qué ocurre?</h3>
+        <p>El investigador propone la forma del modelo, estima sus parámetros y contrasta hipótesis. El resultado se lee en coeficientes e intervalos de confianza.</p>
+      </div>
+      <div class="pane ml">
+        <span class="tag">Machine Learning</span>
+        <h3>¿Qué va a ocurrir?</h3>
+        <p>El algoritmo busca la forma del modelo en los datos y se juzga por lo bien que acierta en casos que no ha visto. El resultado se lee en errores de predicción.</p>
+      </div>
+    </div>
+    <div class="ra-grid">
+      <div class="ra"><b>RESULTADO 1</b><span>Entrena y evalúa modelos de ML para predicción y clasificación.</span></div>
+      <div class="ra"><b>RESULTADO 2</b><span>Segmenta individuos, empresas o territorios con algoritmos de clustering.</span></div>
+      <div class="ra"><b>RESULTADO 3</b><span>Interpreta los modelos y los comunica en lenguaje académico y de política.</span></div>
+      <div class="ra"><b>RESULTADO 4</b><span>Selecciona el modelo adecuado según el problema y la naturaleza de los datos.</span></div>
+    </div>
+    <p class="note-foot"><b>Las dos miradas se complementan:</b> en investigación casi siempre se necesitan ambas.</p>
+  </div>
+</section>
+
+<!-- 04 · LOS TEMAS DEL MÓDULO -->
+<section class="slide ruta" data-block="Contenidos" data-title="La ruta" data-sub="Los cinco temas y los ejercicios prácticos">
+  <div class="slide-scroll wrapA">
+    <div class="slide-head">
+      <span class="eyebrow">Cómo vamos a avanzar</span>
+      <h2>De los <span class="hl">fundamentos</span> a las <span class="hl2">redes neuronales</span></h2>
+    </div>
+    <div class="mod-grid">
+      <div class="mod-card">
+        <div class="mod-n">Tema 2.1</div>
+        <h3>Fundamentos del Machine Learning</h3>
+        <p>ML frente a estadística, flujo de trabajo, partición de datos y validación cruzada, sobreajuste y selección de variables.</p>
+        <div class="mod-temas">
+          <a class="mod-tema" href="index/FUNDAMENTOS.html"><b>CLASE</b><span>Fundamentos de ML para investigación</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/FUNDAMENTOS-TECNICAS-GENERALIDADES.html"><b>CLASE</b><span>Mapa de técnicas</span><i>&rarr;</i></a>
+        </div>
+      </div>
+      <div class="mod-card">
+        <div class="mod-n">Tema 2.2</div>
+        <h3>Aprendizaje supervisado</h3>
+        <p>Regresión lineal y logística, árboles y Random Forest, Gradient Boosting, métricas de evaluación e interpretabilidad con SHAP.</p>
+        <div class="mod-temas">
+          <a class="mod-tema" href="index/animacion-ejemplo-regresion-lineal-simple.html"><b>DEMO</b><span>Regresión lineal simple</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/animacion-ejemplo-arbol-decision.html"><b>DEMO</b><span>Árbol de decisión</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/animacion-ejemplo-random-forest-animado.html"><b>DEMO</b><span>Random Forest</span><i>&rarr;</i></a>
+        </div>
+      </div>
+      <div class="mod-card soon">
+        <div class="mod-n">Tema 2.3</div>
+        <h3>Aprendizaje no supervisado</h3>
+        <p>Clustering K-Means y jerárquico, componentes principales para reducir dimensiones y construir índices, y detección de anomalías.</p>
+        <span class="mod-go">Próximamente</span>
+      </div>
+      <div class="mod-card soon">
+        <div class="mod-n">Tema 2.4</div>
+        <h3>Series de tiempo y datos panel</h3>
+        <p>Modelos ARIMA, datos panel con efectos fijos y aleatorios, cambios estructurales y pronóstico de variables macroeconómicas, sociales o ambientales.</p>
+        <span class="mod-go">Próximamente</span>
+      </div>
+      <div class="mod-card soon">
+        <div class="mod-n">Tema 2.5</div>
+        <h3>Redes neuronales y Deep Learning</h3>
+        <p>Perceptrón y redes artificiales, redes convolucionales y recurrentes, y cuándo conviene el deep learning frente al ML clásico.</p>
+        <span class="mod-go">Próximamente</span>
+      </div>
+      <div class="mod-card lab">
+        <div class="mod-n">Ejercicios prácticos</div>
+        <h3>Tres notebooks con datos de Colombia</h3>
+        <p>Se abren en Jupyter o Google Colab desde la carpeta <code>ejercicios_ml_colombia</code>.</p>
+        <div class="mod-temas">
+          <div class="mod-tema"><b>01</b><span>Random Forest · pobreza municipal</span></div>
+          <div class="mod-tema"><b>02</b><span>PCA y K-Means · tipologías de municipios</span></div>
+          <div class="mod-tema"><b>03</b><span>ARIMA y Gradient Boosting · TRM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+const mobileMQ = window.matchMedia('(max-width:820px)');
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================================================================
+   FONDO DE NODOS (canvas)
+   ================================================================ */
+(function(){
+  const cv = document.getElementById('net'); if(!cv || reduceMotion) return;
+  const ctx = cv.getContext('2d');
+  let w, h, nodes, raf;
+  const COUNT = 46;
+  function resize(){ w = cv.width = innerWidth; h = cv.height = innerHeight; }
+  function init(){
+    nodes = [];
+    for(let i=0;i<COUNT;i++) nodes.push({ x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3 });
+  }
+  function tick(){
+    ctx.clearRect(0,0,w,h);
+    for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w) n.vx*=-1; if(n.y<0||n.y>h) n.vy*=-1; }
+    for(let i=0;i<nodes.length;i++){
+      const a = nodes[i];
+      for(let j=i+1;j<nodes.length;j++){
+        const b = nodes[j]; const d = Math.hypot(a.x-b.x, a.y-b.y);
+        if(d<130){ ctx.strokeStyle='rgba(47,91,234,'+(0.13*(1-d/130))+')'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+      }
+      ctx.fillStyle = i%5 ? 'rgba(47,91,234,.32)' : 'rgba(234,115,23,.45)';
+      ctx.beginPath(); ctx.arc(a.x,a.y,1.7,0,6.283); ctx.fill();
+    }
+    raf = requestAnimationFrame(tick);
+  }
+  function start(){ cancelAnimationFrame(raf); if(!mobileMQ.matches) tick(); }
+  addEventListener('resize', () => { resize(); init(); });
+  document.addEventListener('visibilitychange', () => { if(document.hidden) cancelAnimationFrame(raf); else start(); });
+  resize(); init(); start();
+})();
+
+
+/* ================================================================
+   MOTOR DE DIAPOSITIVAS
+   ================================================================ */
+const slides = [...document.querySelectorAll('.slide')];
+const total = slides.length;
+let current = 0;
+const progress = document.getElementById('progress');
+const curNum = document.getElementById('curNum');
+const blockTag = document.getElementById('blockTag');
+const btnPrev = document.getElementById('prev'), btnNext = document.getElementById('next');
+document.getElementById('totNum').textContent = total;
+
+function render(){
+  slides.forEach((s,i) => {
+    s.classList.remove('active','prev');
+    if(i === current){ s.classList.add('active'); }
+    else if(i < current) s.classList.add('prev');
+  });
+  const s = slides[current];
+  const sc = s.querySelector('.slide-scroll');
+  if(sc) sc.scrollTop = 0;
+  progress.style.width = ((current+1)/total*100) + '%';
+  curNum.textContent = current + 1;
+  blockTag.textContent = s.dataset.block || '';
+  btnPrev.classList.toggle('is-disabled', current === 0);
+  btnNext.classList.toggle('is-disabled', current === total-1);
+  history.replaceState(null, '', '#' + (current+1));   /* al volver de un tema se regresa a la misma lámina */
+  syncMenu();
+}
+function go(i){
+  if(i < 0 || i >= total) return;
+  current = i; render();
+}
+function next(){ go(current+1); }
+function prev(){ go(current-1); }
+btnPrev.onclick = prev; btnNext.onclick = next;
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ openMenu(false); return; }
+  if(e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); next(); }
+  if(e.key === 'ArrowLeft'  || e.key === 'PageUp'){ e.preventDefault(); prev(); }
+  if(e.key === 'Home') go(0);
+  if(e.key === 'End') go(total-1);
+});
+let touchX = 0;
+document.addEventListener('touchstart', e => touchX = e.touches[0].clientX, {passive:true});
+document.addEventListener('touchend', e => {
+  if(e.target.closest('button, a')) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if(Math.abs(dx) > 70){ dx < 0 ? next() : prev(); }
+}, {passive:true});
+
+
+/* ---------------- ÍNDICE ---------------- */
+const menuOverlay = document.getElementById('menuOverlay');
+const menuBody = document.getElementById('menuBody');
+(function buildMenu(){
+  let html = '', lastBlock = null;
+  slides.forEach((s,k) => {
+    const b = s.dataset.block || '';
+    if(b !== lastBlock){
+      if(lastBlock !== null) html += '</ul>';
+      html += '<div class="menu-group">'+b+'</div><ul class="menu-list">';
+      lastBlock = b;
+    }
+    html += '<li data-go="'+k+'"><span class="mn">'+String(k+1).padStart(2,'0')+'</span>'
+         +  '<span><span class="mt">'+(s.dataset.title||'')+'</span><span class="md">'+(s.dataset.sub||'')+'</span></span></li>';
+  });
+  html += '</ul>';
+  menuBody.innerHTML = html;
+  menuBody.querySelectorAll('li').forEach(li => li.onclick = () => { go(+li.dataset.go); openMenu(false); });
+})();
+function syncMenu(){
+  menuBody.querySelectorAll('li').forEach(li => li.classList.toggle('current', +li.dataset.go === current));
+}
+function openMenu(o){ menuOverlay.classList.toggle('open', o); if(o) syncMenu(); }
+document.getElementById('menuBtn').onclick = () => openMenu(true);
+document.getElementById('menuClose').onclick = () => openMenu(false);
+menuOverlay.onclick = e => { if(e.target === menuOverlay) openMenu(false); };
+
+
+/* ================================================================
+   PORTADA · el código se escribe y la gráfica responde
+   ================================================================ */
+(function(){
+  const pre    = document.getElementById('hdCode');
+  const barras = [...document.querySelectorAll('#hdChart .hd-track b')];
+  if(!pre || !barras.length) return;
+
+  /* cada línea: texto plano para teclear y html coloreado al terminar */
+  const LINEAS = [
+    ['from sklearn.ensemble import RandomForestRegressor', '<span class="k">from</span> sklearn.ensemble <span class="k">import</span> RandomForestRegressor'],
+    ['',                                                   ''],
+    ['rf = RandomForestRegressor(random_state=42)',        'rf = <span class="f">RandomForestRegressor</span>(random_state=<span class="s">42</span>)'],
+    ['rf.fit(X_tr, y_tr)',                                 'rf.<span class="f">fit</span>(X_tr, y_tr)'],
+    ['',                                                   ''],
+    ['permutation_importance(rf, X_te, y_te)',             '<span class="f">permutation_importance</span>(rf, X_te, y_te)']
+  ];
+  /* importancia por permutación del ejercicio 1, relativa a la mayor (0,426) */
+  const IMPORTANCIA = [100, 81, 18, 10, 5];
+
+  const pintar = v => barras.forEach((b,i) => { b.style.width = v[i] + '%'; });
+  const dormir = ms => new Promise(r => setTimeout(r, ms));
+
+  if(reduceMotion){                 /* sin movimiento: estado final y ya */
+    pre.innerHTML = LINEAS.map(l => l[1]).join('\n');
+    pintar(IMPORTANCIA);
+    return;
+  }
+
+  async function ciclo(){
+    while(true){
+      pre.innerHTML = '';
+      let hecho = '';
+      for(const [plano, coloreado] of LINEAS){
+        for(let i = 1; i <= plano.length; i++){
+          pre.innerHTML = hecho + plano.slice(0, i) + '<span class="hd-cur">&nbsp;</span>';
+          await dormir(22);
+        }
+        hecho += coloreado + '\n';
+        pre.innerHTML = hecho + '<span class="hd-cur">&nbsp;</span>';
+        await dormir(plano ? 170 : 60);
+      }
+      pintar(IMPORTANCIA);            /* "ejecuta": la gráfica responde */
+      await dormir(5200);
+      barras.forEach(b => b.style.width = '0%');
+      await dormir(900);
+    }
+  }
+  ciclo();
+})();
+
+/* arranque: #n abre en la lámina n */
+(function(){
+  const h = parseInt((location.hash || '').replace('#',''), 10);
+  if(h >= 1 && h <= total) current = h - 1;
+  render();
+})();
+</script>
+</body>
+</html>

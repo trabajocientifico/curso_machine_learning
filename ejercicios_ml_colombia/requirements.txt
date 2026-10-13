@@ -1,0 +1,8 @@
+pandas>=2.0
+numpy
+scikit-learn>=1.4
+statsmodels>=0.14
+scipy
+matplotlib
+geopandas
+jupyter
