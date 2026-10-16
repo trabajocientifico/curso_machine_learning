@@ -235,6 +235,17 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
 .mod-card.lab::before{ background:var(--ml); }
 .mod-card.lab .mod-n, .mod-card.lab .mod-tema b{ color:var(--ml); }
 .mod-card.lab:hover{ border-color:rgba(234,115,23,.4); }
+.mod-card.lab .mod-tema i{ color:var(--ml); }
+.mod-card.lab a.mod-tema:hover{ border-color:var(--ml); background:var(--ml-soft); }
+/* herramientas de trabajo: franja de ancho completo bajo la rejilla, para no dejar una tarjeta suelta */
+.mod-tools{ flex-direction:row; align-items:center; gap:24px; margin-top:12px; padding:9px 14px 9px 24px; }
+.mod-tools::before{ background:var(--ink); }
+.mod-tools .mod-n{ color:var(--ink); }
+.mod-tools .tl-txt{ flex:1; }
+.mod-tools p{ margin-top:2px; }
+.tools-btn{ display:inline-flex; align-items:center; gap:10px; padding:10px 24px; border-radius:99px; background:var(--ink); color:#fff;
+  font-weight:700; font-size:clamp(14px,min(1.05vw,1.9vh),19px); text-decoration:none; white-space:nowrap; transition:transform .2s, background .2s; }
+.tools-btn:hover{ transform:translateY(-2px); background:var(--st); }
 
 /* ==========================================================================
    CONOCER EL CURSO · formulario de entrada
@@ -498,6 +509,8 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
         <div class="mod-temas">
           <a class="mod-tema" href="index/FUNDAMENTOS.html"><b>CLASE</b><span>Fundamentos de ML para investigación</span><i>&rarr;</i></a>
           <a class="mod-tema" href="index/FUNDAMENTOS-TECNICAS-GENERALIDADES.html"><b>CLASE</b><span>Mapa de técnicas</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/esquema-ingenieria-caracteristicas.html"><b>ESQUEMA</b><span>Ingeniería de características: el mapa</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/ingenieria-caracteristicas.html"><b>CLASE</b><span>Ingeniería de características</span><i>&rarr;</i></a>
         </div>
       </div>
       <div class="mod-card">
@@ -531,13 +544,20 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
       <div class="mod-card lab">
         <div class="mod-n">Ejercicios prácticos</div>
         <h3>Tres notebooks con datos de Colombia</h3>
-        <p>Se abren en Jupyter o Google Colab desde la carpeta <code>ejercicios_ml_colombia</code>.</p>
+        <p>Se ven con sus resultados en GitHub; para ejecutarlos, descargue la carpeta <code>ejercicios_ml_colombia</code>.</p>
         <div class="mod-temas">
-          <div class="mod-tema"><b>01</b><span>Random Forest · pobreza municipal</span></div>
-          <div class="mod-tema"><b>02</b><span>PCA y K-Means · tipologías de municipios</span></div>
-          <div class="mod-tema"><b>03</b><span>ARIMA y Gradient Boosting · TRM</span></div>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/01_random_forest_pobreza_municipal.ipynb" target="_blank" rel="noopener"><b>01</b><span>Random Forest · pobreza municipal</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/02_kmeans_pca_tipologias_municipales.ipynb" target="_blank" rel="noopener"><b>02</b><span>PCA y K-Means · tipologías de municipios</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/03_arima_vs_gradient_boosting_trm.ipynb" target="_blank" rel="noopener"><b>03</b><span>ARIMA y Gradient Boosting · TRM</span><i>&rarr;</i></a>
         </div>
       </div>
+    </div>
+    <div class="mod-card mod-tools">
+      <div class="tl-txt">
+        <div class="mod-n">Antes de empezar</div>
+        <p>Python, VS Code, agentes de IA, Git y GitHub: lo que necesita instalado para los ejercicios, paso a paso.</p>
+      </div>
+      <a class="tools-btn" href="index/herramientas.html">Herramientas de trabajo <span aria-hidden="true">&rarr;</span></a>
     </div>
   </div>
 </section>

@@ -36,6 +36,10 @@ svg{width:100%;height:100%;display:block}
 
 </head>
 <body>
+<!-- regreso a «La ruta» del módulo; fuera del escenario y sin propagar el clic, para no avanzar la lámina -->
+<style>.volver{position:fixed;top:14px;right:18px;z-index:50;font:600 12px/1 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;padding:9px 14px;border-radius:99px;text-decoration:none;color:#565c6b;background:rgba(255,255,255,.92);border:1px solid #e4e7ef;opacity:.5;transition:opacity .2s}.volver:hover{opacity:1}@media print{.volver{display:none}}</style>
+<a class="volver" href="../index.html#4" onclick="event.stopPropagation()">← Módulo</a>
+
 <div class="wrap" id="wrap">
   <svg id="stage" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" aria-label="Animación de un árbol de decisión"></svg>
 </div>

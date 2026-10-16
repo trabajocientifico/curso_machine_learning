@@ -111,9 +111,9 @@ function ols(xs,ys){const n=xs.length,mx=mean(xs),my=mean(ys);let sxx=0,sxy=0,sy
   return{a,b,s,seb:s/Math.sqrt(sxx),r2:1-sse/syy,f:x=>a+b*x,ci:x=>2.0*s*Math.sqrt(1/n+(x-mx)**2/sxx)};}
 function kreg(xs,ys,bw){return x=>{let n=0,d=0;for(let i=0;i<xs.length;i++){const w=Math.exp(-0.5*((x-xs[i])/bw)**2);n+=w*ys[i];d+=w;}return n/d;};}
 function leg(x,m){const p=[1,x];for(let n=1;n<m;n++)p.push(((2*n+1)*x*p[n]-n*p[n-1])/(n+1));return p.slice(0,m+1);}
-function polyfit(xs,ys,deg){const m=deg+1,A=[...Array(m)].map(()=>Array(m).fill(0)),b=Array(m).fill(0);
+function polyfit(xs,ys,deg,lam=0){const m=deg+1,A=[...Array(m)].map(()=>Array(m).fill(0)),b=Array(m).fill(0);
   xs.forEach((x,i)=>{const p=leg(x,deg);for(let a=0;a<m;a++){b[a]+=p[a]*ys[i];for(let c=0;c<m;c++)A[a][c]+=p[a]*p[c];}});
-  for(let a=0;a<m;a++)A[a][a]+=1e-9;
+  for(let a=0;a<m;a++)A[a][a]+=1e-9+(a?lam:0);   // lam > 0: regularización (ridge) sin castigar el intercepto
   for(let i=0;i<m;i++){let mx=i;for(let j=i+1;j<m;j++)if(Math.abs(A[j][i])>Math.abs(A[mx][i]))mx=j;[A[i],A[mx]]=[A[mx],A[i]];[b[i],b[mx]]=[b[mx],b[i]];
     for(let j=i+1;j<m;j++){const f=A[j][i]/A[i][i];for(let k=i;k<m;k++)A[j][k]-=f*A[i][k];b[j]-=f*b[i];}}
   const x=Array(m).fill(0);for(let i=m-1;i>=0;i--){let s=b[i];for(let k=i+1;k<m;k++)s-=A[i][k]*x[k];x[i]=s/A[i][i];}
@@ -174,7 +174,7 @@ function entrada(c,o){
     txl(gg,x,y0,p.q,'h3',26,{'text-anchor':'middle',style:'font-size:21px'});tx(gg,x,y0+26*p.q.length+4,p.d,'sm',{'text-anchor':'middle'});return gg;});
   const meta=G(g);S('line',{x1:FIN[0],x2:FIN[0],y1:FIN[1],y2:FIN[1]-86,stroke:C.ink,'stroke-width':3},meta);
   S('path',{d:`M${FIN[0]},${FIN[1]-86} l62,18 l-62,18 Z`,fill:C.ml},meta);
-  tx(meta,1504,FIN[1]-130,'Al final, un reto','h3',{'text-anchor':'end',style:`fill:${C.ml};font-size:21px`});
+  tx(meta,1504,FIN[1]-130,o.meta||'Al final, un reto','h3',{'text-anchor':'end',style:`fill:${C.ml};font-size:21px`});
   tx(meta,1504,FIN[1]-104,o.reto,'sm',{'text-anchor':'end'});
   hide(sub,ruta,paradas,meta);
   return[T=>{fadeIn(T,gancho,.2,{d:.7});fadeIn(T,sub,.7);},
@@ -209,6 +209,10 @@ const RIO=(()=>{const r=rng(52),N=60,F=5,P=Array.from({length:N},()=>r()<.22?4+r
   const rmse=k=>{const q=sim(k);return Math.sqrt(mean(q.map((v,i)=>(v-obs[i])**2)));};
   let kb=.05;for(let i=5;i<=90;i++)if(rmse(i/100)<rmse(kb))kb=i/100;
   return{N,P,sim,stor,obs,rmse,kb};})();
+/* internet: hogares con internet (%) según ingreso per cápita del municipio (u en 0–1 = 0–30 millones); 14 para entrenar y 200 nuevos */
+const NET=(()=>{const r=rng(1),f=u=>88/(1+Math.exp(-9*(u-0.45)))+4,tr=[],te=[];
+  for(let i=0;i<14;i++){const u=(i+0.5)/14+(r()-0.5)*0.05;tr.push([u,clamp(f(u)+randn(r)*5.6,2,100)]);}
+  for(let i=0;i<200;i++){const u=0.02+0.96*r();te.push([u,clamp(f(u)+randn(r)*5.6,2,100)]);}return{f,tr,te};})();
 const STUD=(()=>{const r=rng(17),xs=[],ys=[];for(let i=0;i<40;i++){const a=45+55*r();xs.push(a);ys.push(clamp(-0.4+0.045*a+randn(r)*0.33,0.3,5));}return{xs,ys};})();
 
 /* =====================================================================
@@ -532,7 +536,7 @@ slide({kicker:K0b,title:'Antes de cualquier técnica',build(c){
   return entrada(c,{gancho:'¿Cómo aprende una máquina a partir de datos?',
     sub:'Cinco preguntas para entenderlo, en este orden:',reto:'¿supervisado o no supervisado?',
     paradas:[{q:['¿Qué es','un modelo?'],d:'de la manzana al río'},{q:['¿Qué es','un algoritmo?'],d:'los pasos que ajustan el modelo'},
-      {q:['¿Programar o','aprender las reglas?'],d:'IA, machine learning, deep learning'},{q:['¿Qué significa','aprender?'],d:'tarea, experiencia y desempeño'},
+      {q:['¿Qué es','machine learning?'],d:'programar o aprender las reglas'},{q:['¿Qué significa','aprender?'],d:'tarea, experiencia y desempeño'},
       {q:['¿Con respuesta','o sin ella?'],d:'supervisado y no supervisado'}]});
 }});
 
@@ -825,7 +829,58 @@ slide({kicker:K0b,title:'Algoritmo no es lo mismo que modelo',build(c){
       drawIn(T,ur[1],1.1,.3);T.to(uh[1],{opacity:1,duration:.2},1.35);fadeIn(T,u2,1.4);}];
 }});
 
-/* ---------- 17 · Qué significa aprender ---------- */
+/* ---------- 17 · Qué es machine learning ---------- */
+slide({kicker:K0b,title:'¿Qué es machine learning?',build(c){
+  const g=G(c.svg),{xs,ys}=STUD,fit=ols(xs,ys);
+  // la definición; las palabras clave son tspan para encenderlas con su pieza
+  const clave=[];
+  const frase=(y,partes)=>{const e=tx(g,96,y,'','h2',{style:'font-size:28px'});
+    partes.forEach(([t,k])=>{const s=S('tspan',{},e);s.textContent=t;if(k!==undefined)clave[k]=s;});return e;};
+  const def=[frase(236,[['Machine learning es usar un '],['algoritmo',1],[' para que un '],['modelo',2],[' aprenda patrones a partir de '],['datos',0],[',']]),
+    frase(276,[['sin programar las reglas a mano, y los aplique a '],['casos nuevos',3],['.']]),
+    tx(g,96,316,'Idea atribuida a Arthur Samuel (1959): dar a las computadoras la capacidad de aprender sin ser programadas explícitamente.','sm')];
+  // las cuatro piezas, ya vistas en el bloque
+  const W=330,H=210,Y0=360,X=[96,476,856,1236];
+  const pieza=(i,k)=>{const gg=G(g);S('rect',{x:X[i],y:Y0,width:W,height:H,rx:20,fill:C.soft},gg);tx(gg,X[i]+24,Y0+38,k,'kick',{style:'font-size:13px'});return gg;};
+  const P0=pieza(0,'DATOS');
+  [['asistencia (X)',C.ml],['nota (Y)',C.ml]].forEach(([t,col],j)=>tx(P0,X[0]+24+j*160,Y0+80,t,'hdr',{style:`fill:${col}`}));
+  [0,1,2].forEach(r=>{tx(P0,X[0]+24,Y0+112+r*30,fmt(xs[r],0)+' %','mono',{style:'font-size:17px'});tx(P0,X[0]+184,Y0+112+r*30,fmt(ys[r]),'mono',{style:'font-size:17px'});});
+  tx(P0,X[0]+24,Y0+194,`⋮  ${xs.length} estudiantes`,'sm');
+  const P1=pieza(1,'ALGORITMO');
+  const mx=mean(xs),my=mean(ys),sse=b=>xs.reduce((s,x,i)=>s+(ys[i]-(my+b*(x-mx)))**2,0),bs=range(fit.b-.04,fit.b+.04,40),es=bs.map(sse),em=Math.max(...es);
+  const ax1=lin(bs[0],bs[39],X[1]+30,X[1]+W-30),ay1=lin(0,em,Y0+176,Y0+66);
+  S('path',{d:pathD(bs.map((b,i)=>[ax1(b),ay1(es[i])])),fill:'none',stroke:C.ink,'stroke-width':2.5},P1);
+  S('circle',{cx:ax1(fit.b),cy:ay1(sse(fit.b)),r:7,fill:C.ml},P1);tx(P1,X[1]+24,Y0+196,'mínimos cuadrados: el error más bajo','sm');
+  const P2=pieza(2,'MODELO');
+  const sx2=lin(40,100,X[2]+30,X[2]+W-30),sy2=lin(0,5,Y0+170,Y0+60);
+  xs.forEach((x,i)=>S('circle',{cx:sx2(x),cy:sy2(ys[i]),r:3,fill:C.dot},P2));
+  S('line',{x1:sx2(45),y1:sy2(fit.f(45)),x2:sx2(100),y2:sy2(fit.f(100)),stroke:C.ml,'stroke-width':3,'stroke-linecap':'round'},P2);
+  tx(P2,X[2]+24,Y0+196,`ŷ = ${fmt(fit.a,2)} + ${fmt(fit.b,3)}·x`,'mono',{style:'font-size:16px'});
+  const P3=pieza(3,'CASO NUEVO');
+  tx(P3,X[3]+24,Y0+92,'asistencia = 90 %','mono',{style:'font-size:18px'});
+  S('line',{x1:X[3]+40,x2:X[3]+40,y1:Y0+104,y2:Y0+132,stroke:C.ink,'stroke-width':2},P3);arrowHead(P3,X[3]+40,Y0+142,90,C.ink,.8);
+  tx(P3,X[3]+24,Y0+180,`nota ≈ ${fmt(fit.f(90))}`,'monoL',{style:`fill:${C.ml};font-size:34px`});
+  const piezas=[P0,P1,P2,P3];
+  const fl=[0,1,2].map(i=>{const x1=X[i]+W+8,x2=X[i+1]-8,l=S('line',{x1,x2:x2-10,y1:Y0+H/2,y2:Y0+H/2,stroke:C.ink,'stroke-width':2.5},g);
+    return{l,h:arrowHead(g,x2,Y0+H/2,0,C.ink,.9)};});
+  // tres rasgos
+  const R=[['Aprende de los datos','la forma no la pone el investigador'],['Sin reglas escritas a mano','las reglas salen de los ejemplos'],['Generaliza','se juzga con casos que no vio']];
+  const ras=R.map(([a,b],i)=>{const gg=G(g),x=96+i*474;S('rect',{x,y:610,width:450,height:76,rx:20,fill:C.mlT},gg);
+    tx(gg,x+24,640,a,'h3',{style:`fill:${C.ml};font-size:21px`});tx(gg,x+24,668,b,'sm');return gg;});
+  // el puente con la investigación
+  const inv=G(g);tx(inv,96,752,'En investigación lo usamos para','lab');
+  let px=96;[['PREDECIR','el IPM de un municipio'],['CLASIFICAR','quién desertará'],['SEGMENTAR','tipologías de municipios']].forEach(([v,e])=>{
+    pill(inv,px,800,v,C.ml,C.mlT);tx(inv,px+v.length*9.7+42,799,e,'sm',{style:`fill:${C.ink}`});px+=v.length*9.7+42+e.length*8.4+40;});
+  const cierre=tx(g,96,848,'… y después interpretar y comunicar lo que encontró.','lab',{style:`fill:${C.ml}`});
+  prepDraw(fl.map(f=>f.l));hide(piezas,fl.map(f=>f.h),ras,inv,cierre);
+  return[T=>{fadeIn(T,def,.2,{st:.25});},
+    T=>{piezas.forEach((p,i)=>{const t=i*.9;T.to(clave[i],{fill:C.ml,duration:.3},t);popIn(T,p,t+.1,{s0:.85,ease:'back.out(1.4)'});
+        if(i)(drawIn(T,fl[i-1].l,t-.15,.3),T.to(fl[i-1].h,{opacity:1,duration:.15},t+.1));});},
+    T=>{fadeIn(T,ras,0,{st:.2});},
+    T=>{fadeIn(T,inv,0);fadeIn(T,cierre,.6,{dy:0});}];
+}});
+
+/* ---------- 18 · Qué significa aprender ---------- */
 slide({kicker:K0b,title:'¿Qué significa aprender?',build(c){
   const g=G(c.svg);
   const def=[tx(g,96,208,'Un programa aprende si su desempeño en una tarea T, medido con P, mejora con la experiencia E.','txt'),
@@ -864,7 +919,7 @@ slide({kicker:K0b,title:'¿Qué significa aprender?',build(c){
     T=>{fadeIn(T,mes,0,{st:.1,dy:0});fadeIn(T,fin,.4,{st:.3});}];
 }});
 
-/* ---------- 18 · Supervisado y no supervisado ---------- */
+/* ---------- 19 · Supervisado y no supervisado ---------- */
 slide({kicker:K0b,title:'Supervisado y no supervisado',build(c){
   const g=G(c.svg),r=rng(44);
   S('line',{x1:800,x2:800,y1:250,y2:850,stroke:C.line,'stroke-width':2},g);
@@ -917,7 +972,7 @@ slide({kicker:K0b,title:'Supervisado y no supervisado',build(c){
     T=>{fadeIn(T,pie,0,{st:.15});}];
 }});
 
-/* ---------- 19 · Reto: supervisado o no supervisado ---------- */
+/* ---------- 20 · Reto: supervisado o no supervisado ---------- */
 slide({kicker:K0b,title:'Reto: ¿con respuesta o sin ella?',build(c){
   const g=G(c.svg),svg=c.svg;
   c.root.addEventListener('click',e=>e.stopPropagation());   // aquí el clic se usa para jugar; las flechas siguen pasando de lámina
@@ -967,7 +1022,16 @@ slide({kicker:K0b,title:'Reto: ¿con respuesta o sin ella?',build(c){
       T.fromTo(items,{opacity:0},{opacity:1,duration:.5},.35);fadeIn(T,[fb1,fb2],.5,{st:.1});}];
 }});
 
-/* ---------- 20 · Dos preguntas ---------- */
+/* ---------- 21 · Entrada al bloque de ML frente a estadística ---------- */
+slide({kicker:K1,title:'Dos formas de aprender de los datos',build(c){
+  return entrada(c,{gancho:'¿Estadística o machine learning: cuál usar en una investigación?',
+    sub:'Cinco contrastes para decidir con criterio:',meta:'La meta',reto:'elegir el enfoque según la pregunta',
+    paradas:[{q:['¿Explicar','o predecir?'],d:'mismos datos, dos preguntas'},{q:['¿Quién pone','la forma?'],d:'propuesta o aprendida'},
+      {q:['¿Cómo se sabe','que funciona?'],d:'la muestra o casos nuevos'},{q:['¿Cuántas variables','y a qué costo?'],d:'dimensión e interpretabilidad'},
+      {q:['¿Rivales','o aliadas?'],d:'dos culturas que se complementan'}]});
+}});
+
+/* ---------- 22 · Dos preguntas ---------- */
 slide({kicker:K1,title:'Mismos datos, dos preguntas',build(c){
   const g=G(c.svg),{xs,ys}=MUNI;
   const A=axes(g,{x:150,y:240,w:700,h:490,xd:[0,250],yd:[10,90],xt:[0,50,100,150,200,250],yt:[10,30,50,70,90],xl:'Distancia a la capital del departamento (km)',yl:'IPM (% de hogares pobres)'});
@@ -997,7 +1061,7 @@ slide({kicker:K1,title:'Mismos datos, dos preguntas',build(c){
     T=>{drawIn(T,curve,0,1.5,{ease:'power1.inOut'});popIn(T,qdot,1.3);T.to(dash,{opacity:1,duration:.5},1.6);fadeIn(T,qlab,1.8);fadeIn(T,mb,.6,{st:.1})}];
 }});
 
-/* ---------- 21 · Forma del modelo ---------- */
+/* ---------- 23 · Forma del modelo ---------- */
 slide({kicker:K1,title:'¿Quién decide la forma del modelo?',build(c){
   const g=G(c.svg),r=rng(33),xs=[],ys=[];
   for(let i=0;i<46;i++){const x=18+r()*52;xs.push(x);ys.push(clamp(0.9+2.9*Math.exp(-(((x-46)/13)**2))+randn(r)*0.32,0.3,5));}
@@ -1021,7 +1085,7 @@ slide({kicker:K1,title:'¿Quién decide la forma del modelo?',build(c){
       const p={bw:60};T.to(p,{bw:3.9,duration:2.6,ease:'power2.inOut',onUpdate:()=>curve.setAttribute('d',cpath(p.bw))},.5);fadeIn(T,mb,.9,{st:.1})}];
 }});
 
-/* ---------- 22 · Validación ---------- */
+/* ---------- 24 · Validación ---------- */
 slide({kicker:K1,title:'¿Cómo sé que el modelo funciona?',build(c){
   const g=G(c.svg),r=rng(4);
   S('line',{x1:800,x2:800,y1:230,y2:790,stroke:C.line,'stroke-width':2},g);
@@ -1050,7 +1114,7 @@ slide({kicker:K1,title:'¿Cómo sé que el modelo funciona?',build(c){
       T.fromTo(B2.firstChild,{attr:{'stroke-width':2}},{attr:{'stroke-width':5},duration:.2,yoyo:true,repeat:1},1.6);fadeIn(T,o2,1.8,{st:.1})}];
 }});
 
-/* ---------- 23 · Cuántas variables ---------- */
+/* ---------- 25 · Cuántas variables ---------- */
 slide({kicker:K1,title:'¿Cuántas variables caben?',build(c){
   const g=G(c.svg),r=rng(5);
   const P1=pill(g,150,262,'ESTADÍSTICA',C.st,C.stT);
@@ -1086,7 +1150,7 @@ slide({kicker:K1,title:'¿Cuántas variables caben?',build(c){
       T.to(pNs,{opacity:1,duration:.4},.6);countTo(T,pN,10,2151,.3,1.8,v=>'p = '+miles(v))}];
 }});
 
-/* ---------- 24 · Interpretabilidad vs flexibilidad ---------- */
+/* ---------- 26 · Interpretabilidad vs flexibilidad ---------- */
 slide({kicker:K1,title:'Entender o acertar: un equilibrio',build(c){
   const g=G(c.svg),id='gr'+Math.random().toString(36).slice(2,7);
   const defs=S('defs',{},g),lg=S('linearGradient',{id,gradientUnits:'userSpaceOnUse',x1:170,x2:880,y1:0,y2:0},defs);
@@ -1111,7 +1175,7 @@ slide({kicker:K1,title:'Entender o acertar: un equilibrio',build(c){
     T=>{fadeIn(T,c1,0,{st:.1})},T=>{fadeIn(T,c2,0,{st:.1})}];
 }});
 
-/* ---------- 25 · Dos culturas ---------- */
+/* ---------- 27 · Dos culturas ---------- */
 slide({kicker:K1,title:'Las dos culturas',build(c){
   const g=G(c.svg);
   const src=tx(g,96,192,'Breiman (2001), Statistical Modeling: The Two Cultures','sm');
@@ -1131,7 +1195,7 @@ slide({kicker:K1,title:'Las dos culturas',build(c){
     T=>{popIn(T,br,0,{s0:.6});fadeIn(T,ex,.5)}];
 }});
 
-/* ---------- 26 · Complementariedades ---------- */
+/* ---------- 28 · Complementariedades ---------- */
 slide({kicker:K1,title:'Se complementan',build(c){
   const g=G(c.svg);
   const pos=[[96,210],[824,210],[96,530],[824,530]],W=680,H=290;
@@ -1188,28 +1252,32 @@ slide({kicker:K1,title:'Se complementan',build(c){
   return cards.map(k=>T=>show(T,k));
 }});
 
-/* ---------- 27 · Flujo de trabajo ---------- */
-slide({kicker:K2,title:'Del dato a la decisión',build(c){
-  const g=G(c.svg),X=[250,610,970,1330],Y=420,R=70,names=['Datos','Características','Entrenamiento','Evaluación'];
+/* ---------- 29 · Flujo de trabajo ---------- */
+slide({kicker:K2,title:'De la pregunta a la decisión',build(c){
+  const g=G(c.svg),X=[170,410,650,890,1130,1370],Y=420,R=58,names=ETAPAS;
   const gl=G(g),gn=G(g);
-  const conns=[],heads=[];for(let i=0;i<3;i++){conns.push(S('line',{x1:X[i]+R+14,x2:X[i+1]-R-22,y1:Y,y2:Y,stroke:C.frame,'stroke-width':2.5},gl));heads.push(arrowHead(gl,X[i+1]-R-10,Y,0,C.frame,.9));}
-  const loop=S('path',{d:`M${X[3]},${Y+R+8} C${X[3]},${Y+220} ${X[0]},${Y+220} ${X[0]},${Y+R+20}`,fill:'none',stroke:C.ml,'stroke-width':2.5,'stroke-dasharray':'0'},gl);
-  const loopH=arrowHead(gl,X[0],Y+R+10,-90,C.ml,.9),loopT=tx(gl,790,Y+216,'iterar','lab',{'text-anchor':'middle',fill:C.ml});
+  const conns=[],heads=[];for(let i=0;i<5;i++){conns.push(S('line',{x1:X[i]+R+12,x2:X[i+1]-R-20,y1:Y,y2:Y,stroke:C.frame,'stroke-width':2.5},gl));heads.push(arrowHead(gl,X[i+1]-R-8,Y,0,C.frame,.9));}
+  // se itera entre la evaluación y los datos
+  const loop=S('path',{d:`M${X[4]},${Y+R+8} C${X[4]},${Y+210} ${X[1]},${Y+210} ${X[1]},${Y+R+20}`,fill:'none',stroke:C.ml,'stroke-width':2.5},gl);
+  const loopH=arrowHead(gl,X[1],Y+R+10,-90,C.ml,.9),loopT=tx(gl,(X[1]+X[4])/2,Y+206,'iterar','lab',{'text-anchor':'middle',style:`fill:${C.ml}`});
   prepDraw(conns,loop);
   const nodes=X.map((x,i)=>{const gg=G(gn);S('circle',{cx:x,cy:Y,r:R,fill:C.w,stroke:C.ink,'stroke-width':2.5},gg);
-    if(i===0){for(let a=0;a<3;a++)for(let b=0;b<3;b++)S('rect',{x:x-27+b*19,y:Y-24+a*17,width:16,height:14,rx:2,fill:a===0?C.ink:C.frame},gg);}
-    if(i===1){[-18,0,18].forEach((dy,j)=>{S('line',{x1:x-28,x2:x+28,y1:Y+dy,y2:Y+dy,stroke:C.frame,'stroke-width':3,'stroke-linecap':'round'},gg);S('circle',{cx:x+[-12,14,-2][j],cy:Y+dy,r:6,fill:C.ink},gg);});}
-    if(i===2){[[-24,16],[-12,6],[0,4],[12,-8],[22,-16]].forEach(p=>S('circle',{cx:x+p[0],cy:Y+p[1],r:4,fill:C.dot},gg));S('line',{x1:x-30,y1:Y+20,x2:x+30,y2:Y-22,stroke:C.st,'stroke-width':3,'stroke-linecap':'round'},gg);}
-    if(i===3){[26,17,8].forEach((rr,j)=>S('circle',{cx:x,cy:Y,r:rr,fill:j===2?C.ml:'none',stroke:j===2?'none':C.ink,'stroke-width':2.5},gg));}
-    tx(gg,x,Y+R+46,names[i],'h3',{'text-anchor':'middle'});return gg;});
+    if(i===0)tx(gg,x,Y+20,'?','monoXL',{'text-anchor':'middle',style:`fill:${C.ml};font-size:56px`});
+    if(i===1){for(let a=0;a<3;a++)for(let b=0;b<3;b++)S('rect',{x:x-27+b*19,y:Y-24+a*17,width:16,height:14,rx:2,fill:a===0?C.ink:C.frame},gg);}
+    if(i===2){[-18,0,18].forEach((dy,j)=>{S('line',{x1:x-28,x2:x+28,y1:Y+dy,y2:Y+dy,stroke:C.frame,'stroke-width':3,'stroke-linecap':'round'},gg);S('circle',{cx:x+[-12,14,-2][j],cy:Y+dy,r:6,fill:C.ink},gg);});}
+    if(i===3){[[-24,16],[-12,6],[0,4],[12,-8],[22,-16]].forEach(p=>S('circle',{cx:x+p[0],cy:Y+p[1],r:4,fill:C.dot},gg));S('line',{x1:x-30,y1:Y+20,x2:x+30,y2:Y-22,stroke:C.st,'stroke-width':3,'stroke-linecap':'round'},gg);}
+    if(i===4){[26,17,8].forEach((rr,j)=>S('circle',{cx:x,cy:Y,r:rr,fill:j===2?C.ml:'none',stroke:j===2?'none':C.ink,'stroke-width':2.5},gg));}
+    if(i===5){S('path',{d:`M${x-28},${Y-22} h56 a6,6 0 0 1 6,6 v26 a6,6 0 0 1 -6,6 h-30 l-14,12 v-12 h-12 a6,6 0 0 1 -6,-6 v-26 a6,6 0 0 1 6,-6 z`,fill:'none',stroke:C.ink,'stroke-width':2.5,'stroke-linejoin':'round'},gg);
+      [-10,0].forEach((dy,j)=>S('line',{x1:x-18,x2:x+(j?8:18),y1:Y+dy-2,y2:Y+dy-2,stroke:C.ml,'stroke-width':3,'stroke-linecap':'round'},gg));}
+    tx(gg,x,Y+R+42,names[i],'h3',{'text-anchor':'middle',style:'font-size:21px'});return gg;});
   const parts=Array.from({length:7},()=>S('circle',{cx:X[0],cy:Y,r:7,fill:C.ml},gl));
   const q=txl(g,800,766,['¿Qué estudiantes abandonarán el primer semestre?'],'h2',0,{'text-anchor':'middle'});
   const pp=Array.from({length:10},(_,i)=>person(g,620+i*40,846,1,C.dot));
   const qp=pill(g,727,712,'EJEMPLO GUÍA',C.w,C.ink);
   hide(loopH,loopT,parts,q,pp,qp);
-  return[T=>{popIn(T,nodes,.2,{st:.18,s0:.5});drawIn(T,conns,.7,.5,{st:.18});T.to(heads,{opacity:1,duration:.01},0);T.from(heads,{opacity:0,duration:.3,stagger:.18},1.1)},
-    T=>{parts.forEach((p,i)=>{const pr={v:0};T.set(p,{opacity:1},i*.28);T.to(pr,{v:1,duration:2.2,ease:'none',onUpdate:()=>p.setAttribute('cx',X[0]+(X[3]-X[0])*pr.v)},i*.28);T.to(p,{opacity:0,duration:.3},i*.28+2);});
-      drawIn(T,loop,2.4,1.2);T.to(loopH,{opacity:1,duration:.3},3.5);fadeIn(T,loopT,3.3)},
+  return[T=>{popIn(T,nodes,.2,{st:.15,s0:.5});drawIn(T,conns,.6,.4,{st:.15});T.to(heads,{opacity:1,duration:.01},0);T.from(heads,{opacity:0,duration:.3,stagger:.15},1)},
+    T=>{parts.forEach((p,i)=>{const pr={v:0};T.set(p,{opacity:1},i*.28);T.to(pr,{v:1,duration:2.4,ease:'none',onUpdate:()=>p.setAttribute('cx',X[0]+(X[5]-X[0])*pr.v)},i*.28);T.to(p,{opacity:0,duration:.3},i*.28+2.2);});
+      drawIn(T,loop,2.6,1.2);T.to(loopH,{opacity:1,duration:.3},3.7);fadeIn(T,loopT,3.5)},
     T=>{fadeIn(T,[qp,...q],0,{st:.1});popIn(T,pp,.5,{st:.06});T.to([pp[2],pp[7]].map(p=>p.children),{attr:{fill:C.ml},duration:.5},1.4)}];
 }});
 
@@ -1220,8 +1288,23 @@ function table(p,cols,widths,rows,x0,y0,rh){
   const R=rows.map((row,ri)=>{const gr=G(p);const cells=row.map((v,ci)=>tx(gr,xs[ci]+14,y0+58+ri*rh,v,'cell'));return{g:gr,cells};});
   return{gH,R,xs,x1:x};}
 
-/* ---------- 28 · Datos · tabla ---------- */
-slide({kicker:K2,title:'Cada fila, un estudiante',stage:0,build(c){
+/* ---------- 30 · Todo empieza con la pregunta ---------- */
+slide({kicker:K2,title:'Todo empieza con la pregunta',stage:0,build(c){
+  const g=G(c.svg);
+  const intro=tx(g,96,208,'Cuatro decisiones antes de tocar los datos. Ejemplo guía: la deserción en primer semestre.','txt');
+  const D=[['¿Qué se quiere predecir?',['Y: si cada estudiante que se matricula','deserta o continúa en el primer semestre.'],'la variable dependiente'],
+    ['¿Qué tipo de tarea es?',['Y es categórica y hay semestres anteriores','con la respuesta: clasificación supervisada.'],'tipos de variable · supervisado'],
+    ['¿Contra qué se compara?',['Decir «nadie deserta» ya acierta el 80 %.','La meta útil: detectar al menos 3 de cada 4 desertores.'],'línea base y métrica'],
+    ['¿Hace falta machine learning?',['«¿La tutoría reduce la deserción?» es causal:','pide un diseño estadístico, no un predictor.'],'explicar o predecir']];
+  const cards=D.map(([q,a,ref],i)=>{const x=96+(i%2)*724,y=250+Math.floor(i/2)*290,gg=G(g);
+    S('rect',{x,y,width:684,height:260,rx:22,fill:C.soft},gg);pill(gg,x+28,y+48,'DECISIÓN '+(i+1),C.ml,C.w);
+    tx(gg,x+28,y+104,q,'h2');txl(gg,x+28,y+150,a,'txt',30,{style:`fill:${C.ink}`});tx(gg,x+28,y+228,'→ '+ref,'sm');return gg;});
+  hide(cards.slice(1));
+  return[T=>{fadeIn(T,intro,.2);fadeIn(T,cards[0],.5,{dy:20});},...cards.slice(1).map(k=>T=>fadeIn(T,k,0,{dy:20}))];
+}});
+
+/* ---------- 31 · Datos · tabla ---------- */
+slide({kicker:K2,title:'Cada fila, un estudiante',stage:1,build(c){
   const g=G(c.svg),gt=G(g);
   const rows=[['4.1','18','Diurna','3.2','No','No'],['3.4','23','Nocturna','12.5','Sí','Sí'],['3.9','19','Diurna','7.8','No','No'],
     ['3.1','27','Nocturna','21.0','Sí','Sí'],['4.5','17','Diurna','1.4','No','No'],['3.6','20','Nocturna','9.3','Sí','No']];
@@ -1241,8 +1324,8 @@ slide({kicker:K2,title:'Cada fila, un estudiante',stage:0,build(c){
     T=>{T.fromTo(yT,{opacity:0,scaleY:.2,transformOrigin:'50% 0%'},{opacity:1,scaleY:1,duration:.6,ease:'power2.out'},0);fadeIn(T,yL,.3,{st:.1});T.to(yes,{fill:C.ml,duration:.4,stagger:.1},.7)}];
 }});
 
-/* ---------- 29 · Datos · calidad ---------- */
-slide({kicker:K2,title:'Datos reales, datos sucios',stage:0,build(c){
+/* ---------- 32 · Datos · calidad ---------- */
+slide({kicker:K2,title:'Datos reales, datos sucios',stage:1,build(c){
   const g=G(c.svg),gb=G(g);
   const rows=[['4.1','18','Diurna','3.2','No'],['3.4','23','Nocturna','12.5','Sí'],['—','19','Diurna','7.8','si'],['3.1','250','Nocturna','21.0','Sí'],
     ['3.4','23','Nocturna','12.5','Sí'],['4.5','17','diurna','1.4','SI']];
@@ -1269,37 +1352,39 @@ slide({kicker:K2,title:'Datos reales, datos sucios',stage:0,build(c){
       fadeIn(T,[good[0],good[1]],.9,{st:.15,dx:-20,dy:0});T.fromTo(good[3],{opacity:0,y:-rh},{opacity:1,y:-rh,duration:.4},2.4)}];
 }});
 
-/* ---------- 30 · Separar ---------- */
-slide({kicker:K2,title:'Separar antes de empezar',stage:0,build(c){
+/* ---------- 33 · Separar ---------- */
+slide({kicker:K2,title:'Separar antes de empezar',stage:1,build(c){
   const g=G(c.svg),r=rng(12),N=1000,sp=17,x0=170,y0=270;
   const des=new Set(shuffle([...Array(N).keys()],r).slice(0,200));
   const slot=(i,cols,xx,yy)=>[xx+(i%cols)*sp,yy+Math.floor(i/cols)*sp];
   const dots=Array.from({length:N},(_,i)=>{const [x,y]=slot(i,40,x0,y0);return S('circle',{cx:x,cy:y,r:6,fill:des.has(i)?C.ml:C.dot},g);});
   const perm=shuffle([...Array(N).keys()],r);
-  // tras barajar, el punto i ocupa perm[i]; se estratifica por clase
+  // tras barajar, el punto i ocupa perm[i]; los tres conjuntos se estratifican por clase (20 % de desertores en cada uno)
   const order=[...Array(N).keys()].sort((a,b)=>perm[a]-perm[b]);
   const dList=order.filter(i=>des.has(i)),nList=order.filter(i=>!des.has(i));
-  const testSet=new Set(dList.slice(0,40).concat(nList.slice(0,160)));
-  const trainOrd=order.filter(i=>!testSet.has(i)),testOrd=order.filter(i=>testSet.has(i));
-  const fr1=S('rect',{x:x0-18,y:y0-18,width:40*sp+19,height:20*sp+19,rx:14,fill:'none',stroke:C.st,'stroke-width':2},g);
-  const fr2=S('rect',{x:1010-18,y:y0-18,width:10*sp+19,height:20*sp+19,rx:14,fill:'none',stroke:C.ink,'stroke-width':2,'stroke-dasharray':'6 5'},g);
-  const l1=[tx(g,x0-6,y0+20*sp+44,'Entrenamiento · 800','h3',{fill:C.st}),tx(g,x0-6,y0+20*sp+74,'80 %','mono',{fill:C.sub})];
-  const l2=[tx(g,1004,y0+20*sp+44,'Prueba · 200','h3'),tx(g,1004,y0+20*sp+74,'20 %','mono',{fill:C.sub})];
-  const st=[tx(g,x0+100,y0+20*sp+74,'20 % desertores','mono',{fill:C.ml}),tx(g,1080,y0+20*sp+74,'20 % desertores','mono',{fill:C.ml})];
-  const lk=lock(g,1234,y0+14,1.6,C.ink),lkt=txl(g,1210,y0+80,['No se toca','hasta la','evaluación final'],'txt',28);
+  const prueba=new Set(dList.slice(0,40).concat(nList.slice(0,160))),valid=new Set(dList.slice(40,80).concat(nList.slice(160,320)));
+  const trOrd=order.filter(i=>!prueba.has(i)&&!valid.has(i)),vaOrd=order.filter(i=>valid.has(i)),prOrd=order.filter(i=>prueba.has(i));
+  // [x, columnas, color, nombre, tamaño, papel]
+  const SET=[[x0,30,C.st,'Entrenamiento',600,'ajusta los parámetros'],[730,10,C.ok,'Validación',200,'elige modelo e hiperparámetros'],
+    [980,10,C.ink,'Prueba',200,'se usa una sola vez: el resultado final']];
+  const fr=SET.map(([x,cols,col],k)=>S('rect',{x:x-18,y:y0-18,width:cols*sp+19,height:20*sp+19,rx:14,fill:'none',stroke:col,'stroke-width':2,'stroke-dasharray':k===2?'6 5':'none'},g));
+  const lab=SET.map(([x,,col,nm,n,papel])=>{const gg=G(g);tx(gg,x-6,y0+20*sp+44,`${nm} · ${n}`,'h3',{style:`fill:${col}`});
+    tx(gg,x-6,y0+20*sp+72,`${n/10} %`,'mono',{style:`fill:${C.sub};font-size:17px`});txl(gg,x-6,y0+20*sp+102,papel.split(': '),'sm',22);return gg;});
+  const lk=lock(g,1214,y0+14,1.6,C.ink),lkt=txl(g,1190,y0+80,['No se toca','hasta la','evaluación final'],'txt',28);
+  const st=tx(g,1190,y0+190,'20 % de desertores en cada uno','mono',{style:`fill:${C.ml};font-size:17px`});
   const ex=exChip(g,150,856,'1 000 estudiantes; 200 desertaron');
-  hide(fr1,fr2,l1,l2,st,lk,lkt);
-  return[T=>{popIn(T,dots,.2,{st:{amount:1.2,from:'random'},d:.3});fadeIn(T,ex,1.2)},
+  hide(fr,lab,lk,lkt,st);
+  // con 1 000 puntos se anima el radio y no la escala: escalar exige medir cada círculo y la lámina tarda segundos
+  return[T=>{T.from(dots,{attr:{r:0},duration:.3,ease:'back.out(2)',stagger:{amount:1.2,from:'random'}},.2);fadeIn(T,ex,1.2)},
     T=>{dots.forEach((d,i)=>{const [x,y]=slot(perm[i],40,x0,y0);T.to(d,{attr:{cx:x,cy:y},duration:1.3,ease:'power2.inOut'},(i%97)/97*.4);});},
-    T=>{trainOrd.forEach((i,j)=>{const [x,y]=slot(j,40,x0,y0);T.to(dots[i],{attr:{cx:x,cy:y},duration:1.1,ease:'power2.inOut'},.1+(j%50)/50*.3);});
-      testOrd.forEach((i,j)=>{const [x,y]=slot(j,10,1010,y0);T.to(dots[i],{attr:{cx:x,cy:y},duration:1.3,ease:'power2.inOut'},.1+j*.003);});
-      T.to([fr1,fr2],{opacity:1,duration:.5},1.4);fadeIn(T,[...l1,...l2],1.6,{st:.08})},
-    T=>{popIn(T,lk,0);fadeIn(T,lkt,.3,{st:.1});fadeIn(T,st,.8,{st:.2});
+    T=>{[trOrd,vaOrd,prOrd].forEach((L,k)=>L.forEach((i,j)=>{const [x,y]=slot(j,SET[k][1],SET[k][0],y0);T.to(dots[i],{attr:{cx:x,cy:y},duration:1.2,ease:'power2.inOut'},.1+(j%50)/50*.3+k*.15);}));
+      T.to(fr,{opacity:1,duration:.5,stagger:.15},1.4);fadeIn(T,lab,1.6,{st:.15})},
+    T=>{popIn(T,lk,0);fadeIn(T,lkt,.3,{st:.1});fadeIn(T,st,.8);
       T.fromTo([...dList].map(i=>dots[i]),{attr:{r:6}},{attr:{r:8.5},duration:.3,yoyo:true,repeat:1},.8)}];
 }});
 
-/* ---------- 31 · Características · transformar ---------- */
-slide({kicker:K2,title:'Convertir datos en señales',stage:1,build(c){
+/* ---------- 34 · Características · transformar ---------- */
+slide({kicker:K2,title:'Convertir datos en señales',stage:2,build(c){
   const g=G(c.svg);
   const H1=tx(g,150,262,'DATO CRUDO','kick'),H2=tx(g,960,262,'CARACTERÍSTICA','kick');
   const cell=(x,y,w,name,val,col)=>{const gg=G(g);S('rect',{x,y:y-42,width:w,height:86,rx:14,fill:C.w,stroke:col||C.frame,'stroke-width':2},gg);
@@ -1321,8 +1406,8 @@ slide({kicker:K2,title:'Convertir datos en señales',stage:1,build(c){
   return[T=>{fadeIn(T,[H1,H2],.2,{st:.1});const sub=gsap.timeline();run(sub,rows[0]);T.add(sub,.3);fadeIn(T,ex,1.8)},T=>run(T,rows[1]),T=>run(T,rows[2])];
 }});
 
-/* ---------- 32 · Escalar ---------- */
-slide({kicker:K2,title:'Poner las variables en la misma escala',stage:1,build(c){
+/* ---------- 35 · Escalar ---------- */
+slide({kicker:K2,title:'Poner las variables en la misma escala',stage:2,build(c){
   const g=G(c.svg);
   const cx=[480,820],h=[tx(g,cx[0],292,'Ingreso familiar (COP)','hdr',{'text-anchor':'end'}),tx(g,cx[1],292,'Promedio colegio','hdr',{'text-anchor':'end'})];
   S('line',{x1:150,x2:840,y1:308,y2:308,stroke:C.frame,'stroke-width':1.5},g);
@@ -1351,8 +1436,8 @@ slide({kicker:K2,title:'Poner las variables en la misma escala',stage:1,build(c)
       T.call(()=>{pv[0].textContent='6 %';pv[1].textContent='94 %';},null,2.5)}];
 }});
 
-/* ---------- 33 · Crear variables ---------- */
-slide({kicker:K2,title:'Crear la variable que cuenta la historia',stage:1,build(c){
+/* ---------- 36 · Crear variables ---------- */
+slide({kicker:K2,title:'Crear la variable que cuenta la historia',stage:2,build(c){
   const g=G(c.svg),r=rng(15),D=[];
   for(let i=0;i<120;i++){const ins=8+Math.floor(r()*13),d=r()<0.3,ratio=d?0.08+0.55*r():0.55+0.45*r(),apr=Math.round(ins*ratio);
     D.push({ins,apr,d,rt:apr/ins,jx:(r()-.5)*.5,jy:(r()-.5)*.5});}
@@ -1379,8 +1464,8 @@ slide({kicker:K2,title:'Crear la variable que cuenta la historia',stage:1,build(
       T.to(thr,{opacity:1,duration:.5},1.8);fadeIn(T,h,1.9)}];
 }});
 
-/* ---------- 34 · Fuga de información ---------- */
-slide({kicker:K2,title:'Cuidado con la información del futuro',stage:1,build(c){
+/* ---------- 37 · Fuga de información ---------- */
+slide({kicker:K2,title:'Cuidado con la información del futuro',stage:2,build(c){
   const g=G(c.svg);
   const chip=(y,t,col)=>{const gg=G(g);S('rect',{x:150,y:y-32,width:320,height:48,rx:24,fill:C.soft,stroke:col||'none','stroke-width':2},gg);tx(gg,176,y,t,'lab');return gg;};
   const names=['Promedio colegio','Edad','Jornada','Distancia','Tasa de aprobación'];
@@ -1410,8 +1495,8 @@ slide({kicker:K2,title:'Cuidado con la información del futuro',stage:1,build(c)
       T.to(gs,{v:82,duration:1.2,ease:'power2.inOut',onUpdate:setG},1);T.to(val,{attr:{stroke:C.ink},duration:.4},1.2);fadeIn(T,tag2,2)}];
 }});
 
-/* ---------- 35 · Entrenar ---------- */
-slide({kicker:K2,title:'Entrenar es reducir el error',stage:2,build(c){
+/* ---------- 38 · Entrenar ---------- */
+slide({kicker:K2,title:'Entrenar es reducir el error',stage:3,build(c){
   const g=G(c.svg),{xs,ys}=STUD;
   const A=axes(g,{x:150,y:250,w:640,h:460,xd:[40,100],yd:[0,5],xt:[40,55,70,85,100],yt:[0,1,2,3,4,5],xl:'Asistencia (%)',yl:'Nota final'});
   const ma=mean(xs),sa=Math.sqrt(mean(xs.map(v=>(v-ma)**2))),z=xs.map(v=>(v-ma)/sa);
@@ -1436,11 +1521,9 @@ slide({kicker:K2,title:'Entrenar es reducir el error',stage:2,build(c){
     T=>{const p={k:0};T.to(p,{k:60,duration:4.5,ease:'power1.inOut',onUpdate:()=>draw(Math.round(p.k))},.1)}];
 }});
 
-/* ---------- 36 · Sub/sobreajuste ---------- */
-slide({kicker:K2,title:'Ni muy simple, ni muy complejo',stage:2,build(c){
-  const g=G(c.svg),r=rng(1),f=u=>88/(1+Math.exp(-9*(u-0.45)))+4;
-  const tr=[];for(let i=0;i<14;i++){const u=(i+0.5)/14+(r()-0.5)*0.05;tr.push([u,clamp(f(u)+randn(r)*5.6,2,100)]);}
-  const te=[];for(let i=0;i<200;i++){const u=0.02+0.96*r();te.push([u,clamp(f(u)+randn(r)*5.6,2,100)]);}
+/* ---------- 39 · Sub/sobreajuste ---------- */
+slide({kicker:K2,title:'Ni muy simple, ni muy complejo',stage:3,build(c){
+  const g=G(c.svg),{tr,te}=NET;
   const fits=[],err=[];for(let d=1;d<=12;d++){const p=polyfit(tr.map(q=>2*q[0]-1),tr.map(q=>q[1]),d);fits.push(p);
     const rm=s=>Math.sqrt(s.reduce((a,q)=>a+(p(2*q[0]-1)-q[1])**2,0)/s.length);err.push([rm(tr),rm(te)]);}
   const A=axes(g,{x:150,y:250,w:620,h:460,xd:[0,30],yd:[0,105],xt:[0,10,20,30],yt:[0,25,50,75,100],xl:'Ingreso per cápita (millones de $ al año)',yl:'Hogares con internet (%)'});
@@ -1470,58 +1553,85 @@ slide({kicker:K2,title:'Ni muy simple, ni muy complejo',stage:2,build(c){
     T=>{T.to(tdots,{opacity:1,duration:.4,stagger:{amount:.8,from:'random'}},0);T.to(leg2,{opacity:1,duration:.4},.9);popIn(T,mkT,1.1,{st:.2});drawIn(T,trL,1.8,1.2);drawIn(T,teL,2.2,1.4)}];
 }});
 
-/* ---------- 37 · Validación cruzada ---------- */
-slide({kicker:K2,title:'Validación cruzada: todos evalúan una vez',stage:2,build(c){
-  const g=G(c.svg),X0=300,SW=152,GAP=8,Y=[300,380,460,540,620],sc=[.81,.79,.84,.80,.82];
-  const lg=G(g);S('rect',{x:1180,y:246,width:22,height:16,rx:4,fill:C.st},lg);tx(lg,1210,260,'entrena','sm');S('rect',{x:1300,y:246,width:22,height:16,rx:4,fill:C.ml},lg);tx(lg,1330,260,'valida','sm');
-  const rows=Y.map((y,ri)=>{const gg=G(g);const segs=[0,1,2,3,4].map(j=>S('rect',{x:X0+j*(SW+GAP),y:y-22,width:SW,height:44,rx:8,fill:C.st},gg));
-    const lab=tx(gg,150,y+6,'Ronda '+(ri+1),'lab',{fill:C.sub});const s=tx(gg,1180,y+8,'','mono');return{gg,segs,lab,s};});
-  const n160=[0,1,2,3,4].map(j=>tx(g,X0+j*(SW+GAP)+SW/2,Y[0]+6,'160','mono',{'text-anchor':'middle',fill:C.w,style:'font-size:17px'}));
-  const top=tx(g,X0,250,'800 estudiantes de entrenamiento','sm');
-  const res=[tx(g,1180,730,'0.81 ± 0.02','monoL'),tx(g,1180,764,'exactitud promedio · profundidad 3','sm')];
-  const cmp=[tx(g,300,730,'profundidad 8 → 0.76 ± 0.05','mono',{fill:C.muted}),tx(g,300,764,'se elige la profundidad 3','sm')];
-  const lk=lock(g,160,790,1,C.ink);
-  const ex=exChip(g,150,856,'¿Árbol de profundidad 3 u 8? Decide la validación cruzada');
-  rows.slice(1).forEach(r=>hide(r.gg));hide(rows[0].s,res,cmp,rows[0].lab);
-  const lkT=tx(g,184,798,'Los 200 de prueba siguen guardados','sm');hide(lk,lkT);
-  return[T=>{fadeIn(T,top,.2);T.fromTo(rows[0].segs,{attr:{x:i=>X0+i*(SW+GAP*.8),width:SW+GAP*.8+1}},{attr:{x:i=>X0+i*(SW+GAP),width:SW},duration:.8,ease:'power2.inOut'},.9);
-      T.from(rows[0].segs,{opacity:0,duration:.4},.2);fadeIn(T,n160,1.2,{st:.08});fadeIn(T,ex,1.4)},
-    T=>{T.to(n160,{opacity:0,duration:.3},0);T.to(rows[0].lab,{opacity:1,duration:.3},0);
-      rows.forEach((r,ri)=>{const at=.3+ri*.9;T.to(r.gg,{opacity:1,duration:.3},at);T.to(r.segs[ri],{attr:{fill:C.ml},duration:.4},at+.2);
-        T.to(r.s,{opacity:1,duration:.2},at+.4);countTo(T,r.s,0,sc[ri],at+.4,.5,v=>v.toFixed(2));});},
-    T=>{T.to(rows.map(r=>r.s),{x:0,y:(i)=>730-Y[i]-8,opacity:0,duration:.8,ease:'power2.in',stagger:.05},0);fadeIn(T,res,.8,{st:.1})},
-    T=>{fadeIn(T,cmp,0,{st:.15});popIn(T,lk,.5);fadeIn(T,lkT,.6)}];
+/* ---------- 40 · Regularización ---------- */
+slide({kicker:K2,title:'Controlar el sobreajuste: regularización',stage:3,build(c){
+  const g=G(c.svg),{tr,te}=NET;
+  const intro=tx(g,96,208,'Se castiga la complejidad: los coeficientes grandes cuestan. λ dice cuánto.','txt');
+  const A=axes(g,{x:150,y:250,w:620,h:430,xd:[0,30],yd:[0,105],xt:[0,10,20,30],yt:[0,25,50,75,100],xl:'Ingreso per cápita (millones de $ al año)',yl:'Hogares con internet (%)'});
+  const cid='rg'+Math.random().toString(36).slice(2,7),cp=S('clipPath',{id:cid},S('defs',{},g));S('rect',{x:150,y:250,width:620,height:430},cp);
+  const cg=G(g,{'clip-path':`url(#${cid})`});const U=u=>A.sx(u*30);
+  te.forEach(q=>S('circle',{cx:U(q[0]),cy:A.sy(q[1]),r:4,fill:'none',stroke:C.ml,'stroke-width':1.5,opacity:.55},cg));
+  const xs=tr.map(q=>2*q[0]-1),ys=tr.map(q=>q[1]),ajuste=lam=>polyfit(xs,ys,12,lam);
+  const cpath=lam=>{const p=ajuste(lam);return pathD(range(0,1,240).map(u=>[U(u),A.sy(clamp(p(2*u-1),-60,200))]));};
+  const curve=S('path',{d:cpath(1e-6),fill:'none',stroke:C.st,'stroke-width':4,'stroke-linecap':'round'},cg);
+  tr.forEach(q=>S('circle',{cx:U(q[0]),cy:A.sy(q[1]),r:7.5,fill:C.ink},g));
+  const lamT=tx(g,176,284,'','mono',{style:`fill:${C.st}`});
+  const putL=L=>{lamT.textContent=`λ = 10^${fmt(L,1)}`;};putL(-6);
+  // error con datos de entrenamiento y con datos nuevos, según log λ
+  const rm=(p,s)=>Math.sqrt(mean(s.map(q=>(p(2*q[0]-1)-q[1])**2)));
+  const LG=range(-6,2,61),E=LG.map(L=>{const p=ajuste(10**L);return[rm(p,tr),rm(p,te)];});
+  const YM=35,B=axes(g,{x:960,y:290,w:500,h:300,xd:[-6,2],yd:[0,YM],xt:[-6,-4,-2,0,2],yt:[0,10,20,30],fx:v=>'10^'+v,xl:'λ (escala logarítmica)',yl:'Error (puntos %)'});
+  const bs=v=>B.sy(Math.min(v,YM));
+  const trL=S('path',{d:pathD(LG.map((L,i)=>[B.sx(L),bs(E[i][0])])),fill:'none',stroke:C.ink,'stroke-width':3},g);
+  const teL=S('path',{d:pathD(LG.map((L,i)=>[B.sx(L),bs(E[i][1])])),fill:'none',stroke:C.ml,'stroke-width':3},g);
+  const ib=E.reduce((b,e,i)=>e[1]<E[b][1]?i:b,0),Lb=LG[ib];
+  const mk=[S('line',{x1:B.sx(Lb),x2:B.sx(Lb),y1:B.sy(0),y2:B.sy(YM),stroke:C.ml,'stroke-width':2,'stroke-dasharray':'5 5'},g),
+    tx(g,B.sx(Lb)+10,B.sy(YM)+18,'λ se elige con validación','sm',{style:`fill:${C.ml}`})];
+  const leg=G(g);S('line',{x1:980,x2:1010,y1:676,y2:676,stroke:C.ink,'stroke-width':3},leg);tx(leg,1020,682,'con datos de entrenamiento','sm');
+  S('line',{x1:980,x2:1010,y1:706,y2:706,stroke:C.ml,'stroke-width':3},leg);tx(leg,1020,712,'con datos nuevos','sm');
+  prepDraw(trL,teL);
+  // técnicas de control
+  const TEC=['MÁS DATOS','MODELO MÁS SIMPLE','RIDGE (L2) · LASSO (L1)','PROFUNDIDAD MÁXIMA O PODA','PARADA TEMPRANA','VALIDACIÓN CRUZADA'];
+  const tec=G(g);tx(tec,96,800,'Técnicas para controlar el sobreajuste','lab');let px=96;
+  TEC.forEach(t=>{pill(tec,px,846,t,C.st,C.stT);px+=t.length*9.7+42;});
+  hide(B.g,mk,leg,tec);
+  const mover=(T,a,b,at,d)=>{const p={L:a};T.to(p,{L:b,duration:d,ease:'power1.inOut',onUpdate:()=>{curve.setAttribute('d',cpath(10**p.L));putL(p.L);}},at);};
+  return[T=>{fadeIn(T,intro,.2);T.from(A.g,{opacity:0,duration:.5},.3);fadeIn(T,lamT,.8,{dy:0});},
+    T=>{mover(T,-6,2,.2,4);},
+    T=>{T.to(B.g,{opacity:1,duration:.5},0);T.to(leg,{opacity:1,duration:.4},.3);drawIn(T,trL,.4,1.4);drawIn(T,teL,.8,1.4);mover(T,2,Lb,2.2,1.6);fadeIn(T,mk,3.6,{st:.15,dy:0});},
+    T=>{fadeIn(T,tec,0);}];
 }});
 
-/* ---------- 38 · Matriz de confusión ---------- */
-slide({kicker:K2,title:'¿En qué se equivoca el modelo?',stage:3,build(c){
-  const g=G(c.svg),r=rng(20);
-  const lab=Array.from({length:200},(_,i)=>i<40?(i<30?'TP':'FN'):(i<55?'FP':'TN'));const ord=shuffle([...Array(200).keys()],r);
-  const lg=G(g);S('circle',{cx:158,cy:270,r:7,fill:C.ml},lg);tx(lg,172,276,'desertó','sm');S('circle',{cx:262,cy:270,r:7,fill:C.dot},lg);tx(lg,276,276,'continuó','sm');
-  const gC=G(g);
-  const dots=ord.map((id,j)=>S('circle',{cx:158+(j%20)*18,cy:320+Math.floor(j/20)*18,r:6,fill:id<40?C.ml:C.dot},g));
-  const pl=tx(g,150,540,'200 estudiantes de prueba','sm');
-  const mx=760,my=290,cw=330,ch=220,gp=12,cell={TP:[0,0],FN:[0,1],FP:[1,0],TN:[1,1]};
-  const tint={TP:C.okT,TN:C.okT,FP:C.badT,FN:C.badT},col={TP:C.ok,TN:C.ok,FP:C.bad,FN:C.bad},name={TP:'Aciertos',TN:'Aciertos',FP:'Falsas alarmas',FN:'No detectados'};
-  const cells={},cnt={TP:0,FN:0,FP:0,TN:0};
-  Object.keys(cell).forEach(k=>{const [ri,ci]=cell[k],x=mx+ci*(cw+gp),y=my+ri*(ch+gp);
-    cells[k]={x,y,r:S('rect',{x,y,width:cw,height:ch,rx:16,fill:C.w,stroke:C.frame,'stroke-width':2},gC)};});
-  const hdr=[tx(g,mx+cw/2,my-18,'Predice: deserta','hdr',{'text-anchor':'middle'}),tx(g,mx+cw+gp+cw/2,my-18,'Predice: continúa','hdr',{'text-anchor':'middle'}),
-    tx(g,mx-18,my+ch/2+5,'Desertó','hdr',{'text-anchor':'end'}),tx(g,mx-18,my+ch+gp+ch/2+5,'Continuó','hdr',{'text-anchor':'end'})];
-  const targets=ord.map(id=>{const k=lab[id],n=cnt[k]++,cc=cells[k];return[cc.x+20+(n%18)*16.8,cc.y+22+Math.floor(n/18)*16.8];});
-  const nums=[],nms=[];Object.keys(cell).forEach(k=>{const cc=cells[k];nums.push(tx(g,cc.x+cw-20,cc.y+ch-20,String({TP:30,FN:10,FP:15,TN:145}[k]),'monoL',{'text-anchor':'end',fill:col[k]}));
-    nms.push(tx(g,cc.x+20,cc.y+ch-24,name[k],'lab',{fill:col[k]}));});
-  const acc=tx(g,mx,my+2*ch+gp+52,'Exactitud = (30 + 145) / 200 = 87.5 %','mono');
-  const ex=exChip(g,150,856,'200 estudiantes que el modelo nunca vio; 40 desertaron');
-  hide(nums,nms,acc,hdr);
-  return[T=>{fadeIn(T,lg,.2);popIn(T,dots,.3,{st:{amount:1,from:'random'},d:.3});fadeIn(T,pl,1.1);T.from(Object.values(cells).map(c=>c.r),{opacity:0,duration:.6,stagger:.1},.6);fadeIn(T,ex,1.3)},
-    T=>{fadeIn(T,hdr,0,{st:.08});dots.forEach((d,j)=>T.to(d,{attr:{cx:targets[j][0],cy:targets[j][1],r:5.5},duration:1,ease:'power3.inOut'},.4+j*.009));T.to(pl,{opacity:0,duration:.3},.4)},
-    T=>{Object.keys(cells).forEach((k,i)=>T.to(cells[k].r,{attr:{fill:tint[k],stroke:col[k]},duration:.5},i*.15));fadeIn(T,nms,.3,{st:.15});popIn(T,nums,.5,{st:.15})},
-    T=>{fadeIn(T,acc,0)}];
+/* ---------- 41 · Parámetros e hiperparámetros ---------- */
+slide({kicker:K2,title:'Parámetros e hiperparámetros',stage:3,build(c){
+  const g=G(c.svg),{tr,te}=NET;
+  const intro=tx(g,96,208,'Unos números los aprende el algoritmo; otros los decide usted antes de entrenar.','txt');
+  const col=(x,pl,colr,tint,def,ej)=>{const gg=G(g);S('rect',{x,y:240,width:684,height:190,rx:20,fill:tint},gg);pill(gg,x+28,288,pl,colr,C.w);
+    tx(gg,x+28,334,def,'h3');txl(gg,x+28,374,ej,'txt',28,{style:`fill:${C.ink}`});return gg;};
+  const cP=col(96,'PARÁMETROS',C.st,C.stT,'Los aprende el algoritmo con los datos',['β₀ y β₁ de la regresión · k del río','los coeficientes del polinomio']);
+  const cH=col(820,'HIPERPARÁMETROS',C.ml,C.mlT,'Los fija el investigador antes de entrenar',['el grado del polinomio · λ de la regularización','la profundidad máxima de un árbol']);
+  const anal=tx(g,800,476,'Como en la receta: la temperatura del fogón la decide usted; cuánto se doran las arepas sale de cocinarlas.','sm',{'text-anchor':'middle'});
+  // búsqueda en rejilla: error con los datos de validación para cada combinación de grado y λ
+  const xs=tr.map(q=>2*q[0]-1),ys=tr.map(q=>q[1]),GR=[1,3,5,8,12],LA=[-6,-4,-2,0,2],LAt=['10⁻⁶','10⁻⁴','10⁻²','1','10²'];
+  const err=GR.map(d=>LA.map(L=>{const p=polyfit(xs,ys,d,10**L);return Math.sqrt(mean(te.map(q=>(p(2*q[0]-1)-q[1])**2)));}));
+  let bi=0,bj=0;err.forEach((row,i)=>row.forEach((e,j)=>{if(e<err[bi][bj]-1e-9){bi=i;bj=j;}}));
+  const emin=err[bi][bj],emax=Math.max(...err.flat()),tt=e=>clamp(Math.log(e/emin)/Math.log(emax/emin),0,1);
+  const mix=(a,b,t)=>{const h=s=>[1,3,5].map(k=>parseInt(s.slice(k,k+2),16)),A=h(a),B=h(b);return`rgb(${A.map((v,k)=>Math.round(v+(B[k]-v)*t)).join(',')})`;};
+  const X0=330,Y0=572,CW=104,CH=50;
+  const rej=G(g);tx(rej,96,532,'Error con los datos de validación (puntos %)','lab');
+  LAt.forEach((t,j)=>tx(rej,X0+j*CW+CW/2,562,'λ = '+t,'tick',{'text-anchor':'middle'}));
+  GR.forEach((d,i)=>tx(rej,X0-14,Y0+i*CH+CH/2+5,'grado '+d,'tick',{'text-anchor':'end'}));
+  const celdas=[];GR.forEach((d,i)=>LA.forEach((L,j)=>{const gg=G(g),t=tt(err[i][j]);
+    S('rect',{x:X0+j*CW+2,y:Y0+i*CH+2,width:CW-4,height:CH-4,rx:6,fill:mix('#fdefe2','#ea7317',t)},gg);
+    tx(gg,X0+j*CW+CW/2,Y0+i*CH+CH/2+6,fmt(err[i][j]),'mono',{'text-anchor':'middle',style:`font-size:16px;fill:${t>.55?C.w:C.ink}`});celdas.push(gg);}));
+  const mejor=S('rect',{x:X0+bj*CW-1,y:Y0+bi*CH-1,width:CW+2,height:CH+2,rx:8,fill:'none',stroke:C.ink,'stroke-width':3.5},g);
+  const mejT=tx(g,X0+5*CW+16,Y0+bi*CH+CH/2+6,`← grado ${GR[bi]}, λ = ${LAt[bj]}`,'mono',{style:'font-size:15px'});
+  const rejT=tx(g,96,850,'Búsqueda en rejilla: entrenar con cada combinación y quedarse con la de menor error en validación.','sm');
+  // la regla y los hiperparámetros de las técnicas del curso
+  const regla=[tx(g,1080,560,'Se eligen con validación,','h3',{style:`fill:${C.ml}`}),tx(g,1080,588,'nunca con la prueba.','h3',{style:`fill:${C.ml}`}),
+    ...txl(g,1080,620,['La prueba mide el resultado final;','si se usa para elegir, ese resultado se infla.'],'sm',22)];
+  const TEC=[['Ridge / Lasso','λ'],['Árbol de decisión','profundidad máxima'],['Random Forest','n.º de árboles'],['Gradient Boosting','tasa de aprendizaje'],['K-means','número de grupos k'],['Red neuronal','capas y neuronas']];
+  const tec=G(g);tx(tec,1080,700,'EN LAS TÉCNICAS DEL CURSO','kick',{style:'font-size:12px'});
+  TEC.forEach(([a,b],i)=>{const x=1080+(i%2)*220,y=730+Math.floor(i/2)*42;tx(tec,x,y,a,'sm',{style:`fill:${C.ink}`});tx(tec,x,y+18,b,'mono',{style:`font-size:13px;fill:${C.ml}`});});
+  hide(cH,anal,rej,celdas,mejor,mejT,rejT,regla,tec);
+  return[T=>{fadeIn(T,intro,.2);fadeIn(T,cP,.5,{dx:-20,dy:0});fadeIn(T,cH,1,{dx:20,dy:0});fadeIn(T,anal,1.6);},
+    T=>{fadeIn(T,rej,0);popIn(T,celdas,.3,{st:.06,s0:.6,d:.3});T.to(mejor,{opacity:1,duration:.3},2);popIn(T,mejor,2,{s0:1.3});fadeIn(T,[mejT,rejT],2.2,{st:.2,dy:0});},
+    T=>{fadeIn(T,regla,0,{st:.1});},
+    T=>{fadeIn(T,tec,0);}];
 }});
 
-/* ---------- 39 · Umbral y métricas ---------- */
-slide({kicker:K2,title:'Una métrica no basta',stage:3,build(c){
+/* ---------- 42 · Umbral y métricas ---------- */
+slide({kicker:K2,title:'Una métrica no basta',stage:4,build(c){
   const g=G(c.svg),r=rng(21),P=[];
   for(let i=0;i<30;i++)P.push({p:0.5+0.47*r()**0.8,d:1});for(let i=0;i<10;i++)P.push({p:0.12+0.37*r(),d:1});
   for(let i=0;i<15;i++)P.push({p:0.5+0.3*r()**1.5,d:0});for(let i=0;i<145;i++)P.push({p:0.02+0.47*r()**1.7,d:0});
@@ -1554,8 +1664,8 @@ slide({kicker:K2,title:'Una métrica no basta',stage:3,build(c){
     T=>{moveTo(T,1,.1);T.to(mm[2].gg.querySelectorAll('text'),{fill:C.bad,duration:.4},1.4);fadeIn(T,warn,1.6,{st:.1})}];
 }});
 
-/* ---------- 40 · Error en regresión ---------- */
-slide({kicker:K2,title:'¿Cuánto nos equivocamos, en unidades reales?',stage:3,build(c){
+/* ---------- 43 · Error en regresión ---------- */
+slide({kicker:K2,title:'¿Cuánto nos equivocamos, en unidades reales?',stage:4,build(c){
   const g=G(c.svg),{xs,ys}=STUD,fit=ols(xs,ys),pr=xs.map(fit.f);
   const A=axes(g,{x:180,y:250,w:460,h:460,xd:[0,5],yd:[0,5],xt:[0,1,2,3,4,5],yt:[0,1,2,3,4,5],xl:'Nota real',yl:'Nota predicha'});
   const diag=S('line',{x1:A.sx(0),y1:A.sy(0),x2:A.sx(5),y2:A.sy(5),stroke:C.frame,'stroke-width':2,'stroke-dasharray':'8 6'},g);
@@ -1577,20 +1687,42 @@ slide({kicker:K2,title:'¿Cuánto nos equivocamos, en unidades reales?',stage:3,
       T.fromTo(mline,{opacity:0,scaleX:0,transformOrigin:'0% 50%'},{opacity:1,scaleX:1,duration:.7,ease:'power2.out'},1.9);fadeIn(T,out,2.3,{st:.1})}];
 }});
 
-/* ---------- 41 · Cierre ---------- */
+/* ---------- 44 · Interpretar y comunicar ---------- */
+slide({kicker:K2,title:'Interpretar y comunicar',stage:5,build(c){
+  const g=G(c.svg),VP=30,FN=10,FP=15,VN=145,N=VP+FN+FP+VN,pct=v=>fmt(v*100,v*100%1?1:0)+' %';
+  const exa=(VP+VN)/N,sen=VP/(VP+FN),pre=VP/(VP+FP),base=(FP+VN)/N;
+  const intro=tx(g,96,208,'El mismo modelo de deserción, evaluado con los 200 estudiantes de prueba.','txt');
+  const k1=tx(g,96,276,'LO QUE DICE EL MODELO','kick',{style:'font-size:13px'}),k2=tx(g,820,276,'LO QUE ENTIENDE QUIEN DECIDE','kick',{style:`font-size:13px;fill:${C.ml}`});
+  const F=[[`Exactitud ${pct(exa)}`,`Acierta con ${VP+VN} de ${N}; «nadie deserta» acertaría con ${FP+VN}.`],
+    [`Sensibilidad ${pct(sen)}`,`De los ${VP+FN} que desertarían, el programa llega a ${VP}.`],
+    [`Precisión ${pct(pre)}`,`De cada ${Math.round(1/(1-pre))} alertas, ${Math.round(1/(1-pre))-1} son ciertas; ${FP} alertas sobran.`]];
+  const filas=F.map(([a,b],i)=>{const y=340+i*92,L=tx(g,96,y,a,'mono',{style:'font-size:26px'}),
+    l=S('line',{x1:560,x2:780,y1:y-9,y2:y-9,stroke:C.frame,'stroke-width':2},g),h=arrowHead(g,792,y-9,0,C.frame,.9),R=tx(g,820,y,b,'lab');return{L,l,h,R};});
+  const Q=[['¿Mejor que qué?','Compare siempre con una línea base.'],['¿Qué variables pesan?','Importancia de variables; SHAP en el tema 2.2.'],
+    ['¿Para quién no funciona y qué no dice?','Revise grupos; predecir no es explicar la causa.']];
+  const qs=Q.map(([a,b],i)=>{const gg=G(g),x=96+i*474;S('rect',{x,y:640,width:450,height:110,rx:20,fill:C.mlT},gg);
+    tx(gg,x+24,684,a,'h3',{style:`fill:${C.ml};font-size:21px`});tx(gg,x+24,716,b,'sm');return gg;});
+  const qt=tx(g,96,610,'Tres preguntas que todo informe debe responder','lab');
+  prepDraw(filas.map(f=>f.l));hide(k2,filas.map(f=>[f.h,f.R]),qs,qt);
+  return[T=>{fadeIn(T,[intro,k1],.2,{st:.1});fadeIn(T,filas.map(f=>f.L),.5,{st:.2,dx:-16,dy:0});},
+    T=>{fadeIn(T,k2,0);filas.forEach((f,i)=>{drawIn(T,f.l,.2+i*.5,.4);T.to(f.h,{opacity:1,duration:.15},.55+i*.5);fadeIn(T,f.R,.6+i*.5,{dx:-10,dy:0});});},
+    T=>{fadeIn(T,qt,0);fadeIn(T,qs,.2,{st:.2});}];
+}});
+
+/* ---------- 45 · Cierre ---------- */
 slide({kicker:'SÍNTESIS',title:'Dos preguntas, un mismo ciclo',build(c){
-  const g=G(c.svg),cx=800,cy=500,R=190,names=['Datos','Características','Entrenamiento','Evaluación'],ang=[-135,-45,45,135];
+  const g=G(c.svg),cx=800,cy=500,R=190,names=ETAPAS,ang=[-150,-90,-30,30,90,150];
   const ring=S('circle',{cx,cy,r:R,fill:'none',stroke:C.frame,'stroke-width':2.5},g);prepDraw(ring);
-  const nodes=ang.map((a,i)=>{const rad=a*Math.PI/180,x=cx+R*Math.cos(rad),y=cy+R*Math.sin(rad),gg=G(g);S('circle',{cx:x,cy:y,r:13,fill:C.ink},gg);
-    const off=[[-22,-16,'end'],[22,-16,'start'],[22,34,'start'],[-22,34,'end']][i];tx(gg,x+off[0],y+off[1],names[i],'lab',{'text-anchor':off[2]});return gg;});
+  const nodes=ang.map((a,i)=>{const rad=a*Math.PI/180,x=cx+R*Math.cos(rad),y=cy+R*Math.sin(rad),gg=G(g);S('circle',{cx:x,cy:y,r:13,fill:i===0||i===5?C.ml:C.ink},gg);
+    const co=Math.cos(rad),an=co>.3?'start':co<-.3?'end':'middle';tx(gg,x+30*co,y+30*Math.sin(rad)+7,names[i],'lab',{'text-anchor':an});return gg;});
   const center=txl(g,cx,cy-6,['Pregunta de','investigación'],'h2',38,{'text-anchor':'middle'});
-  const orb=S('circle',{cx:cx+R*Math.cos(-.75*Math.PI),cy:cy+R*Math.sin(-.75*Math.PI),r:9,fill:C.ml},g);
+  const orb=S('circle',{cx:cx+R*Math.cos(-150*Math.PI/180),cy:cy+R*Math.sin(-150*Math.PI/180),r:9,fill:C.ml},g);
   const L=[pill(g,150,470,'ESTADÍSTICA',C.st,C.stT),tx(g,150,526,'¿Por qué ocurre?','h2')],Rr=[pill(g,1450,470,'MACHINE LEARNING',C.ml,C.mlT,true),tx(g,1450,526,'¿Qué ocurrirá?','h2',{'text-anchor':'end'})];
-  const a1=S('line',{x1:420,x2:cx-R-40,y1:500,y2:500,stroke:C.st,'stroke-width':2.5},g),a2=S('line',{x1:1180,x2:cx+R+40,y1:500,y2:500,stroke:C.ml,'stroke-width':2.5},g);prepDraw(a1,a2);
-  const msg=tx(g,cx,810,'Pregunta primero, algoritmo después','h2',{'text-anchor':'middle'});
+  const a1=S('line',{x1:420,x2:cx-R-60,y1:500,y2:500,stroke:C.st,'stroke-width':2.5},g),a2=S('line',{x1:1180,x2:cx+R+60,y1:500,y2:500,stroke:C.ml,'stroke-width':2.5},g);prepDraw(a1,a2);
+  const msg=tx(g,cx,810,'Pregunta primero, algoritmo después; y al final, comunicar','h2',{'text-anchor':'middle'});
   hide(L,Rr,msg,orb);
-  return[T=>{drawIn(T,ring,.2,1.4,{ease:'power1.inOut'});popIn(T,nodes,.5,{st:.3,s0:.4});fadeIn(T,center,1.4,{st:.1});
-      T.set(orb,{opacity:1},1.8);const p={a:-135};T.to(p,{a:225,duration:2.8,ease:'power1.inOut',onUpdate:()=>{const r=p.a*Math.PI/180;orb.setAttribute('cx',cx+R*Math.cos(r));orb.setAttribute('cy',cy+R*Math.sin(r));}},1.8)},
+  return[T=>{drawIn(T,ring,.2,1.4,{ease:'power1.inOut'});popIn(T,nodes,.5,{st:.22,s0:.4});fadeIn(T,center,1.6,{st:.1});
+      T.set(orb,{opacity:1},2);const p={a:-150};T.to(p,{a:210,duration:3,ease:'power1.inOut',onUpdate:()=>{const r=p.a*Math.PI/180;orb.setAttribute('cx',cx+R*Math.cos(r));orb.setAttribute('cy',cy+R*Math.sin(r));}},2)},
     T=>{fadeIn(T,L,0,{st:.1,dx:-30,dy:0});fadeIn(T,Rr,.2,{st:.1,dx:30,dy:0});drawIn(T,[a1,a2],.7,.7);fadeIn(T,msg,1.4)}];
 }});
 
@@ -1601,8 +1733,10 @@ const stage=document.getElementById('stage'),pg=document.getElementById('pg');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function fit(){const s=Math.min(innerWidth/1600,innerHeight/900);stage.style.transform=`translate(-50%,-50%) scale(${s})`;}
 addEventListener('resize',fit);fit();
-function stageNav(p,cur){const g=G(p),names=['Datos','Características','Entrenamiento','Evaluación'],xs=[1010,1100,1270,1425];
-  names.forEach((n,i)=>{S('circle',{cx:xs[i],cy:91,r:5,fill:i===cur?C.ink:'none',stroke:i===cur?C.ink:C.muted,'stroke-width':1.5},g);tx(g,xs[i]+13,96,n,'nav'+(i===cur?' on':''));});return g;}
+/* etapas del ciclo; las posiciones salen del largo de cada nombre, alineadas a la derecha */
+const ETAPAS=['Pregunta','Datos','Características','Entrenamiento','Evaluación','Comunicar'];
+function stageNav(p,cur){const g=G(p),w=ETAPAS.map(n=>n.length*8.2+13),gap=22;let x=1504-w.reduce((a,b)=>a+b)-gap*(ETAPAS.length-1);
+  ETAPAS.forEach((n,i)=>{S('circle',{cx:x,cy:91,r:5,fill:i===cur?C.ink:'none',stroke:i===cur?C.ink:C.muted,'stroke-width':1.5},g);tx(g,x+13,96,n,'nav'+(i===cur?' on':''));x+=w[i]+gap;});return g;}
 let si=0,k=0,tl=null,cur=null,steps=null;const leaving=[];
 function mount(idx){const s=SLIDES[idx],root=document.createElement('div');root.className='slide';stage.insertBefore(root,pg);
   const svg=S('svg',{viewBox:'0 0 1600 900',width:1600,height:900},root);const heads=[];
