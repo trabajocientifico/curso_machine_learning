@@ -112,9 +112,9 @@
 
   <header>
     <div>
-      <div class="kicker">Regresión lineal simple · horas de estudio y calificación</div>
+      <div class="kicker">Regresión lineal simple · experiencia laboral e ingreso</div>
       <div class="title" id="title">Dos variables</div>
-      <div class="sub" id="sub">Cada punto es una persona observada</div>
+      <div class="sub" id="sub">Cada punto es una persona ocupada</div>
     </div>
     <div class="eqbox" id="eqbox">
       <div class="eq">
@@ -200,9 +200,9 @@ const gAxes=grp("axes"), gMean=grp("mean"), gResid=grp("resid"), gSquares=grp("s
     const t=el("text",{class:"tick",x:L-14,y:sy(y)+5,"text-anchor":"end"});t.textContent=y.toFixed(1);gAxes.appendChild(t);
   }
   const xl=el("text",{class:"axlab",x:(L+W-R)/2,y:H-16,"text-anchor":"middle"});
-  xl.textContent="x — horas de estudio por semana";gAxes.appendChild(xl);
+  xl.textContent="x — años de experiencia laboral";gAxes.appendChild(xl);
   const yl=el("text",{class:"axlab",x:-(T+H-Bm)/2,y:24,transform:"rotate(-90)","text-anchor":"middle"});
-  yl.textContent="y — calificación";gAxes.appendChild(yl);
+  yl.textContent="y — ingreso mensual (millones de $)";gAxes.appendChild(yl);
 })();
 
 /* media */
@@ -226,7 +226,7 @@ gInt.appendChild(iDot);gInt.appendChild(iLab);
 /* pendiente */
 const shor=el("line",{class:"slopeline"}), sver=el("line",{class:"slopeline"});
 const slabH=el("text",{class:"lab mid","text-anchor":"middle"}), slabV=el("text",{class:"lab amber"});
-slabH.textContent="+1 hora";
+slabH.textContent="+1 año";
 gSlope.appendChild(shor);gSlope.appendChild(sver);gSlope.appendChild(slabH);gSlope.appendChild(slabV);
 
 /* predicción */
@@ -234,7 +234,7 @@ const PX=7.5;
 const pv=el("line",{class:"guide"}), ph=el("line",{class:"guide"});
 const pdot=el("circle",{r:8,fill:"var(--pred)"});
 const plabX=el("text",{class:"lab violet","text-anchor":"middle"}), plabY=el("text",{class:"lab violet","text-anchor":"end"});
-plabX.textContent="x = 7.5";
+plabX.textContent="x = 7.5 años";
 gPred.appendChild(pv);gPred.appendChild(ph);gPred.appendChild(pdot);gPred.appendChild(plabX);gPred.appendChild(plabY);
 
 /* puntos */
@@ -243,7 +243,7 @@ const dots=DATA.map((d,i)=>{
   const c=el("circle",{class:"dot",cx:sx(d.x),cy:sy(d.y),r:7});
   c.style.transitionDelay=(i*45)+"ms";
   c.addEventListener("mousemove",e=>{
-    tip.textContent="x = "+d.x+" h   ·   y = "+d.y.toFixed(1)+"   ·   ε = "+(d.y-(st.b0+st.b1*d.x)).toFixed(2);
+    tip.textContent="x = "+d.x+" años   ·   y = $"+d.y.toFixed(1)+" M   ·   ε = "+(d.y-(st.b0+st.b1*d.x)).toFixed(2);
     tip.style.opacity="1";tip.style.left=(e.clientX+14)+"px";tip.style.top=(e.clientY-34)+"px";
   });
   c.addEventListener("mouseleave",()=>tip.style.opacity="0");
@@ -318,11 +318,11 @@ function tweenTo(b0,b1,dur,done){
 
 /* ---------------- pasos ---------------- */
 const STEPS=[
- {t:"Dos variables",              s:"Cada punto es una persona observada",                     show:["axes","points"]},
+ {t:"Dos variables",              s:"Cada punto es una persona ocupada",                     show:["axes","points"]},
  {t:"Sin modelo, solo el promedio",s:"Predecir siempre lo mismo ignora por completo a x",      show:["axes","points","mean"]},
  {t:"El modelo es una recta",      s:"Una sola línea resume cómo x acompaña a y",              show:["axes","points","line"],eq:1,hi:[]},
  {t:"β₀ · el intercepto",          s:"El punto de partida: el valor de y cuando x vale 0",     show:["axes","points","line","intercept"],eq:1,hi:["b0"]},
- {t:"β₁ · la pendiente",           s:"Cuánto sube y por cada hora adicional de estudio",       show:["axes","points","line","slope"],eq:1,hi:["b1"]},
+ {t:"β₁ · la pendiente",           s:"Cuánto sube el ingreso por cada año adicional de experiencia",       show:["axes","points","line","slope"],eq:1,hi:["b1"]},
  {t:"ŷ · la predicción",           s:"Entro con un valor de x y leo el valor esperado de y",   show:["axes","points","line","pred"],eq:1,hi:["yh","xx"]},
  {t:"ε · el residuo",              s:"La distancia entre lo observado y lo predicho",          show:["axes","points","line","resid"],eq:1,hi:["er"],err:1},
  {t:"Mínimos cuadrados",           s:"La mejor recta es la que hace mínima la suma de estas áreas",show:["axes","points","line","resid","squares"],eq:1,hi:["er"],err:1,metrics:1},

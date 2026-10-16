@@ -40,12 +40,39 @@ text{font-family:var(--disp)}
 .hdr{font:600 15px var(--disp);fill:var(--sub)}
 .nav{font:500 15px var(--disp);fill:var(--muted)}
 .nav.on{fill:var(--ink);font-weight:600}
-@media (prefers-reduced-motion: reduce){#stage *{transition:none!important}}
+/* índice de láminas: vive fuera del escenario para que sus clics no avancen la presentación */
+#ixBtn{position:fixed;top:16px;right:20px;z-index:20;border:1px solid var(--line);background:rgba(255,255,255,.9);color:var(--sub);
+  font:600 12px var(--mono);letter-spacing:.1em;padding:9px 14px;border-radius:99px;cursor:pointer;opacity:.55;transition:opacity .2s,background .2s,color .2s}
+#ixBtn:hover{opacity:1;background:var(--ink);color:#fff;border-color:var(--ink)}
+#ixOv{position:fixed;inset:0;z-index:30;background:rgba(21,24,31,.3);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+#ixOv.open{opacity:1;visibility:visible}
+#ixPanel{position:absolute;top:0;right:0;height:100%;width:min(430px,92vw);box-sizing:border-box;background:#fff;border-left:1px solid var(--line);
+  padding:22px 20px 28px;overflow-y:auto;transform:translateX(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1);font-family:var(--disp);color:var(--ink)}
+#ixOv.open #ixPanel{transform:none}
+.ix-h{display:flex;justify-content:space-between;align-items:center;font:600 11px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--st)}
+#ixX{border:none;background:#f5f6f8;width:34px;height:34px;border-radius:50%;cursor:pointer;color:var(--ink);font-size:14px}
+#ixX:hover{background:var(--ml);color:#fff}
+.ix-back{display:inline-block;margin-top:14px;font:500 13px var(--disp);color:var(--sub);text-decoration:none}
+.ix-back:hover{color:var(--st)}
+.ix-g{font:500 10.5px var(--mono);letter-spacing:.16em;color:var(--muted);margin:18px 0 6px}
+#ixBody ul{list-style:none;margin:0;padding:0}
+#ixBody li{display:flex;align-items:baseline;gap:12px;padding:8px 10px;border-radius:10px;cursor:pointer;font:500 15px/1.25 var(--disp)}
+#ixBody li span{font:600 11px var(--mono);color:var(--ml);flex:none}
+#ixBody li:hover{background:#f5f6f8}
+#ixBody li.cur{background:var(--st);color:#fff}
+#ixBody li.cur span{color:#fff;opacity:.75}
+@media (prefers-reduced-motion: reduce){#stage *{transition:none!important}#ixOv,#ixPanel{transition:none}}
 </style>
 
 </head>
 <body>
 <div id="view"><div id="stage"><div id="pg"></div></div></div>
+<button id="ixBtn" aria-label="Índice de láminas">☰ Índice</button>
+<div id="ixOv"><div id="ixPanel">
+  <div class="ix-h"><span>Ir a una lámina</span><button id="ixX" aria-label="Cerrar">✕</button></div>
+  <a class="ix-back" href="../index.html#4">← Volver al módulo</a>
+  <div id="ixBody"></div>
+</div></div>
 
 <script>/*!
  * GSAP 3.12.5
@@ -134,10 +161,46 @@ function nivelNav(p,x,y,act,color){const g=G(p);for(let i=0;i<5;i++)S('rect',{x:
 function modelBox(p,cx,cy,w,label){const g=G(p);S('rect',{x:cx-w/2,y:cy-34,width:w,height:68,rx:34,fill:C.w,stroke:C.ink,'stroke-width':2},g);
   tx(g,cx,cy+7,label,'lab',{'text-anchor':'middle'});return g;}
 
+/* lámina de entrada a un bloque: una pregunta gancho y la ruta de preguntas que el bloque responde, con el reto al final */
+function entrada(c,o){
+  const g=G(c.svg);
+  const gancho=tx(g,96,262,o.gancho,'h2',{style:'font-size:42px'}),sub=tx(g,96,312,o.sub,'txt');
+  const XS=[220,490,760,1030,1300],YS=[700,530,700,530,700],FIN=[1470,530];
+  const pts=[[96,800],...XS.map((x,i)=>[x,YS[i]]),FIN];
+  const ruta=S('path',{d:smooth(pts),fill:'none',stroke:C.frame,'stroke-width':4,'stroke-dasharray':'2 10','stroke-linecap':'round'},g);
+  const paradas=o.paradas.map((p,i)=>{const gg=G(g),x=XS[i],y=YS[i],alta=y<600;
+    S('circle',{cx:x,cy:y,r:30,fill:C.w,stroke:C.ink,'stroke-width':2.5},gg);tx(gg,x,y+8,String(i+1),'mono',{'text-anchor':'middle'});
+    const y0=alta?y-48-26*p.q.length:y+60;
+    txl(gg,x,y0,p.q,'h3',26,{'text-anchor':'middle',style:'font-size:21px'});tx(gg,x,y0+26*p.q.length+4,p.d,'sm',{'text-anchor':'middle'});return gg;});
+  const meta=G(g);S('line',{x1:FIN[0],x2:FIN[0],y1:FIN[1],y2:FIN[1]-86,stroke:C.ink,'stroke-width':3},meta);
+  S('path',{d:`M${FIN[0]},${FIN[1]-86} l62,18 l-62,18 Z`,fill:C.ml},meta);
+  tx(meta,1504,FIN[1]-130,'Al final, un reto','h3',{'text-anchor':'end',style:`fill:${C.ml};font-size:21px`});
+  tx(meta,1504,FIN[1]-104,o.reto,'sm',{'text-anchor':'end'});
+  hide(sub,ruta,paradas,meta);
+  return[T=>{fadeIn(T,gancho,.2,{d:.7});fadeIn(T,sub,.7);},
+    T=>{T.to(ruta,{opacity:1,duration:.6},0);
+      paradas.forEach((p,i)=>{popIn(T,p.children[0],.3+i*.45,{s0:.3});fadeIn(T,p,.3+i*.45,{dy:10});});
+      fadeIn(T,meta,.5+paradas.length*.45,{dx:-20,dy:0});}];
+}
+/* punto del puntero en coordenadas del SVG (el escenario está escalado) */
+function svgPt(svg,e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
+/* arrastre con el puntero: on(dx,dy) mientras se mueve; fin(dx,dy) al soltar */
+function arrastrable(el,svg,ini,mov,fin){el.style.cursor='grab';el.style.touchAction='none';
+  el.addEventListener('pointerdown',e=>{if(ini&&ini()===false)return;e.preventDefault();const p0=svgPt(svg,e);
+    const m=ev=>{const p=svgPt(svg,ev);mov(p.x-p0.x,p.y-p0.y);},u=ev=>{removeEventListener('pointermove',m);removeEventListener('pointerup',u);
+      const p=svgPt(svg,ev);fin(p.x-p0.x,p.y-p0.y);};
+    addEventListener('pointermove',m);addEventListener('pointerup',u);});}
+function boton(p,x,y,w,t,col,fn){const gg=G(p);S('rect',{x,y,width:w,height:46,rx:23,fill:col},gg);
+  tx(gg,x+w/2,y+29,t,'lab',{'text-anchor':'middle',style:`fill:${C.w};font-size:18px`});gg.style.cursor='pointer';gg.addEventListener('click',fn);return gg;}
+/* marca ✓ o ✗ */
+function marca(p,x,y,ok){const gg=G(p);S('circle',{cx:x,cy:y,r:13,fill:ok?C.ok:C.bad},gg);
+  S('path',{d:ok?`M${x-6},${y} l4,5 l8,-10`:`M${x-5},${y-5} l10,10 M${x+5},${y-5} l-10,10`,fill:'none',stroke:C.w,'stroke-width':3,'stroke-linecap':'round','stroke-linejoin':'round'},gg);return gg;}
+
 /* =====================================================================
    Datos compartidos
    ===================================================================== */
-const FERT=(()=>{const r=rng(21),xs=[],ys=[];for(let i=0;i<60;i++){const x=5+r()*235;xs.push(x);ys.push(3+0.035*x-0.00008*x*x+randn(r)*0.45);}return{xs,ys};})();
+/* municipios: distancia a la capital del departamento (km) e IPM (%); datos simulados con fines didácticos */
+const MUNI=(()=>{const r=rng(21),xs=[],ys=[];for(let i=0;i<60;i++){const x=5+r()*235;xs.push(x);ys.push(clamp(22+0.42*x-0.00105*x*x+randn(r)*6,5,95));}return{xs,ys};})();
 /* río: embalse lineal dS/dt = P − Q, Q = k·S. F pasa de mm/día a m³/s en una cuenca de 432 km² */
 const RIO=(()=>{const r=rng(52),N=60,F=5,P=Array.from({length:N},()=>r()<.22?4+r()*26:0);
   const paso=(k,pp,f)=>{let s=30;return pp.map(p=>{s+=p;const q=k*s;s-=q;return f(q,s);});};
@@ -176,7 +239,16 @@ slide({build(c){
   }];
 }});
 
-/* ---------- 2 · Tipos de estudio ---------- */
+/* ---------- 2 · Entrada al bloque de investigación y datos ---------- */
+slide({kicker:K0,title:'Investigar empieza con una pregunta',build(c){
+  return entrada(c,{gancho:'¿Por qué desertan los estudiantes de primer semestre?',
+    sub:'Para responder una pregunta así con datos hay que tomar cinco decisiones:',reto:'clasificar las variables de una base real',
+    paradas:[{q:['¿Cómo se diseña','el estudio?'],d:'experimental u observacional'},{q:['¿Hasta dónde','se quiere llegar?'],d:'los cinco niveles'},
+      {q:['¿Qué se mide?'],d:'variables categóricas y numéricas'},{q:['¿Qué explica','a qué?'],d:'dependiente e independiente'},
+      {q:['¿Cómo se analiza?'],d:'describir e inferir'}]});
+}});
+
+/* ---------- 3 · Tipos de estudio ---------- */
 slide({kicker:K0,title:'Tipos de estudio',build(c){
   const g=G(c.svg),r=rng(14);
   const q=tx(g,96,208,'Una misma pregunta, dos formas de responderla: ¿la tutoría reduce la deserción?','txt');
@@ -209,7 +281,7 @@ slide({kicker:K0,title:'Tipos de estudio',build(c){
     T=>{fadeIn(T,E.cn,0,{st:.1});fadeIn(T,O.cn,.4,{st:.1});}];
 }});
 
-/* ---------- 3 · Niveles de investigación ---------- */
+/* ---------- 4 · Niveles de investigación ---------- */
 slide({kicker:K0,title:'Niveles de investigación',build(c){
   const g=G(c.svg),base=770;
   const intro=tx(g,96,208,'Lo que se quiere saber define el nivel. Ejemplo: la deserción en el primer semestre.','txt');
@@ -234,7 +306,103 @@ slide({kicker:K0,title:'Niveles de investigación',build(c){
       drawIn(T,arrow,.5,1.4);T.to(head,{opacity:1,duration:.2},1.85);fadeIn(T,note,1.2,{st:.1});}];
 }});
 
-/* ---------- 4 · Cada nivel pide su análisis ---------- */
+/* ---------- 5 · Variables ---------- */
+slide({kicker:K0,title:'Variables: lo que se mide',build(c){
+  const g=G(c.svg);
+  const intro=tx(g,96,208,'Una variable es una característica que cambia de una unidad de análisis a otra: aquí, de un estudiante a otro.','txt');
+  // [nombre, valor, tipo (0 categórica, 1 numérica), subtipo (0 nominal o discreta, 1 ordinal o continua)]
+  const V=[['Jornada','nocturna',0,0],['Trabaja','sí',0,0],['Programa','Contaduría',0,0],['Estrato','2',0,1],
+    ['Créditos inscritos','18',1,0],['Hermanos','3',1,0],['Asistencia','87,5 %',1,1],['Distancia','12,4 km',1,1]];
+  const CW=264,CH=52,BX=[96,840],BW=664,col=t=>t?C.ml:C.st,tin=t=>t?C.mlT:C.stT;
+  // las dos familias y, dentro de cada una, la pregunta que las divide
+  const cajas=[0,1].map(t=>{const gg=G(g),x=BX[t];
+    S('rect',{x,y:250,width:BW,height:450,rx:22,fill:tin(t)},gg);
+    pill(gg,x+28,300,t?'NUMÉRICAS':'CATEGÓRICAS',col(t),C.w);
+    tx(gg,x+28,344,t?'Cuantitativas: cuentan o miden una cantidad':'Cualitativas: clasifican en grupos','sm');return gg;});
+  const SUB=[[['Nominal','sin orden entre los grupos'],['Ordinal','los grupos tienen orden'],'¿tiene orden?'],
+    [['Discreta','se cuenta: valores enteros'],['Continua','se mide: admite decimales'],'¿se cuenta o se mide?']];
+  const subs=[0,1].map(t=>{const gg=G(g),x=BX[t];
+    tx(gg,x+BW-28,300,SUB[t][2],'mono',{'text-anchor':'end',style:`font-size:17px;fill:${col(t)}`});
+    S('line',{x1:x+BW/2,x2:x+BW/2,y1:378,y2:676,stroke:C.w,'stroke-width':3},gg);
+    [0,1].forEach(k=>{tx(gg,x+28+k*BW/2,410,SUB[t][k][0],'h3');tx(gg,x+28+k*BW/2,436,SUB[t][k][1],'sm');});return gg;});
+  // la ficha de un estudiante: cada dato es una variable
+  const ficha=G(g);S('rect',{x:620,y:236,width:360,height:600,rx:22,fill:C.w,stroke:C.frame,'stroke-width':1.5},ficha);
+  person(ficha,672,300,1.4,C.dot);tx(ficha,704,296,'Ficha de matrícula','h3');tx(ficha,704,322,'estudiante n.º 0347','sm');
+  const cnt1=[0,0],cnt2={};
+  const chips=V.map((v,i)=>{const gg=G(g),r=S('rect',{x:0,y:0,width:CW,height:CH,rx:CH/2,fill:C.w,stroke:C.frame,'stroke-width':2},gg);
+    tx(gg,20,34,v[0],'lab',{style:'font-size:18px'});tx(gg,CW-20,34,v[1],'mono',{'text-anchor':'end',style:`font-size:16px;fill:${C.sub}`});
+    const t=v[2],j=cnt1[t]++,kk=t+'-'+v[3],m=cnt2[kk]=(cnt2[kk]||0)+1;
+    gsap.set(gg,{x:668,y:350+i*58});
+    return{gg,r,t,p1:{x:BX[t]+28+(j%2)*304,y:400+Math.floor(j/2)*72},p2:{x:BX[t]+28+v[3]*BW/2,y:470+(m-1)*66}};});
+  // la trampa: un número que no es numérico
+  const est=chips[3],tr=txl(g,BX[0]+28+BW/2,566,['Es un número, pero el estrato 3','no es el triple del estrato 1'],'sm',24,{style:`fill:${C.ink}`});
+  // el tipo decide qué se puede calcular
+  const cierre=tx(g,800,748,'El tipo decide qué se puede calcular','h3',{'text-anchor':'middle'});
+  const mC=G(g);[56,34,20].forEach((h,i)=>S('rect',{x:96+i*32,y:838-h,width:24,height:h,rx:3,fill:C.st},mC));
+  tx(mC,212,806,'Frecuencias, proporciones y moda','lab');tx(mC,212,832,'gráfico de barras, tabla de contingencia','sm');
+  const mN=G(g);[8,18,32,48,56,46,30,16,7].forEach((h,i)=>S('rect',{x:840+i*15,y:838-h,width:13,height:h,fill:C.ml},mN));
+  tx(mN,1000,806,'Media, mediana y desviación','lab');tx(mN,1000,832,'histograma, diagrama de caja','sm');
+  hide(cajas,subs,tr,cierre,mC,mN);
+  return[T=>{fadeIn(T,intro,.2);fadeIn(T,ficha,.4);T.from(chips.map(k=>k.gg),{opacity:0,duration:.4,stagger:.08},.8);},
+    T=>{T.to(ficha,{opacity:0,duration:.4},0);fadeIn(T,cajas,.2,{st:.15});
+      chips.forEach((k,i)=>{T.to(k.gg,{x:k.p1.x,y:k.p1.y,duration:.9,ease:'power2.inOut'},.6+i*.07);T.to(k.r,{attr:{stroke:col(k.t)},duration:.4},1.2+i*.07);});},
+    T=>{fadeIn(T,subs,0,{st:.2});chips.forEach((k,i)=>T.to(k.gg,{x:k.p2.x,y:k.p2.y,duration:.8,ease:'power2.inOut'},.5+i*.06));},
+    T=>{T.to(est.r,{attr:{stroke:C.ink,'stroke-width':4},duration:.4},0);fadeIn(T,tr,.3,{st:.1});
+      fadeIn(T,cierre,1.2);fadeIn(T,mC,1.6);fadeIn(T,mN,1.9);}];
+}});
+
+/* ---------- 6 · Dependiente e independiente ---------- */
+slide({kicker:K0,title:'Variable dependiente e independiente',build(c){
+  const g=G(c.svg);
+  const q=tx(g,96,208,'Pregunta explicativa: ¿la tutoría reduce la deserción?','txt');
+  // el papel de cada variable en la pregunta
+  const D=G(g);
+  // la descripción de Y va alineada a la derecha para no cruzarse con la flecha de la variable de control
+  const caja=(x,pl,nom,tipo,desc,der)=>{const gg=G(D);pill(gg,x,300,pl,C.ink,C.soft);
+    S('rect',{x,y:322,width:340,height:130,rx:20,fill:C.w,stroke:C.ink,'stroke-width':2.5},gg);
+    tx(gg,x+28,384,nom,'h2');tx(gg,x+28,424,tipo,'sm',{style:`fill:${C.st}`});
+    txl(gg,der?x+340:x,492,desc,'sm',24,der?{'text-anchor':'end'}:{});return gg;};
+  const bX=caja(150,'VARIABLE INDEPENDIENTE · X','Tutoría','categórica: asiste / no asiste',['La causa supuesta:','la que se cree que influye']);
+  const bY=caja(1110,'VARIABLE DEPENDIENTE · Y','Deserción','categórica: desertó / continuó',['El efecto:','lo que se quiere explicar'],1);
+  const fl=S('line',{x1:506,x2:1086,y1:387,y2:387,stroke:C.ink,'stroke-width':3},D),fh=arrowHead(D,1098,387,0,C.ink,1.1);
+  const flT=tx(D,796,370,'influye en','lab',{'text-anchor':'middle'});
+  // la variable de control: la misma que confundía el estudio observacional
+  const ctl=G(D);pill(ctl,670,556,'VARIABLE DE CONTROL',C.ml,C.mlT);
+  S('rect',{x:670,y:578,width:260,height:90,rx:20,fill:C.w,stroke:C.ml,'stroke-width':2.5,'stroke-dasharray':'8 6'},ctl);
+  tx(ctl,698,634,'Trabaja','h2');
+  const cl=[[670,623,430,462],[930,623,1170,462]].map(([x1,y1,x2,y2])=>{const a=Math.atan2(y2-y1,x2-x1);
+    return{l:S('line',{x1,y1,x2:x2-12*Math.cos(a),y2:y2-12*Math.sin(a),stroke:C.ml,'stroke-width':2.5,'stroke-dasharray':'7 6'},ctl),h:arrowHead(ctl,x2,y2,a*180/Math.PI,C.ml,.9)};});
+  const ctT=txl(ctl,800,716,['También influye en las dos: si no se tiene en cuenta,','confunde la relación entre X y Y.'],'sm',24,{'text-anchor':'middle'});
+  // la pregunta decide el papel
+  const R=G(g);
+  const h=tx(R,96,268,'La pregunta decide el papel, no la variable','h2');
+  const hd=[['PREGUNTA',96],['X · INDEPENDIENTES',600],['Y · DEPENDIENTE',1200]].map(([t,x])=>tx(R,x,330,t,'kick',{style:'font-size:13px'}));
+  const chip=(p,x,y,t,num)=>{const gg=G(p),w=t.length*10.5+40;
+    S('rect',{x,y:y-30,width:w,height:46,rx:23,fill:num?C.mlT:C.stT,stroke:num?C.ml:C.st,'stroke-width':1.8},gg);
+    tx(gg,x+20,y,t,'lab',{style:'font-size:19px'});return gg;};
+  const flecha=y=>{const gg=G(R);S('line',{x1:1000,x2:1158,y1:y-7,y2:y-7,stroke:C.ink,'stroke-width':2},gg);arrowHead(gg,1170,y-7,0,C.ink,.9);return gg;};
+  const f1=[tx(R,96,400,'¿La asistencia sube la nota?','txt'),chip(R,600,400,'Asistencia',1),flecha(400),chip(R,1200,400,'Nota',1)];
+  const sepF=S('line',{x1:96,x2:1500,y1:452,y2:452,stroke:C.line,'stroke-width':2},R);
+  const f2=[tx(R,96,520,'¿Quién desertará el próximo semestre?','txt'),chip(R,696,520,'Asistencia',1),chip(R,855,520,'Trabaja',0),flecha(520),chip(R,1200,520,'Deserta',0)];
+  const nota=chip(R,1200,400,'Nota',1);
+  const leyR=G(R);S('circle',{cx:1262,cy:262,r:8,fill:C.stT,stroke:C.st,'stroke-width':1.8},leyR);tx(leyR,1278,268,'categórica','sm');
+  S('circle',{cx:1382,cy:262,r:8,fill:C.mlT,stroke:C.ml,'stroke-width':1.8},leyR);tx(leyR,1398,268,'numérica','sm');
+  // mismo papel, otro nombre
+  const Vg=G(g);S('line',{x1:96,x2:1500,y1:606,y2:606,stroke:C.line,'stroke-width':2},Vg);
+  tx(Vg,96,660,'Estadística','h3',{style:`fill:${C.st}`});tx(Vg,600,660,'independiente · explicativa · predictora','txt');tx(Vg,1200,660,'dependiente · respuesta','txt');
+  tx(Vg,96,720,'Machine learning','h3',{style:`fill:${C.ml}`});tx(Vg,600,720,'características (features)','txt');tx(Vg,1200,720,'variable objetivo (target)','txt');
+  const fin=tx(g,800,810,'Mismo papel, otro nombre: X son las columnas que entran al modelo; y, la que se quiere predecir.','lab',{'text-anchor':'middle'});
+  prepDraw(fl,cl.map(k=>k.l));hide(bX,bY,fh,flT,ctl,cl.map(k=>k.h),R,Vg,fin);
+  return[T=>{fadeIn(T,q,.2);popIn(T,bX,.5,{s0:.8,ease:'back.out(1.4)'});drawIn(T,fl,1,.8);T.to(fh,{opacity:1,duration:.2},1.75);fadeIn(T,flT,1.4,{dy:0});
+      popIn(T,bY,1.8,{s0:.8,ease:'back.out(1.4)'});},
+    T=>{fadeIn(T,ctl,0,{dy:0});drawIn(T,cl.map(k=>k.l),.4,.7,{st:.15});T.to(cl.map(k=>k.h),{opacity:1,duration:.2},1.1);},
+    T=>{T.to([q,D],{opacity:0,duration:.4},0);T.to(R,{opacity:1,duration:.01},.4);
+      fadeIn(T,[h,leyR],.4,{st:.1});fadeIn(T,hd,.6,{st:.08,dy:0});fadeIn(T,f1,.9,{st:.12});T.from(sepF,{opacity:0,duration:.3},1.3);
+      fadeIn(T,f2[0],1.6);T.fromTo(nota,{x:0,y:0},{x:-600,y:120,duration:1.1,ease:'power2.inOut'},2);fadeIn(T,f2.slice(1),2.6,{st:.12});},
+    T=>{fadeIn(T,Vg,0);fadeIn(T,fin,.6);}];
+}});
+
+/* ---------- 7 · Cada nivel pide su análisis ---------- */
 slide({kicker:K0,title:'Cada nivel pide su análisis',build(c){
   const g=G(c.svg),r=rng(27),{xs,ys}=STUD;
   const E=[['EXPLORATORIO','Sin análisis estadístico','Entrevistas, observación, lectura de casos'],
@@ -273,42 +441,42 @@ slide({kicker:K0,title:'Cada nivel pide su análisis',build(c){
       T.to([line,rt],{opacity:.25,duration:.5},.9);drawIn(T,[lw,ln],1.2,.9,{st:.3});fadeIn(T,lg,1.4);}];
 }});
 
-/* ---------- 5 · Estadística: describir e inferir ---------- */
+/* ---------- 8 · Estadística: describir e inferir ---------- */
 slide({kicker:K0,title:'Estadística: describir e inferir',build(c){
-  const g=G(c.svg),{ys}=FERT,r=rng(9),n=ys.length;
+  const g=G(c.svg),{ys}=MUNI,r=rng(9),n=ys.length;
   const m=mean(ys),sd=Math.sqrt(ys.reduce((s,v)=>s+(v-m)**2,0)/(n-1));
   const def=txl(g,96,208,['Analizar datos es convertir observaciones en respuestas.','La estadística aporta el método para hacerlo midiendo la incertidumbre.'],'txt',30);
   const sep=S('line',{x1:770,x2:770,y1:296,y2:790,stroke:C.line,'stroke-width':2},g);
   // descriptiva: lo que se ve en la muestra
   const c0=G(g);pill(c0,96,322,'DESCRIPTIVA',C.ink,C.soft);tx(c0,96,378,'¿Cómo son mis datos?','h2');
-  tx(c0,96,412,'Resume lo observado: 60 lotes de maíz, rendimiento en t/ha','sm');
-  const lo=Math.floor(Math.min(...ys)),hi=Math.ceil(Math.max(...ys)),nb=(hi-lo)*2,cnt=Array(nb).fill(0);
-  ys.forEach(v=>cnt[Math.min(nb-1,Math.floor((v-lo)*2))]++);
+  tx(c0,96,412,'Resume lo observado: pobreza multidimensional (IPM) de 60 municipios','sm');
+  const BW=5,lo=Math.floor(Math.min(...ys)/BW)*BW,hi=Math.ceil(Math.max(...ys)/BW)*BW,nb=(hi-lo)/BW,cnt=Array(nb).fill(0);
+  ys.forEach(v=>cnt[Math.min(nb-1,Math.floor((v-lo)/BW))]++);
   const hx=lin(lo,hi,96,696),bw=600/nb,cm=Math.max(...cnt);
   S('line',{x1:96,x2:696,y1:700,y2:700,stroke:C.frame,'stroke-width':1.5},c0);
-  for(let v=lo;v<=hi;v++)tx(c0,hx(v),726,v,'tick',{'text-anchor':'middle'});
+  for(let v=Math.ceil(lo/10)*10;v<=hi;v+=10)tx(c0,hx(v),726,v+' %','tick',{'text-anchor':'middle'});
   const bars=cnt.map((k,i)=>S('rect',{x:96+i*bw+3,y:700-k/cm*220,width:bw-6,height:k/cm*220,rx:3,fill:C.dot},c0));
   const ml=S('line',{x1:hx(m),x2:hx(m),y1:462,y2:700,stroke:C.ink,'stroke-width':2.5,'stroke-dasharray':'6 6'},c0);
-  const mt=tx(c0,96,772,'','mono',{style:'font-size:18px'}),st=tx(c0,330,772,`desviación = ${fmt(sd)} t/ha`,'mono',{style:`font-size:18px;fill:${C.sub}`});
+  const mt=tx(c0,96,772,'','mono',{style:'font-size:18px'}),st=tx(c0,330,772,`desviación = ${fmt(sd)} puntos`,'mono',{style:`font-size:18px;fill:${C.sub}`});
   // inferencial: cada muestra da una media distinta
   const c1=G(g);pill(c1,840,322,'INFERENCIAL',C.st,C.stT);tx(c1,840,378,'¿Y en toda la población?','h2');
   tx(c1,840,412,'Cada muestra da una media distinta: de ahí sale la incertidumbre','sm');
   const pop=Array.from({length:240},()=>{const a=r()*6.283,d=Math.sqrt(r());
     return{el:S('circle',{cx:1180+Math.cos(a)*d*300,cy:512+Math.sin(a)*d*50,r:4,fill:C.frame},c1),v:m+sd*randn(r)};});
-  const NS=30,K=30,sem=sd/Math.sqrt(NS),rx=lin(m-1,m+1,880,1480);
+  const NS=30,K=30,sem=sd/Math.sqrt(NS),rx=lin(m-10,m+10,880,1480);
   S('line',{x1:880,x2:1480,y1:700,y2:700,stroke:C.frame,'stroke-width':1.5},c1);
-  [-1,-.5,0,.5,1].forEach(d=>tx(c1,rx(m+d),726,fmt(m+d),'tick',{'text-anchor':'middle'}));
-  tx(c1,1480,596,'media de cada muestra (t/ha)','sm',{'text-anchor':'end'});
-  const stack={},muestras=Array.from({length:K},()=>{const s=shuffle(pop.slice(),r).slice(0,NS),mu=mean(s.map(p=>p.v)),b=Math.round((mu-m)/.06),k=stack[b]=(stack[b]||0)+1;
-    return{els:s.map(p=>p.el),dot:S('circle',{cx:rx(m+b*.06),cy:520,r:6.5,fill:C.st},c1),cy:690-(k-1)*14};});
+  [-10,-5,0,5,10].forEach(d=>tx(c1,rx(m+d),726,fmt(m+d),'tick',{'text-anchor':'middle'}));
+  tx(c1,1480,596,'IPM medio de cada muestra (%)','sm',{'text-anchor':'end'});
+  const stack={},muestras=Array.from({length:K},()=>{const s=shuffle(pop.slice(),r).slice(0,NS),mu=mean(s.map(p=>p.v)),b=Math.round((mu-m)/.6),k=stack[b]=(stack[b]||0)+1;
+    return{els:s.map(p=>p.el),dot:S('circle',{cx:rx(m+b*.6),cy:520,r:6.5,fill:C.st},c1),cy:690-(k-1)*14};});
   const iv=G(c1);S('line',{x1:rx(m-2*sem),x2:rx(m+2*sem),y1:748,y2:748,stroke:C.st,'stroke-width':4,'stroke-linecap':'round'},iv);
   [m-2*sem,m+2*sem].forEach(v=>S('line',{x1:rx(v),x2:rx(v),y1:739,y2:757,stroke:C.st,'stroke-width':4,'stroke-linecap':'round'},iv));
-  const it=tx(c1,1180,790,`95 % de las medias: entre ${fmt(m-2*sem,2)} y ${fmt(m+2*sem,2)} t/ha`,'mono',{'text-anchor':'middle',style:`font-size:18px;fill:${C.st}`});
+  const it=tx(c1,1180,790,`95 % de las medias: entre ${fmt(m-2*sem)} % y ${fmt(m+2*sem)} %`,'mono',{'text-anchor':'middle',style:`font-size:18px;fill:${C.st}`});
   const fin=tx(g,800,852,'¿Y si lo que necesito es anticipar un caso nuevo?','h2',{'text-anchor':'middle',style:`fill:${C.ml}`});
   hide(sep,c1,ml,st,muestras.map(s=>s.dot),iv,it,fin);
   return[T=>{fadeIn(T,def,.2,{st:.12});fadeIn(T,[...c0.querySelectorAll('text')].slice(0,3),.6,{st:.08});
       T.from(bars,{attr:{height:0,y:700},duration:.7,ease:'power2.out',stagger:.04},.9);T.to(ml,{opacity:1,duration:.4},1.7);
-      countTo(T,mt,0,m,1.7,1,v=>`media = ${fmt(v)} t/ha`);fadeIn(T,st,2.3);},
+      countTo(T,mt,0,m,1.7,1,v=>`media = ${fmt(v)} %`);fadeIn(T,st,2.3);},
     T=>{T.to([sep,c1],{opacity:1,duration:.4},0);popIn(T,pop.map(p=>p.el),.2,{st:{amount:.6,from:'random'},d:.3});
       let t=1.1;muestras.forEach((s,i)=>{const d=i<3?.9:.14;
         T.to(s.els,{attr:{fill:C.st},duration:d*.25},t);
@@ -318,60 +486,240 @@ slide({kicker:K0,title:'Estadística: describir e inferir',build(c){
     T=>{fadeIn(T,fin,0,{dy:20,d:.7});}];
 }});
 
-/* ---------- 6 · Qué es un modelo ---------- */
+/* ---------- 9 · Reto: tipos de variables ---------- */
+slide({kicker:K0,title:'Reto: clasifique las variables',build(c){
+  const g=G(c.svg),svg=c.svg;
+  c.root.addEventListener('click',e=>e.stopPropagation());   // aquí el clic se usa para jugar; las flechas siguen pasando de lámina
+  const intro=tx(g,96,208,'Base de datos de los municipios de Colombia. Arrastre cada variable a su tipo y pulse «Revisar».','txt');
+  const TIP=[['Categórica','nominal',C.st,C.stT],['Categórica','ordinal',C.st,C.stT],['Numérica','discreta',C.ml,C.mlT],['Numérica','continua',C.ml,C.mlT]];
+  const BW=338,BX=k=>96+k*(BW+18),BY=448,BH=332,CW=318,CH=54;
+  const cajas=TIP.map(([a,b,col,tint],k)=>{const gg=G(g),x=BX(k);S('rect',{x,y:BY,width:BW,height:BH,rx:20,fill:tint},gg);
+    tx(gg,x+20,BY+34,a,'sm',{style:`fill:${col}`});tx(gg,x+20,BY+62,b,'h3');return gg;});
+  // [nombre, ejemplo de valor, tipo correcto]
+  const V=[['Región','Andina, Caribe…',0],['Tiene aeropuerto','sí / no',0],['Categoría municipal','de 1 a 6',1],['Riesgo de desastre','bajo / medio / alto',1],
+    ['Número de colegios','12',2],['Número de hogares','8 450',2],['IPM','46,3 %',3],['Área','1 284,5 km²',3]];
+  const orden=[2,6,0,5,3,7,1,4];   // la bandeja no las muestra agrupadas
+  const bandeja=i=>{const j=orden.indexOf(i);return{x:158+(j%4)*328,y:250+Math.floor(j/4)*68};};
+  const chips=V.map(([n,v],i)=>{const gg=G(g);S('rect',{x:0,y:0,width:CW,height:CH,rx:16,fill:C.w,stroke:C.frame,'stroke-width':2},gg);
+    tx(gg,18,24,n,'lab',{style:'font-size:18px'});tx(gg,18,44,v,'sm',{style:'font-size:14px'});
+    const t=bandeja(i);gsap.set(gg,{x:t.x,y:t.y});return{gg,mk:null};});
+  const donde=Array(V.length).fill(-1),lista=[[],[],[],[]];let resuelto=false;
+  const quitarMarca=i=>{if(chips[i].mk){chips[i].mk.remove();chips[i].mk=null;}};
+  const acomodar=(k,T,at=0)=>{const L=lista[k],sp=L.length>4?Math.min(62,200/(L.length-1)):62;
+    L.forEach((i,j)=>(T||gsap).to(chips[i].gg,{x:BX(k)+10,y:BY+84+j*sp,duration:.35,ease:'power2.out'},T?at:undefined));};
+  const colocar=(i,k)=>{const a=donde[i];if(a>=0)lista[a].splice(lista[a].indexOf(i),1);donde[i]=k;quitarMarca(i);msg.textContent='';
+    if(k>=0){lista[k].push(i);acomodar(k);}else{const t=bandeja(i);gsap.to(chips[i].gg,{x:t.x,y:t.y,duration:.35});}if(a>=0&&a!==k)acomodar(a);};
+  chips.forEach((ch,i)=>arrastrable(ch.gg,svg,()=>{if(resuelto)return false;gsap.killTweensOf(ch.gg);g.appendChild(ch.gg);ch.x0=gsap.getProperty(ch.gg,'x');ch.y0=gsap.getProperty(ch.gg,'y');},
+    (dx,dy)=>gsap.set(ch.gg,{x:ch.x0+dx,y:ch.y0+dy}),
+    ()=>{const cx=gsap.getProperty(ch.gg,'x')+CW/2,cy=gsap.getProperty(ch.gg,'y')+CH/2,k=[0,1,2,3].find(k=>cx>=BX(k)&&cx<=BX(k)+BW&&cy>=BY&&cy<=BY+BH);
+      colocar(i,k===undefined?-1:k);}));
+  const marcar=()=>{let ok=0;V.forEach((v,i)=>{quitarMarca(i);if(donde[i]<0)return;const bien=donde[i]===v[2];ok+=bien;chips[i].mk=marca(chips[i].gg,CW-26,CH/2,bien);});return ok;};
+  const msg=tx(g,270,830,'','lab');
+  const rev=boton(g,96,804,150,'Revisar',C.ink,()=>{if(resuelto)return;const ok=marcar(),f=donde.filter(d=>d<0).length;
+    msg.textContent=f?`${ok} bien ${ok===1?'ubicada':'ubicadas'} · ${f===1?'falta 1':`faltan ${f}`} por ubicar`:ok===V.length?'¡Todas correctas!':`${ok} de ${V.length} correctas: mueva las marcadas con ✗ y revise de nuevo`;});
+  const pista=tx(g,1504,830,'Flecha →: ver la solución','sm',{'text-anchor':'end'});
+  const nota=tx(g,96,830,'«Categoría municipal» es un número, pero ordinal: como el estrato, la 2 no es el doble de la 1.','lab',{style:`fill:${C.ml}`});
+  hide(cajas,chips.map(k=>k.gg),rev,pista,nota);
+  return[T=>{fadeIn(T,intro,.2);fadeIn(T,cajas,.4,{st:.1});popIn(T,chips.map(k=>k.gg),.8,{st:.07,s0:.7});fadeIn(T,[rev,pista],1.4,{dy:0});},
+    T=>{T.call(()=>{resuelto=true;},null,0);T.to([rev,pista,msg],{opacity:0,duration:.3},0);
+      lista.forEach(L=>L.length=0);V.forEach((v,i)=>{donde[i]=v[2];lista[v[2]].push(i);quitarMarca(i);});
+      [0,1,2,3].forEach(k=>acomodar(k,T,.2+k*.15));
+      T.call(()=>marcar(),null,1);fadeIn(T,nota,1.2);}];
+}});
+
+/* ---------- 10 · Entrada al bloque de conceptos básicos ---------- */
+slide({kicker:K0b,title:'Antes de cualquier técnica',build(c){
+  return entrada(c,{gancho:'¿Cómo aprende una máquina a partir de datos?',
+    sub:'Cinco preguntas para entenderlo, en este orden:',reto:'¿supervisado o no supervisado?',
+    paradas:[{q:['¿Qué es','un modelo?'],d:'de la manzana al río'},{q:['¿Qué es','un algoritmo?'],d:'los pasos que ajustan el modelo'},
+      {q:['¿Programar o','aprender las reglas?'],d:'IA, machine learning, deep learning'},{q:['¿Qué significa','aprender?'],d:'tarea, experiencia y desempeño'},
+      {q:['¿Con respuesta','o sin ella?'],d:'supervisado y no supervisado'}]});
+}});
+
+/* ---------- 11 · Qué es un modelo ---------- */
 slide({kicker:K0b,title:'¿Qué es un modelo?',build(c){
+  const g=G(c.svg),id=Math.random().toString(36).slice(2,7),defs=S('defs',{},g);
+  const rg=S('radialGradient',{id:'ap'+id,cx:'38%',cy:'34%',r:'72%'},defs);
+  [['0','#f47a63'],['.55','#d8322b'],['1','#8f1a17']].forEach(([o,col])=>S('stop',{offset:o,'stop-color':col},rg));
+  const hg=S('linearGradient',{id:'hj'+id,x1:'0',y1:'0',x2:'1',y2:'1'},defs);
+  [['0','#8fd062'],['1','#3b8a2e']].forEach(([o,col])=>S('stop',{offset:o,'stop-color':col},hg));
+  const CUERPO='M0,-95 C30,-125 105,-125 135,-60 C165,10 130,110 70,140 C45,152 20,148 0,138 C-20,148 -45,152 -70,140 C-130,110 -165,10 -135,-60 C-105,-125 -30,-125 0,-95 Z';
+  const TALLO='M0,-92 C2,-118 9,-140 20,-160',HOJA='M14,-128 C40,-172 96,-176 118,-150 C88,-118 42,-112 14,-128 Z',VENA='M18,-129 C52,-146 84,-154 112,-150';
+  // una manzana dibujada por capas; modo: 'foto' (degradados y volumen), 'icono' (colores planos) o 'trazo' (solo líneas)
+  const manzana=(p,tf,modo)=>{const a=G(p,{transform:tf}),o={a};
+    if(modo==='foto'){o.sombra=S('ellipse',{cx:0,cy:166,rx:118,ry:15,fill:C.ink,opacity:.12},a);
+      o.relleno=S('path',{d:CUERPO,fill:`url(#ap${id})`},a);
+      o.brillo=S('ellipse',{cx:-72,cy:-38,rx:20,ry:44,fill:'#fff',opacity:.5,transform:'rotate(24 -72 -38)'},a);}
+    else if(modo==='icono')S('path',{d:CUERPO,fill:C.bad},a);
+    o.tallo=S('path',{d:TALLO,fill:'none',stroke:modo==='foto'?'#6b4426':C.ink,'stroke-width':modo==='trazo'?10:8,'stroke-linecap':'round'},a);
+    if(modo!=='trazo'){o.hoja=G(a);S('path',{d:HOJA,fill:modo==='foto'?`url(#hj${id})`:C.ok},o.hoja);
+      if(modo==='foto')S('path',{d:VENA,fill:'none',stroke:'#2f6e25','stroke-width':2},o.hoja);}
+    if(modo!=='icono')o.contorno=S('path',{d:CUERPO,fill:'none',stroke:C.ink,'stroke-width':modo==='trazo'?10:3,'stroke-linejoin':'round'},a);
+    return o;};
+  const M=manzana(g,'translate(400,478) scale(1.12)','foto');
+  prepDraw(M.contorno,M.tallo);
+  // a la derecha: los rasgos que se van eligiendo
+  const X=800,kR=tx(g,X,272,'CONSTRUYAMOS UNA MANZANA','kick',{style:'font-size:13px'});
+  const ras=['Forma: un contorno redondeado','Color: rojo, más oscuro en el borde','Tallo y hoja','Brillo y sombra: parece tener volumen'].map((t,i)=>{const gg=G(g),y=322+i*46;
+    S('circle',{cx:X+12,cy:y-7,r:13,fill:C.mlT},gg);tx(gg,X+12,y-2,String(i+1),'pill',{'text-anchor':'middle',fill:C.ml});tx(gg,X+40,y,t,'lab');return gg;});
+  const preg=tx(g,X,560,'¿Es una manzana?','ttl',{style:`fill:${C.ml}`});
+  const resp=txl(g,X,616,['No. Es la representación de una manzana:','no se come, no pesa, no huele.'],'txt',30);
+  const cap=[tx(g,400,716,'Ceci n’est pas une pomme.','h3',{'text-anchor':'middle',style:'font-style:italic;font-weight:500'}),
+    tx(g,400,746,'René Magritte, 1964','sm',{'text-anchor':'middle'})];
+  // de lo más detallado a lo más abstracto
+  const def=[...txl(g,X,284,['Un modelo es una representación','simplificada de la realidad.'],'h2',40),
+    ...txl(g,X,378,['Se queda con los rasgos que importan para la pregunta','y deja el resto por fuera.'],'txt',28)];
+  const RX=[850,980,1110,1240,1385],RY=548,esc='scale(.3)';
+  const dat=G(g);txl(dat,RX[4],RY-6,['rojo · 180 g','8 cm'],'mono',28,{'text-anchor':'middle',style:'font-size:17px'});
+  // cada representación va en su propio grupo: la animación de entrada no debe pisar su escala
+  const rep=(i,modo)=>{const w=G(g);manzana(w,`translate(${RX[i]},${RY}) ${esc}`,modo);return w;};
+  const reps=[rep(0,'foto'),rep(1,'icono'),rep(2,'trazo'),tx(g,RX[3],RY+8,'manzana','mono',{'text-anchor':'middle'}),dat];
+  const rlab=['dibujo','ícono','trazo','palabra','datos'].map((t,i)=>tx(g,RX[i],636,t,'sm',{'text-anchor':'middle'}));
+  const fl=S('line',{x1:X,x2:1450,y1:676,y2:676,stroke:C.ink,'stroke-width':2},g),fh=arrowHead(g,1462,676,0,C.ink,.9);
+  const fx=[tx(g,X,706,'más detalle','tick'),tx(g,1462,706,'más abstracto','tick',{'text-anchor':'end'})];
+  const fin=[tx(g,X,770,'Más abstracto no es peor: conviene el que responde la pregunta.','lab'),
+    tx(g,X,820,'Las matemáticas también sirven para representar la realidad →','h3',{style:`fill:${C.ml}`})];
+  prepDraw(fl);hide(M.relleno,M.brillo,M.sombra,M.hoja,ras,preg,resp,cap,def,reps,rlab,fh,fx,fin);
+  return[T=>{fadeIn(T,kR,.3,{dy:0});drawIn(T,M.contorno,.5,1.6,{ease:'power1.inOut'});fadeIn(T,ras[0],.9);},
+    T=>{T.to(M.relleno,{opacity:1,duration:.9},0);T.to(M.contorno,{opacity:.25,duration:.9},.2);fadeIn(T,ras[1],.3);},
+    T=>{drawIn(T,M.tallo,0,.5);popIn(T,M.hoja,.4,{s0:.3});fadeIn(T,ras[2],.3);},
+    T=>{T.to(M.sombra,{opacity:.12,duration:.8},0);T.to(M.brillo,{opacity:.5,duration:.8},.2);fadeIn(T,ras[3],.3);
+      popIn(T,preg,1,{s0:.6,ease:'back.out(1.6)'});},
+    T=>{fadeIn(T,resp,0,{st:.15});fadeIn(T,cap,.8,{st:.2});},
+    T=>{T.to([kR,ras,preg,resp],{opacity:0,duration:.4},0);fadeIn(T,def,.5,{st:.1});
+      popIn(T,reps,1.2,{st:.25,s0:.4});fadeIn(T,rlab,1.4,{st:.25,dy:6});drawIn(T,fl,2.2,.8);T.to(fh,{opacity:1,duration:.2},2.9);fadeIn(T,fx,2.9,{dy:0});
+      fadeIn(T,fin[0],3.4);fadeIn(T,fin[1],4,{dx:-20,dy:0,d:.7});}];
+}});
+
+/* ---------- 12 · Las matemáticas también representan la realidad ---------- */
+slide({kicker:K0b,title:'Las matemáticas también representan la realidad',build(c){
   const g=G(c.svg),{N,P,sim,stor,obs,rmse,kb}=RIO,KI=.04,RS=1.7,P2=P.map(p=>p*1.5);
   const ymax=Math.ceil(Math.max(...obs,...sim(KI),...sim(kb,P2))/20)*20;
-  const def=txl(g,96,252,['Una representación simplificada','de la realidad: ecuaciones que','imitan cómo se comporta un proceso.'],'h2',40);
-  const A=axes(g,{x:760,y:384,w:720,h:346,xd:[0,N],yd:[0,ymax],xt:[0,10,20,30,40,50,60],yt:[0,1,2,3,4].map(i=>i*ymax/4),xl:'Día',yl:'Caudal (m³/s)'});
-  const gr=G(g);tx(gr,760,226,'Lluvia (mm/día)','axl');S('line',{x1:760,x2:1480,y1:238,y2:238,stroke:C.frame,'stroke-width':1.5},gr);
-  const rain=P.map((p,i)=>S('rect',{x:A.sx(i+.5)-4,y:238,width:8,height:p*RS,rx:2,fill:'#8ea5f3'},gr));
+  const intro=tx(g,96,208,'Como el dibujo de la manzana, dos ecuaciones se quedan con lo esencial de un río.','txt');
+  // a la derecha, lo medido: lluvia arriba, caudal abajo
+  const A=axes(g,{x:820,y:420,w:660,h:310,xd:[0,N],yd:[0,ymax],xt:[0,10,20,30,40,50,60],yt:[0,1,2,3,4].map(i=>i*ymax/4),xl:'Día',yl:'Caudal (m³/s)'});
+  const gr=G(g);tx(gr,820,262,'Lluvia (mm/día)','axl');S('line',{x1:820,x2:1480,y1:274,y2:274,stroke:C.frame,'stroke-width':1.5},gr);
+  const rain=P.map((p,i)=>S('rect',{x:A.sx(i+.5)-4,y:274,width:8,height:p*RS,rx:2,fill:'#8ea5f3'},gr));
   const gl=G(g),gd=G(g);
   const dots=obs.map((v,i)=>S('circle',{cx:A.sx(i+.5),cy:A.sy(v),r:5,fill:C.dot},gd));
   const cpath=(k,pp)=>pathD(sim(k,pp).map((v,i)=>[A.sx(i+.5),A.sy(v)]));
-  const esc=S('path',{d:cpath(kb,P2),stroke:C.st,'stroke-width':3,fill:'none','stroke-dasharray':'7 7','stroke-linejoin':'round'},gl);
+  const escP=S('path',{d:cpath(kb,P2),stroke:C.st,'stroke-width':3,fill:'none','stroke-dasharray':'7 7','stroke-linejoin':'round'},gl);
   const curve=S('path',{d:cpath(KI),stroke:C.ml,'stroke-width':4,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'},gl);
-  const cur=S('line',{x1:A.sx(0),x2:A.sx(0),y1:238,y2:730,stroke:C.ink,'stroke-width':1.5,'stroke-dasharray':'4 5'},g);
-  const mueve=x=>{cur.setAttribute('x1',x);cur.setAttribute('x2',x);};
-  const lg1=[S('circle',{cx:1268,cy:359,r:5,fill:C.dot},g),tx(g,1280,364,'observado','sm')];
-  const lg2=[S('line',{x1:1378,x2:1404,y1:359,y2:359,stroke:C.ml,'stroke-width':4,'stroke-linecap':'round'},g),tx(g,1412,364,'modelo','sm')];
-  const lg3=[S('line',{x1:1010,x2:1040,y1:359,y2:359,stroke:C.st,'stroke-width':3,'stroke-dasharray':'7 7'},g),tx(g,1050,364,'si lloviera 50 % más','sm')];
-  // esquema: lluvia → cuenca que almacena → caudal
-  const sc=G(g);[[150,404,16],[172,396,20],[194,406,15]].forEach(p=>S('circle',{cx:p[0],cy:p[1],r:p[2],fill:C.frame},sc));
-  const gotas=[152,172,192].map(x=>S('line',{x1:x,y1:430,x2:x-6,y2:448,stroke:C.st,'stroke-width':2.5,'stroke-linecap':'round'},sc));
-  tx(sc,218,446,'P','mono',{style:`fill:${C.st}`});
-  const agua=S('rect',{x:122,y:500,width:106,height:50,fill:C.stT},sc);S('path',{d:'M120,462 V552 H230 V462',fill:'none',stroke:C.ink,'stroke-width':2.5,'stroke-linejoin':'round'},sc);
-  tx(sc,175,540,'S','mono',{'text-anchor':'middle'});
-  S('line',{x1:230,x2:292,y1:540,y2:540,stroke:C.ink,'stroke-width':2.5},sc);arrowHead(sc,304,540,0,C.ink,.9);tx(sc,314,548,'Q','mono',{style:`fill:${C.ml}`});
-  const St=stor(kb),Smax=Math.max(...St);
-  const dia=i=>{const h=10+St[i]/Smax*74;agua.setAttribute('y',550-h);agua.setAttribute('height',h);
-    gotas.forEach(d=>d.setAttribute('stroke-opacity',P[i]>0||i===N-1?1:.15));};dia(N-1);
-  const eq=[tx(g,390,474,'dS/dt = P − Q','mono',{style:'font-size:30px'}),tx(g,390,526,'Q = k · S','mono',{style:'font-size:30px'})];
-  const lg=txl(g,96,612,['S · agua almacenada en la cuenca','P · lluvia que entra','Q · caudal que sale','k · qué tan rápido drena la cuenca'],'sm',26);
+  const cur=S('line',{x1:A.sx(0),x2:A.sx(0),y1:274,y2:730,stroke:C.ink,'stroke-width':1.5,'stroke-dasharray':'4 5'},g);
+  const mueve=i=>{const x=A.sx(i+.5);cur.setAttribute('x1',x);cur.setAttribute('x2',x);};
+  const lg1=[S('circle',{cx:1268,cy:395,r:5,fill:C.dot},g),tx(g,1280,400,'observado','sm')];
+  const lg2=[S('line',{x1:1378,x2:1404,y1:395,y2:395,stroke:C.ml,'stroke-width':4,'stroke-linecap':'round'},g),tx(g,1412,400,'modelo','sm')];
+  const lg3=[S('line',{x1:1010,x2:1040,y1:395,y2:395,stroke:C.st,'stroke-width':3,'stroke-dasharray':'7 7'},g),tx(g,1050,400,'si lloviera 50 % más','sm')];
+  // a la izquierda, el paisaje: nube, cuenca, suelo que almacena, río y estación de aforo
+  const id='cl'+Math.random().toString(36).slice(2,7),L=G(g),cp=S('clipPath',{id},S('defs',{},L));
+  S('rect',{x:96,y:240,width:644,height:330,rx:18},cp);
+  const pn=G(L,{'clip-path':`url(#${id})`});
+  S('rect',{x:96,y:240,width:644,height:330,fill:'#eef3fd'},pn);
+  S('path',{d:'M96,440 L190,330 L260,380 L350,290 L450,400 L520,350 L640,430 L740,410 V570 H96 Z',fill:'#d6e4cc'},pn);
+  S('path',{d:'M96,470 L170,422 L250,452 L330,404 L420,456 L520,432 L600,466 L740,452 V570 H96 Z',fill:'#bcd3ad'},pn);
+  S('rect',{x:96,y:482,width:644,height:88,fill:'#ece2d3'},pn);
+  const agua=S('rect',{x:96,y:540,width:644,height:30,fill:'#8ea5f3',opacity:.8},pn);
+  S('line',{x1:96,x2:740,y1:482,y2:482,stroke:'#c4b298','stroke-width':2},pn);
+  const rio=S('path',{d:'M300,470 C380,480 430,462 500,472 S640,484 740,476',fill:'none',stroke:'#4f74e3','stroke-width':6,'stroke-linecap':'round','stroke-dasharray':'22 9'},pn);
+  // estación de aforo
+  S('rect',{x:652,y:418,width:6,height:58,fill:C.ink},pn);S('rect',{x:632,y:396,width:46,height:28,rx:5,fill:C.w,stroke:C.ink,'stroke-width':2},pn);
+  S('path',{d:'M640,416 l8,-8 l8,5 l8,-9 l8,4',fill:'none',stroke:C.ml,'stroke-width':2.2,'stroke-linejoin':'round'},pn);
+  const nube=G(pn);[[196,300,26],[230,284,36],[268,300,26],[232,306,28]].forEach(q=>S('circle',{cx:q[0],cy:q[1],r:q[2],fill:'#fff'},nube));
+  const gotas=Array.from({length:15},(_,j)=>S('line',{x1:186+j*6.6,y1:330,x2:183+j*6.6,y2:342,stroke:C.st,'stroke-width':2.5,'stroke-linecap':'round',opacity:0},pn));
+  S('rect',{x:96,y:240,width:644,height:330,rx:18,fill:'none',stroke:C.frame,'stroke-width':1.5},L);
+  const Qmax=Math.max(...obs,...sim(kb,P2)),Smax=Math.max(...stor(kb),...stor(kb,P2));
+  // estado del paisaje en el día i; t (segundos) mueve las gotas y la corriente
+  const paisaje=(i,t,pp,q,s)=>{
+    gotas.forEach((d,j)=>{const off=(t*300+j*43)%120;d.setAttribute('transform',`translate(0,${off.toFixed(1)})`);
+      d.setAttribute('opacity',pp[i]>0?(clamp(.35+pp[i]/25,0,1)*(1-off/130)).toFixed(2):0);});
+    rio.setAttribute('stroke-width',(3+q[i]/Qmax*13).toFixed(1));rio.style.strokeDashoffset=(-t*90).toFixed(1);
+    if(s){const h=6+s[i]/Smax*78;agua.setAttribute('y',570-h);agua.setAttribute('height',h);}};
+  // rótulos sobre el dibujo
+  const rot=(x,y,s,t,col)=>{const gg=G(g);tx(gg,x,y,s,'mono',{style:`fill:${col};font-size:22px`});tx(gg,x+22,y-1,t,'sm',{style:`fill:${C.ink}`});return gg;};
+  const rP=rot(300,292,'P','lluvia que entra',C.st),rS=rot(112,512,'S','agua almacenada en la cuenca',C.ink),
+    rQ=rot(470,520,'Q','caudal que sale',C.ml),rK=rot(470,548,'k','qué tan rápido drena',C.ink);
+  const eqT=(x,y,partes)=>{const e=tx(g,x,y,'','mono',{style:'font-size:30px'});
+    partes.forEach(([t,col])=>{const s=S('tspan',col?{style:`fill:${col}`}:{},e);s.textContent=t;});return e;};
+  const eq=[eqT(96,626,[['dS/dt = '],['P',C.st],[' − '],['Q',C.ml]]),eqT(430,626,[['Q',C.ml],[' = k · S']])];
+  const eqs=[tx(g,96,660,'lo que cambia = lo que entra − lo que sale','sm'),tx(g,430,660,'sale más cuanto más hay','sm')];
   const kt=tx(g,96,744,'','mono',{style:`fill:${C.ml}`}),et=tx(g,250,744,'','mono',{style:`fill:${C.sub}`});
   const put=k=>{kt.textContent=`k = ${fmt(k,2)}`;et.textContent=`error = ${fmt(rmse(k))} m³/s`;};put(KI);
   const cal=tx(g,96,786,'Calibrar: buscar el k que mejor reproduce lo observado','sm');
   const simT=tx(g,96,786,'Simular: el modelo responde lo que nunca se midió','sm');
   const ex=exChip(g,150,850,'Lluvia y caudal diario de una cuenca durante 60 días');
-  prepDraw(curve);hide(cur,lg1,sc,eq,lg,lg2,lg3,esc,kt,et,cal,simT);
-  const DT=.045;
-  return[T=>{fadeIn(T,def,.2,{st:.1});T.from([A.g,gr],{opacity:0,duration:.6},.5);fadeIn(T,ex,.9);
-      // el tiempo corre: cae la lluvia y la estación mide el caudal
-      T.set(cur,{opacity:1},1.2);T.fromTo(cur,{attr:{x1:A.sx(0),x2:A.sx(0)}},{attr:{x1:A.sx(N),x2:A.sx(N)},duration:N*DT,ease:'none'},1.2);
-      rain.forEach((b,i)=>{if(P[i]>0)T.from(b,{attr:{height:0},duration:.3,ease:'power2.out'},1.2+i*DT);});
-      dots.forEach((d,i)=>popIn(T,d,1.25+i*DT,{d:.25}));T.to(cur,{opacity:0,duration:.3},1.2+N*DT);fadeIn(T,lg1,1.6,{dy:0});},
-    T=>{fadeIn(T,sc,0,{dy:0});fadeIn(T,eq,.5,{st:.25});fadeIn(T,lg,1,{st:.1});
+  const correr=(T,at,dur,pp,q,s)=>{const p={t:0};T.set(cur,{opacity:1},at);
+    T.to(p,{t:N-1,duration:dur,ease:'none',onUpdate:()=>{const i=Math.round(p.t);paisaje(i,p.t*dur/(N-1),pp,q,s);mueve(i);}},at);
+    T.to(cur,{opacity:0,duration:.3},at+dur);
+    // al terminar, el dibujo se queda en el día más lluvioso para que se lea la lluvia, el río y el agua almacenada
+    T.call(()=>paisaje(PK,.4,pp,q,s||stor(kb,pp)),null,at+dur);};
+  const PK=P.indexOf(Math.max(...P));paisaje(PK,.4,P,obs,stor(kb));
+  prepDraw(curve);hide(cur,lg1,lg2,lg3,escP,rP,rS,rQ,rK,eq,eqs,kt,et,cal,simT);
+  const DT=.05;
+  return[T=>{fadeIn(T,intro,.2);T.from(L,{opacity:0,duration:.7},.4);T.from([A.g,gr],{opacity:0,duration:.6},.6);fadeIn(T,ex,.9);
+      // el tiempo corre: llueve, el río crece y la estación mide el caudal
+      correr(T,1.3,N*DT,P,obs,null);
+      rain.forEach((b,i)=>{if(P[i]>0)T.from(b,{attr:{height:0},duration:.3,ease:'power2.out'},1.3+i*DT);});
+      dots.forEach((d,i)=>popIn(T,d,1.35+i*DT,{d:.25}));fadeIn(T,lg1,1.6,{dy:0});},
+    T=>{popIn(T,[rP,rS,rQ,rK],0,{st:.35,s0:.6});fadeIn(T,eq,1.2,{st:.3});fadeIn(T,eqs,1.6,{st:.2,dy:6});
       // la cuenca se llena y se vacía con los mismos 60 días
-      const p={t:0};T.set(cur,{opacity:1},1.5);T.to(p,{t:N-1,duration:4.5,ease:'none',onUpdate:()=>{const i=Math.round(p.t);dia(i);mueve(A.sx(i+.5));}},1.5);
-      T.to(cur,{opacity:0,duration:.3},6);},
+      correr(T,2.4,4.5,P,sim(kb),stor(kb));},
     T=>{drawIn(T,curve,0,1.8,{ease:'power1.inOut'});fadeIn(T,lg2,.3,{dy:0});fadeIn(T,[kt,et],.6,{st:.1});},
     T=>{T.call(()=>{curve.style.strokeDasharray='none';},null,0);
       const p={k:KI};T.to(p,{k:kb,duration:2.6,ease:'power2.inOut',onUpdate:()=>{curve.setAttribute('d',cpath(p.k));put(p.k);}},.1);fadeIn(T,cal,2.4);},
     T=>{T.to(cal,{opacity:0,duration:.3},0);rain.forEach((b,i)=>{if(P[i]>0)T.to(b,{attr:{height:P2[i]*RS},duration:.8,ease:'power2.out'},.2+i*.01);});
-      T.to(esc,{opacity:1,duration:.9},1);fadeIn(T,lg3,1.1,{dy:0});fadeIn(T,simT,1.4);}];
+      T.to(nube.children,{attr:{fill:'#d9dde6'},duration:.6},.2);
+      T.to(escP,{opacity:1,duration:.9},1);fadeIn(T,lg3,1.1,{dy:0});fadeIn(T,simT,1.4);correr(T,1.2,4,P2,sim(kb,P2),stor(kb,P2));}];
 }});
 
-/* ---------- 7 · Dos caminos para llegar a un modelo ---------- */
+/* ---------- 13 · Qué es un algoritmo ---------- */
+slide({kicker:K0b,title:'¿Qué es un algoritmo?',build(c){
+  const g=G(c.svg),{obs,rmse,kb}=RIO;
+  const intro=tx(g,96,208,'Una secuencia finita de pasos precisos que convierte una entrada en una salida.','txt');
+  // tres columnas: entrada → pasos → salida
+  const COL=[[96,364,'ENTRADA'],[560,520,'PASOS'],[1180,320,'SALIDA']];
+  const marco=G(g);COL.forEach(([x,w,t])=>{tx(marco,x,270,t,'kick',{style:'font-size:13px'});S('rect',{x,y:290,width:w,height:230,rx:20,fill:C.soft},marco);});
+  [[470,548],[1090,1168]].forEach(([a,b])=>{S('line',{x1:a,x2:b-12,y1:405,y2:405,stroke:C.ink,'stroke-width':2.5},marco);arrowHead(marco,b,405,0,C.ink,1);});
+  const pasos=(p,ls)=>ls.map((t,i)=>{const gg=G(p),y=344+i*46;tx(gg,588,y,String(i+1),'mono',{style:`fill:${C.ml}`});tx(gg,620,y,t,'txt',{style:`fill:${C.ink}`});return gg;});
+  // A · una receta
+  const A=G(g);
+  txl(A,124,346,['Harina de maíz','Agua tibia','Sal'],'txt',38,{style:`fill:${C.ink}`});
+  pasos(A,['Mezclar la harina, el agua y la sal','Amasar hasta que no se pegue','Formar bolas y aplanarlas','Asar 10 minutos por cada lado']);
+  tx(A,1208,346,'Arepas','h2');
+  [[1300,452],[1392,440]].forEach(([x,y])=>{S('ellipse',{cx:x,cy:y,rx:46,ry:40,fill:'#f2d7a0',stroke:'#d4ad66','stroke-width':2.5},A);
+    [[-14,-10],[10,-16],[16,8],[-8,14],[0,0]].forEach(([dx,dy])=>S('circle',{cx:x+dx,cy:y+dy,r:3.2,fill:'#a87a3a',opacity:.7},A));});
+  // B · la calibración de k del río también era un algoritmo
+  const B=G(g);
+  txl(B,124,346,['Lluvia de 60 días','Caudal medido de 60 días'],'txt',38,{style:`fill:${C.ink}`});
+  const om=Math.max(...obs);S('path',{d:pathD(obs.map((v,i)=>[124+i*5,500-v/om*60])),fill:'none',stroke:C.dot,'stroke-width':2},B);
+  const PB=pasos(B,['Probar un valor de k','Simular el caudal con el modelo','Medir el error frente a lo observado','Repetir con otro k; quedarse con el menor']);
+  const kOut=tx(B,1208,410,`k = ${fmt(kb,2)}`,'monoL',{style:`fill:${C.ml}`});tx(B,1208,452,'el modelo queda calibrado','sm');
+  const resal=S('rect',{x:578,y:318,width:490,height:38,rx:10,fill:C.mlT},g);g.insertBefore(resal,B);
+  const bucle=S('path',{d:'M1050,482 C1076,482 1076,336 1050,336',fill:'none',stroke:C.ml,'stroke-width':2.5},g),bh=arrowHead(g,1046,336,180,C.ml,.8);
+  // el error según k: el algoritmo recorre la curva y se queda con el mínimo
+  const ks=range(.05,.9,86),es=ks.map(rmse),ym=Math.ceil(Math.max(...es)/5)*5;
+  const E=axes(g,{x:860,y:610,w:620,h:180,xd:[0,.9],yd:[0,ym],xt:[0,.2,.4,.6,.8],yt:[0,ym/2,ym],xl:'k',yl:'Error (m³/s)'});
+  const cur=S('path',{d:pathD(ks.map((k,i)=>[E.sx(k),E.sy(es[i])])),fill:'none',stroke:C.ink,'stroke-width':2.5},g);
+  const pt=S('circle',{cx:E.sx(ks[0]),cy:E.sy(es[0]),r:8,fill:C.ml},g);
+  const mn=[S('line',{x1:E.sx(kb),x2:E.sx(kb),y1:E.sy(0),y2:622,stroke:C.ml,'stroke-width':2,'stroke-dasharray':'5 5'},g),
+    tx(g,E.sx(kb)+12,630,`mínimo: k = ${fmt(kb,2)}`,'mono',{style:`fill:${C.ml};font-size:17px`})];
+  // rasgos de todo algoritmo y la palabra «parámetro»
+  const ras=[['Preciso','cada paso, sin ambigüedad'],['Finito','termina en algún momento'],['Reproducible','mismos datos, misma salida']].map(([a,b],i)=>{
+    const gg=G(g),y=618+i*58;S('rect',{x:96,y,width:640,height:46,rx:23,fill:C.soft},gg);tx(gg,120,y+30,a,'h3',{style:'font-size:20px'});tx(gg,290,y+30,b,'sm');return gg;});
+  const par=tx(g,96,830,'k es un parámetro: el número que el algoritmo ajusta con los datos.','lab',{style:`fill:${C.ml}`});
+  prepDraw(cur,bucle);hide(B,resal,bh,E.g,pt,mn,ras,par);
+  return[T=>{fadeIn(T,intro,.2);fadeIn(T,marco,.4);fadeIn(T,[...A.children],.8,{st:.06});},
+    T=>{T.to(A,{opacity:0,duration:.4},0);T.to(B,{opacity:1,duration:.01},.4);fadeIn(T,[...B.children],.45,{st:.08});popIn(T,kOut,1.4,{s0:.6});},
+    T=>{T.to(E.g,{opacity:1,duration:.5},0);drawIn(T,cur,.3,1.2);drawIn(T,bucle,.6,.6);T.to(bh,{opacity:1,duration:.2},1.15);
+      T.to(pt,{opacity:1,duration:.2},1.5);
+      const p={i:0},N=ks.length-1;
+      T.to(p,{i:N,duration:4,ease:'none',onUpdate:()=>{const i=Math.round(p.i);pt.setAttribute('cx',E.sx(ks[i]));pt.setAttribute('cy',E.sy(es[i]));
+        resal.setAttribute('y',318+(Math.floor(p.i/3)%4)*46);resal.style.opacity=1;}},1.6);
+      T.to(pt,{attr:{cx:E.sx(kb),cy:E.sy(rmse(kb))},duration:.6,ease:'power2.inOut'},5.7);T.to(resal,{opacity:0,duration:.3},5.7);
+      fadeIn(T,mn,6.1,{st:.1,dy:0});},
+    T=>{fadeIn(T,ras,0,{st:.15,dx:-16,dy:0});fadeIn(T,par,.8);}];
+}});
+
+/* ---------- 14 · Dos caminos para llegar a un modelo ---------- */
 slide({kicker:K0b,title:'Dos caminos para llegar a un modelo',build(c){
   const g=G(c.svg),{N,P,sim,obs,rmse,kb}=RIO,ymax=Math.ceil(Math.max(...obs)/20)*20;
   const intro=tx(g,96,208,'El mismo río: 60 días de lluvia y caudal.','txt');
@@ -409,7 +757,7 @@ slide({kicker:K0b,title:'Dos caminos para llegar a un modelo',build(c){
     T=>{fadeIn(T,fin.slice(0,2),0,{st:.3});fadeIn(T,fin[2],.9,{dy:20,d:.7});}];
 }});
 
-/* ---------- 8 · Programar las reglas o aprenderlas ---------- */
+/* ---------- 15 · Programar las reglas o aprenderlas ---------- */
 slide({kicker:K0b,title:'¿Programar las reglas o aprenderlas?',build(c){
   const g=G(c.svg);
   const cIA=G(g);S('circle',{cx:380,cy:520,r:255,fill:C.soft,stroke:C.frame,'stroke-width':2},cIA);tx(cIA,380,322,'Inteligencia artificial','h3',{'text-anchor':'middle'});
@@ -442,7 +790,7 @@ slide({kicker:K0b,title:'¿Programar las reglas o aprenderlas?',build(c){
       T.fromTo(box.firstChild,{attr:{'stroke-width':2}},{attr:{'stroke-width':5},duration:.2,yoyo:true,repeat:1},2.6);fadeIn(T,t2,2.8);}];
 }});
 
-/* ---------- 9 · Algoritmo no es lo mismo que modelo ---------- */
+/* ---------- 16 · Algoritmo no es lo mismo que modelo ---------- */
 slide({kicker:K0b,title:'Algoritmo no es lo mismo que modelo',build(c){
   const g=G(c.svg);
   const def=tx(g,96,208,'El algoritmo es el procedimiento; el modelo es lo que ese procedimiento deja aprendido.','txt');
@@ -461,13 +809,13 @@ slide({kicker:K0b,title:'Algoritmo no es lo mismo que modelo',build(c){
       drawIn(T,f2.l,t+1.4,.4);T.to(f2.h,{opacity:1,duration:.2},t+1.75);popIn(T,mb,t+1.8,{s0:.7});fadeIn(T,out,t+2,{st:.1});drawIn(T,ln,t+2.2,.8);};
     return{fit,run};};
   const box=modelBox(g,760,490,230,'Algoritmo'),bs=tx(g,760,552,'mínimos cuadrados','sm',{'text-anchor':'middle'});
-  const A=caso(262,'Datos A · 60 lotes de maíz',FERT,[0,250],[1,9],'Modelo A','rendimiento según nitrógeno');
+  const A=caso(262,'Datos A · 60 municipios',MUNI,[0,250],[10,90],'Modelo A','pobreza según distancia');
   const B=caso(540,'Datos B · 40 estudiantes',STUD,[40,100],[0,5],'Modelo B','nota según asistencia');
   const msg=tx(g,1240,494,'Mismo algoritmo, otros datos: otro modelo','h3',{'text-anchor':'middle'});
   // usar el modelo
-  const U=820,ku=tx(g,96,U+5,'USAR','kick',{style:'font-size:13px'}),u1=tx(g,170,U+7,'lote nuevo · 120 kg N/ha','mono');
+  const U=820,ku=tx(g,96,U+5,'USAR','kick',{style:'font-size:13px'}),u1=tx(g,170,U+7,'municipio a 120 km','mono');
   const ub=modelBox(g,610,U,170,'Modelo A');ub.firstChild.setAttribute('stroke',C.ml);ub.firstChild.setAttribute('stroke-width',3);
-  const u2=tx(g,750,U+7,`≈ ${fmt(A.fit.f(120))} t/ha`,'mono',{style:`fill:${C.ml}`});
+  const u2=tx(g,750,U+7,`IPM ≈ ${fmt(A.fit.f(120))} %`,'mono',{style:`fill:${C.ml}`});
   const ur=[S('line',{x1:484,x2:502,y1:U,y2:U,stroke:C.ink,'stroke-width':2},g),S('line',{x1:702,x2:720,y1:U,y2:U,stroke:C.ink,'stroke-width':2},g)];
   const uh=[arrowHead(g,514,U,0,C.ink,.9),arrowHead(g,732,U,0,C.ink,.9)];
   prepDraw(ur);hide(box,bs,msg,ku,u1,ub,u2,uh);
@@ -477,10 +825,152 @@ slide({kicker:K0b,title:'Algoritmo no es lo mismo que modelo',build(c){
       drawIn(T,ur[1],1.1,.3);T.to(uh[1],{opacity:1,duration:.2},1.35);fadeIn(T,u2,1.4);}];
 }});
 
-/* ---------- 10 · Dos preguntas ---------- */
+/* ---------- 17 · Qué significa aprender ---------- */
+slide({kicker:K0b,title:'¿Qué significa aprender?',build(c){
+  const g=G(c.svg);
+  const def=[tx(g,96,208,'Un programa aprende si su desempeño en una tarea T, medido con P, mejora con la experiencia E.','txt'),
+    tx(g,96,238,'Tom Mitchell (1997)','sm')];
+  // T, E y P: primero en abstracto, luego con el ejemplo de la deserción
+  const TEP=[['T','Tarea','lo que debe hacer','Identificar quién desertará',C.st],['E','Experiencia','los datos de los que aprende','Registros de semestres anteriores',C.ink],
+    ['P','Desempeño','cómo se mide si lo hace bien','% de aciertos en estudiantes nuevos',C.ml]];
+  const cards=TEP.map(([l,n,d,e,col],i)=>{const gg=G(g),y=290+i*140;
+    S('rect',{x:96,y,width:560,height:118,rx:20,fill:C.soft},gg);
+    tx(gg,124,y+76,l,'monoL',{style:`fill:${col}`});tx(gg,196,y+48,n,'h3');
+    const dd=tx(gg,196,y+82,d,'sm'),ee=tx(gg,196,y+84,e,'txt',{style:`fill:${C.ink}`});return{gg,dd,ee};});
+  // curva de aprendizaje: un umbral sobre la tasa de aprobación, entrenado con n estudiantes y medido en 2 000 nuevos
+  const r=rng(31),caso=()=>{const a=r();return[a,r()<1/(1+Math.exp((a-.55)/.08))?1:0];};
+  const prueba=Array.from({length:2000},caso),acierto=(t,d)=>d.filter(([a,y])=>(a<=t?1:0)===y).length/d.length;
+  const NS=[4,6,10,20,40,80,160,320,640];
+  const curva=NS.map(n=>{let s=0;for(let k=0;k<30;k++){const tr=Array.from({length:n},caso);let bt=.5,ba=-1;
+    for(let t=0;t<=1.0001;t+=.01){const a=acierto(t,tr);if(a>ba+1e-9){ba=a;bt=t;}}s+=acierto(bt,prueba);}return s/30*100;});
+  const A=axes(g,{x:780,y:320,w:700,h:360,xd:[Math.log(4),Math.log(640)],yd:[70,90],xt:NS.map(Math.log),fx:v=>Math.round(Math.exp(v)),
+    yt:[70,75,80,85,90],fy:v=>v+' %',xl:'Estudiantes con que se entrena (E)',yl:'Aciertos en estudiantes nuevos (P)'});
+  const P=NS.map((n,i)=>[A.sx(Math.log(n)),A.sy(curva[i])]);
+  const ln=S('path',{d:smooth(P),fill:'none',stroke:C.ml,'stroke-width':4,'stroke-linecap':'round'},g);
+  const dots=P.map(p=>S('circle',{cx:p[0],cy:p[1],r:6,fill:C.ml},g));
+  const lab=tx(g,P[0][0]+14,P[0][1]-16,'','mono',{style:`fill:${C.ml};font-size:18px`});
+  const mes=[S('line',{x1:P[5][0],x2:P[8][0],y1:P[8][1]-34,y2:P[8][1]-34,stroke:C.sub,'stroke-width':1.5,'stroke-dasharray':'4 4'},g),
+    tx(g,(P[5][0]+P[8][0])/2,P[8][1]-46,'meseta','sm',{'text-anchor':'middle'})];
+  const fin=[tx(g,96,770,'P se mide en casos nuevos: aprender no es memorizar.','lab'),
+    tx(g,96,808,'Si P deja de subir, más datos ya no ayudan: hay que cambiar el modelo o las variables.','lab',{style:`fill:${C.ml}`})];
+  prepDraw(ln);hide(cards.map(k=>k.ee),A.g,dots,lab,mes,fin);
+  return[T=>{fadeIn(T,def,.2,{st:.1});fadeIn(T,cards.map(k=>k.gg),.6,{st:.2,dx:-16,dy:0});},
+    T=>{cards.forEach((k,i)=>{T.to(k.dd,{opacity:0,duration:.3},i*.25);fadeIn(T,k.ee,.3+i*.25,{dy:8});});},
+    T=>{T.to(A.g,{opacity:1,duration:.5},0);drawIn(T,ln,.5,2.6,{ease:'power1.inOut'});popIn(T,dots,.5,{st:2.6/NS.length,d:.3});
+      T.set(lab,{opacity:1},.5);
+      const p={i:0};T.to(p,{i:NS.length-1,duration:2.6,ease:'power1.inOut',onUpdate:()=>{const i=Math.round(p.i);
+        lab.setAttribute('x',P[i][0]+(i>6?-14:14));lab.setAttribute('text-anchor',i>6?'end':'start');lab.setAttribute('y',P[i][1]+(i>6?32:-16));
+        lab.textContent=`n = ${NS[i]} → ${fmt(curva[i],0)} %`;}},.5);},
+    T=>{fadeIn(T,mes,0,{st:.1,dy:0});fadeIn(T,fin,.4,{st:.3});}];
+}});
+
+/* ---------- 18 · Supervisado y no supervisado ---------- */
+slide({kicker:K0b,title:'Supervisado y no supervisado',build(c){
+  const g=G(c.svg),r=rng(44);
+  S('line',{x1:800,x2:800,y1:250,y2:850,stroke:C.line,'stroke-width':2},g);
+  // supervisado: cada estudiante trae su respuesta (desertó o continuó)
+  const L=G(g);pill(L,96,272,'SUPERVISADO',C.st,C.stT);tx(L,96,320,'Los datos traen la respuesta: Y','h3');
+  const AL=axes(L,{x:150,y:380,w:580,h:270,xd:[40,100],yd:[0,100],xt:[40,60,80,100],yt:[0,50,100],xl:'Asistencia (%)',yl:'Aprobación de créditos (%)'});
+  const est=[];for(let i=0;i<60;i++){const d=i<22?1:0,x=clamp(d?58+randn(r)*8:84+randn(r)*7,42,99),y=clamp(d?38+randn(r)*14:74+randn(r)*12,3,98);est.push({x,y,d});}
+  const eD=est.map(e=>S('circle',{cx:AL.sx(e.x),cy:AL.sy(e.y),r:6.5,fill:e.d?C.bad:C.st},L));
+  const ly=G(L);S('circle',{cx:560,cy:316,r:6.5,fill:C.bad},ly);tx(ly,574,322,'desertó','sm');S('circle',{cx:650,cy:316,r:6.5,fill:C.st},ly);tx(ly,664,322,'continuó','sm');
+  // frontera: mediatriz entre las medias de los dos grupos (en pantalla)
+  const m=[1,0].map(d=>{const s=est.filter(e=>e.d===d);return[mean(s.map(e=>AL.sx(e.x))),mean(s.map(e=>AL.sy(e.y)))];});
+  const mid=[(m[0][0]+m[1][0])/2,(m[0][1]+m[1][1])/2],dir=[-(m[1][1]-m[0][1]),m[1][0]-m[0][0]],nd=Math.hypot(...dir),u=[dir[0]/nd,dir[1]/nd];
+  const cid='cs'+Math.random().toString(36).slice(2,7),cp=S('clipPath',{id:cid},S('defs',{},g));S('rect',{x:150,y:380,width:580,height:270},cp);
+  const fr=S('line',{x1:mid[0]-u[0]*400,y1:mid[1]-u[1]*400,x2:mid[0]+u[0]*400,y2:mid[1]+u[1]*400,stroke:C.ink,'stroke-width':2.5,'stroke-dasharray':'8 6','clip-path':`url(#${cid})`},g);
+  const nv={x:63,y:47},np=[AL.sx(nv.x),AL.sy(nv.y)],lado=p=>(p[0]-mid[0])*(m[1][0]-m[0][0])+(p[1]-mid[1])*(m[1][1]-m[0][1]);
+  const nDes=lado(np)<0,nPt=S('circle',{cx:np[0],cy:np[1],r:10,fill:C.w,stroke:C.ink,'stroke-width':3},g);
+  // halo blanco para que el rótulo se lea encima de los puntos
+  const halo='paint-order:stroke;stroke:#fff;stroke-width:6px;stroke-linejoin:round;';
+  const nT=tx(g,np[0]-16,np[1]-18,'','mono',{'text-anchor':'end',style:halo+'font-size:16px;font-weight:600'});
+  const sL=tx(g,96,750,'Aprende la regla que separa los grupos y predice Y en casos nuevos.','sm');
+  // no supervisado: municipios sin etiqueta; K-means busca tres grupos
+  const R=G(g);pill(R,840,272,'NO SUPERVISADO',C.ink,C.soft);tx(R,840,320,'No hay Y: se buscan grupos','h3');
+  const AR=axes(R,{x:894,y:380,w:586,h:270,xd:[0,100],yd:[0,80],xt:[0,25,50,75,100],yt:[0,40,80],xl:'Pobreza multidimensional (%)',yl:'Hogares con internet (%)'});
+  const mun=[];[[72,12],[46,34],[22,60]].forEach(([cx,cy],k)=>{for(let i=0;i<25;i++)mun.push([clamp(cx+randn(r)*7,2,98),clamp(cy+randn(r)*7,1,79)]);});
+  const mD=mun.map(p=>S('circle',{cx:AR.sx(p[0]),cy:AR.sy(p[1]),r:6,fill:C.dot},R));
+  let cen=[[30,20],[55,70],[90,45]];const hist=[cen.map(q=>q.slice())],ah=[];let asg=[];
+  for(let it=0;it<10;it++){asg=mun.map(p=>{let b=0,bd=1e9;cen.forEach((q,k)=>{const d=(p[0]-q[0])**2+(p[1]-q[1])**2;if(d<bd){bd=d;b=k;}});return b;});ah.push(asg);
+    const nc=cen.map((q,k)=>{const s=mun.filter((_,i)=>asg[i]===k);return s.length?[mean(s.map(p=>p[0])),mean(s.map(p=>p[1]))]:q;});
+    const mov=nc.some((q,k)=>Math.hypot(q[0]-cen[k][0],q[1]-cen[k][1])>1e-6);cen=nc;hist.push(cen.map(q=>q.slice()));if(!mov)break;}
+  // nombre de cada grupo según su pobreza: el más pobre es «rezago rural»
+  const ord=[0,1,2].sort((a,b)=>cen[b][0]-cen[a][0]),NOM=['Rezago rural','En transición','Conectados'],COLK=[C.bad,C.ml,C.ok],rol=[];ord.forEach((k,j)=>rol[k]=j);
+  const cX=cen.map((q,k)=>S('path',{d:'M-9,-9L9,9M-9,9L9,-9',stroke:C.ink,'stroke-width':3.5,'stroke-linecap':'round',transform:`translate(${AR.sx(hist[0][k][0])},${AR.sy(hist[0][k][1])})`},g));
+  const cT=cen.map((q,k)=>tx(g,AR.sx(q[0]),AR.sy(q[1])-30,NOM[rol[k]],'lab',{'text-anchor':'middle',style:`${halo}fill:${COLK[rol[k]]};font-size:17px;font-weight:600`}));
+  const sR=tx(g,840,750,`K-means encuentra los grupos en ${hist.length-1} iteraciones, sin que nadie los etiquete.`,'sm');
+  // franja inferior: para qué sirve cada uno
+  const pie=[...txl(g,96,796,['Y numérica → regresión: ¿qué IPM tendrá?','Y categórica → clasificación: ¿desertará?'],'lab',28,{style:`fill:${C.st}`}),
+    tx(g,96,852,'TEMA 2.2','tick'),
+    ...txl(g,840,796,['Agrupamiento: tipologías de municipios','Reducción de dimensión (PCA) · anomalías'],'lab',28),tx(g,840,852,'TEMA 2.3','tick')];
+  hide(fr,nPt,nT,sL,R,cX,cT,sR,pie);
+  return[T=>{fadeIn(T,[...L.children].slice(0,2),.2,{st:.1});T.from(AL.g,{opacity:0,duration:.5},.4);popIn(T,eD,.6,{st:{amount:.6,from:'random'},d:.3});fadeIn(T,ly,1.2,{dy:0});},
+    T=>{T.to(fr,{opacity:1,duration:.6},0);popIn(T,nPt,.6);
+      T.call(()=>{nT.textContent=nDes?'predice: deserta':'predice: continúa';},null,1);fadeIn(T,nT,1,{dy:0});
+      T.to(nPt,{attr:{fill:nDes?C.bad:C.st},duration:.4},1.3);fadeIn(T,sL,1.5);},
+    T=>{T.to(R,{opacity:1,duration:.4},0);popIn(T,mD,.3,{st:{amount:.5,from:'random'},d:.3});
+      T.to(cX,{opacity:1,duration:.3},1.2);
+      hist.slice(1).forEach((h,s)=>{const t=1.6+s*.9;
+        h.forEach((q,k)=>T.to(cX[k],{attr:{transform:`translate(${AR.sx(q[0])},${AR.sy(q[1])})`},duration:.7,ease:'power2.inOut'},t));
+        mD.forEach((d,i)=>T.to(d,{attr:{fill:COLK[rol[ah[s][i]]]},duration:.4},t+.2));});
+      const tf=1.6+(hist.length-1)*.9;fadeIn(T,cT,tf,{st:.15});fadeIn(T,sR,tf+.3);},
+    T=>{fadeIn(T,pie,0,{st:.15});}];
+}});
+
+/* ---------- 19 · Reto: supervisado o no supervisado ---------- */
+slide({kicker:K0b,title:'Reto: ¿con respuesta o sin ella?',build(c){
+  const g=G(c.svg),svg=c.svg;
+  c.root.addEventListener('click',e=>e.stopPropagation());   // aquí el clic se usa para jugar; las flechas siguen pasando de lámina
+  const intro=tx(g,96,208,'Lea cada situación y llévela al lado que corresponde: arrastre la tarjeta o use los botones.','txt');
+  // [situación, rótulo corto, 0 supervisado · 1 no supervisado, por qué]
+  const S8=[[['Predecir qué estudiantes','desertarán, con los registros','de semestres anteriores'],'Predecir la deserción',0,'Los semestres anteriores dicen quién desertó: hay Y.'],
+    [['Agrupar los municipios','según sus privaciones','del IPM'],'Tipologías de municipios',1,'Nadie dice a qué grupo pertenece cada municipio.'],
+    [['Estimar el IPM de municipios','sin censo reciente, con los','que sí lo tienen'],'Estimar el IPM',0,'Se aprende de municipios con IPM medido: regresión.'],
+    [['Detectar contratos públicos','con precios inusuales, sin','auditorías previas'],'Contratos inusuales',1,'Ningún contrato viene marcado: detección de anomalías.'],
+    [['Pronosticar la TRM del','próximo mes con su','historia diaria'],'Pronosticar la TRM',0,'El valor que siguió a cada día es la Y que se aprende.'],
+    [['Resumir 15 indicadores','sociales en un solo índice'],'Índice compuesto (PCA)',1,'Se busca estructura entre variables, sin Y.'],
+    [['Clasificar fotos satelitales','en urbano o rural, con fotos','ya etiquetadas'],'Urbano o rural',0,'Las etiquetas de las fotos son la Y: clasificación.'],
+    [['Encontrar perfiles de hogares','según gasto, tamaño','y vivienda'],'Perfiles de hogares',1,'Los perfiles no existen de antemano: agrupamiento.']];
+  const ZX=[96,1084],ZW=420;
+  const zonas=[['SUPERVISADO','hay una Y que aprender',C.st,C.stT],['NO SUPERVISADO','no hay Y: se busca estructura',C.ink,C.soft]].map(([a,b,col,tint],k)=>{
+    const gg=G(g);S('rect',{x:ZX[k],y:250,width:ZW,height:540,rx:22,fill:tint},gg);pill(gg,ZX[k]+24,296,a,col,C.w);tx(gg,ZX[k]+24,334,b,'sm');return gg;});
+  const items=G(g),n=[0,0];
+  const anotar=(i,k,mk)=>{const y=376+n[k]++*50,gg=G(items);tx(gg,ZX[k]+24,y+6,S8[i][1],'lab',{style:'font-size:18px'});
+    if(mk!==undefined)marca(gg,ZX[k]+ZW-30,y,mk);return gg;};
+  // la tarjeta del centro
+  const pila=G(g);[[14,14],[7,7]].forEach(([dx,dy])=>S('rect',{x:590+dx,y:300+dy,width:420,height:220,rx:20,fill:C.soft,stroke:C.frame,'stroke-width':1.5},pila));
+  const card=G(g);S('rect',{x:590,y:300,width:420,height:220,rx:20,fill:C.w,stroke:C.ink,'stroke-width':2.5},card);
+  const lin3=[0,1,2].map(j=>tx(card,800,382+j*34,'','h3',{'text-anchor':'middle',style:'font-size:23px'}));
+  const num=tx(card,800,342,'','tick',{'text-anchor':'middle'});
+  let i=0,ok=0,ocupado=false,resuelto=false;
+  const mostrar=()=>{const s=S8[i];lin3.forEach((t,j)=>t.textContent=s[0][j]||'');num.textContent=`${i+1} DE ${S8.length}`;
+    gsap.fromTo(card,{x:0,rotation:0,opacity:0,scale:.92,transformOrigin:'50% 50%'},{opacity:1,scale:1,duration:.35,ease:'back.out(1.6)'});};
+  const fb1=tx(g,800,640,'','h3',{'text-anchor':'middle'}),fb2=tx(g,800,670,'','sm',{'text-anchor':'middle'});
+  const cuenta=tx(g,800,740,'','mono',{'text-anchor':'middle',style:'font-size:18px'});
+  const decidir=k=>{if(ocupado||resuelto||i>=S8.length)return;ocupado=true;const s=S8[i],bien=s[2]===k;ok+=bien;
+    fb1.textContent=bien?'✓ Correcto':`✗ Era ${s[2]?'no supervisado':'supervisado'}`;fb1.style.fill=bien?C.ok:C.bad;fb2.textContent=s[3];
+    anotar(i,k,bien);i++;cuenta.textContent=`Aciertos: ${ok} de ${i}`;
+    gsap.to(card,{x:k?520:-520,rotation:k?14:-14,opacity:0,duration:.45,ease:'power2.in',onComplete:()=>{ocupado=false;
+      if(i<S8.length)mostrar();else{gsap.set([card,pila,botones],{opacity:0});
+        fb1.textContent=`Resultado: ${ok} de ${S8.length}`;fb1.style.fill=C.ink;fb2.textContent='Supervisado: hay una Y · No supervisado: no la hay';}}});};
+  arrastrable(card,svg,()=>!(ocupado||resuelto||i>=S8.length),
+    dx=>gsap.set(card,{x:dx,rotation:dx/28,transformOrigin:'50% 100%'}),
+    dx=>{if(Math.abs(dx)>150)decidir(dx<0?0:1);else gsap.to(card,{x:0,rotation:0,duration:.3,ease:'back.out(2)'});});
+  const botones=G(g);boton(botones,590,548,200,'← Supervisado',C.st,()=>decidir(0));boton(botones,810,548,200,'No supervisado →',C.ink,()=>decidir(1));
+  const pista=tx(g,800,830,'Flecha →: ver todas las respuestas','sm',{'text-anchor':'middle'});
+  hide(zonas,pila,card,botones,pista);
+  return[T=>{fadeIn(T,intro,.2);fadeIn(T,zonas,.4,{st:.15});T.to(pila,{opacity:1,duration:.4},.8);T.call(()=>mostrar(),null,.9);fadeIn(T,[botones,pista],1.2,{dy:0});},
+    T=>{T.call(()=>{resuelto=true;},null,0);T.to([card,pila,botones,pista,cuenta],{opacity:0,duration:.3},0);
+      // la tarjeta puede tener todavía su animación de entrada en curso: se detiene para que no reaparezca
+      T.call(()=>{gsap.killTweensOf(card);gsap.set(card,{opacity:0});items.replaceChildren();n[0]=n[1]=0;S8.forEach((s,j)=>anotar(j,s[2]));
+        fb1.textContent='Supervisado: hay una Y conocida';fb1.style.fill=C.st;fb2.textContent='No supervisado: sin Y; se buscan grupos o patrones';},null,.3);
+      T.fromTo(items,{opacity:0},{opacity:1,duration:.5},.35);fadeIn(T,[fb1,fb2],.5,{st:.1});}];
+}});
+
+/* ---------- 20 · Dos preguntas ---------- */
 slide({kicker:K1,title:'Mismos datos, dos preguntas',build(c){
-  const g=G(c.svg),{xs,ys}=FERT;
-  const A=axes(g,{x:150,y:240,w:700,h:490,xd:[0,250],yd:[1,9],xt:[0,50,100,150,200,250],yt:[1,3,5,7,9],xl:'Nitrógeno (kg/ha)',yl:'Rendimiento (t/ha)'});
+  const g=G(c.svg),{xs,ys}=MUNI;
+  const A=axes(g,{x:150,y:240,w:700,h:490,xd:[0,250],yd:[10,90],xt:[0,50,100,150,200,250],yt:[10,30,50,70,90],xl:'Distancia a la capital del departamento (km)',yl:'IPM (% de hogares pobres)'});
   const gb=G(g),gd=G(g),gl=G(g);
   const fit=ols(xs,ys),kr=kreg(xs,ys,22);
   const gr=range(0,250,60);
@@ -490,48 +980,48 @@ slide({kicker:K1,title:'Mismos datos, dos preguntas',build(c){
   const curve=S('path',{d:pathD(range(0,250,120).map(x=>[A.sx(x),A.sy(kr(x))])),stroke:C.ml,'stroke-width':4,fill:'none','stroke-linecap':'round'},gl);
   prepDraw(line,curve);
   const q=120,qy=kr(q);
-  const dash=[S('line',{x1:A.sx(q),x2:A.sx(q),y1:A.sy(1),y2:A.sy(qy),stroke:C.ml,'stroke-width':2,'stroke-dasharray':'6 6'},gl),
+  const dash=[S('line',{x1:A.sx(q),x2:A.sx(q),y1:A.sy(10),y2:A.sy(qy),stroke:C.ml,'stroke-width':2,'stroke-dasharray':'6 6'},gl),
               S('line',{x1:A.sx(0),x2:A.sx(q),y1:A.sy(qy),y2:A.sy(qy),stroke:C.ml,'stroke-width':2,'stroke-dasharray':'6 6'},gl)];
   const qdot=S('circle',{cx:A.sx(q),cy:A.sy(qy),r:11,fill:C.w,stroke:C.ml,'stroke-width':4},gl);
-  const qlab=tx(gl,A.sx(q)+20,A.sy(qy)+44,`${fmt(qy)} t/ha`,'mono',{fill:C.ml});
+  const qlab=tx(gl,A.sx(q)+20,A.sy(qy)+44,`${fmt(qy)} %`,'mono',{fill:C.ml});
   const tval=fit.b/fit.seb;
-  const sb=[pill(g,960,272,'ESTADÍSTICA',C.st,C.stT),...txl(g,960,330,['¿El nitrógeno aumenta','el rendimiento?'],'h2',38),
-    tx(g,960,420,`+${fmt(fit.b*100)} t/ha por cada 100 kg`,'mono'),tx(g,960,452,tval>3.5?'p < 0.001':'p < 0.05','mono',{fill:C.sub}),
+  const sb=[pill(g,960,272,'ESTADÍSTICA',C.st,C.stT),...txl(g,960,330,['¿La distancia a la capital','aumenta la pobreza?'],'h2',38),
+    tx(g,960,420,`+${fmt(fit.b*100)} puntos por cada 100 km`,'mono'),tx(g,960,452,tval>3.5?'p < 0.001':'p < 0.05','mono',{fill:C.sub}),
     tx(g,960,500,'→ Explicar','h3',{style:`fill:${C.st}`}),nivelNav(g,1112,502,3,C.st),tx(g,1204,500,'nivel explicativo','sm')];
-  const mb=[pill(g,960,582,'MACHINE LEARNING',C.ml,C.mlT),...txl(g,960,640,['¿Cuánto rendirá un lote','con 120 kg N/ha?'],'h2',38),
-    tx(g,960,730,`≈ ${fmt(qy)} t/ha`,'mono'),tx(g,960,778,'→ Predecir','h3',{style:`fill:${C.ml}`}),nivelNav(g,1112,780,4,C.ml),tx(g,1204,778,'nivel predictivo','sm')];
-  const ex=exChip(g,150,850,'60 lotes de maíz con distinta dosis de nitrógeno');
+  const mb=[pill(g,960,582,'MACHINE LEARNING',C.ml,C.mlT),...txl(g,960,640,['¿Qué IPM tendrá un municipio','a 120 km de la capital?'],'h2',38),
+    tx(g,960,730,`≈ ${fmt(qy)} %`,'mono'),tx(g,960,778,'→ Predecir','h3',{style:`fill:${C.ml}`}),nivelNav(g,1112,780,4,C.ml),tx(g,1204,778,'nivel predictivo','sm')];
+  const ex=exChip(g,150,850,'60 municipios: distancia a la capital y pobreza multidimensional');
   hide(band,sb,mb,dash,qdot,qlab);
   return[T=>{T.from(A.g,{opacity:0,duration:.6},.1);popIn(T,dots,.3,{st:{each:.014,from:'random'}});fadeIn(T,ex,1)},
     T=>{T.to(band,{opacity:1,duration:.8},.2);drawIn(T,line,0,1.1);fadeIn(T,sb,.5,{st:.1})},
     T=>{drawIn(T,curve,0,1.5,{ease:'power1.inOut'});popIn(T,qdot,1.3);T.to(dash,{opacity:1,duration:.5},1.6);fadeIn(T,qlab,1.8);fadeIn(T,mb,.6,{st:.1})}];
 }});
 
-/* ---------- 11 · Forma del modelo ---------- */
+/* ---------- 21 · Forma del modelo ---------- */
 slide({kicker:K1,title:'¿Quién decide la forma del modelo?',build(c){
   const g=G(c.svg),r=rng(33),xs=[],ys=[];
-  for(let i=0;i<46;i++){const x=5+r()*35;xs.push(x);ys.push(clamp(88*Math.exp(-(((x-24)/8.5)**2))+randn(r)*5,0,100));}
-  const A=axes(g,{x:150,y:240,w:700,h:490,xd:[0,45],yd:[0,100],xt:[0,10,20,30,40],yt:[0,25,50,75,100],xl:'Temperatura (°C)',yl:'Germinación (%)'});
+  for(let i=0;i<46;i++){const x=18+r()*52;xs.push(x);ys.push(clamp(0.9+2.9*Math.exp(-(((x-46)/13)**2))+randn(r)*0.32,0.3,5));}
+  const A=axes(g,{x:150,y:240,w:700,h:490,xd:[15,75],yd:[0,5],xt:[20,30,40,50,60,70],yt:[0,1,2,3,4,5],xl:'Edad (años)',yl:'Ingreso laboral mensual (millones de $)'});
   const gres=G(g),gd=G(g),gl=G(g);
   const fit=ols(xs,ys);
   const res=xs.map((x,i)=>S('line',{x1:A.sx(x),x2:A.sx(x),y1:A.sy(ys[i]),y2:A.sy(fit.f(x)),stroke:ys[i]>fit.f(x)?C.st:C.muted,'stroke-width':2},gres));
   const dots=xs.map((x,i)=>S('circle',{cx:A.sx(x),cy:A.sy(ys[i]),r:7,fill:C.dot},gd));
-  const line=S('path',{d:pathD([[A.sx(2),A.sy(fit.f(2))],[A.sx(43),A.sy(fit.f(43))]]),stroke:C.st,'stroke-width':4,fill:'none','stroke-linecap':'round'},gl);
+  const line=S('path',{d:pathD([[A.sx(17),A.sy(fit.f(17))],[A.sx(72),A.sy(fit.f(72))]]),stroke:C.st,'stroke-width':4,fill:'none','stroke-linecap':'round'},gl);
   prepDraw(line,res);
-  const cpath=bw=>{const k=kreg(xs,ys,bw);return pathD(range(2,43,120).map(x=>[A.sx(x),A.sy(k(x))]));};
-  const curve=S('path',{d:cpath(40),stroke:C.ml,'stroke-width':4.5,fill:'none','stroke-linecap':'round'},gl);
+  const cpath=bw=>{const k=kreg(xs,ys,bw);return pathD(range(17,72,120).map(x=>[A.sx(x),A.sy(k(x))]));};
+  const curve=S('path',{d:cpath(60),stroke:C.ml,'stroke-width':4.5,fill:'none','stroke-linecap':'round'},gl);
   const sb=[pill(g,960,282,'ESTADÍSTICA',C.st,C.stT),tx(g,960,340,'Tú propones la forma','h2'),
     tx(g,960,392,'y = β₀ + β₁x','mono',{fill:C.st}),tx(g,960,430,'¿Curva? Hay que proponerla: + β₂x²','sm')];
   const mb=[pill(g,960,552,'MACHINE LEARNING',C.ml,C.mlT),tx(g,960,610,'La forma se aprende','h2'),tx(g,960,650,'de los propios datos','txt')];
-  const ex=exChip(g,150,850,'Temperatura y germinación de semillas en 46 ensayos');
+  const ex=exChip(g,150,850,'Edad e ingreso laboral de 46 trabajadores');
   hide(sb,mb,curve);
   return[T=>{T.from(A.g,{opacity:0,duration:.6},.1);popIn(T,dots,.3,{st:{each:.014,from:'random'}});fadeIn(T,ex,1)},
     T=>{drawIn(T,line,0,1);drawIn(T,res,1,.5,{st:.02});fadeIn(T,sb,.4,{st:.1})},
     T=>{T.to(res,{opacity:0,duration:.5},0);T.to(line,{opacity:.3,duration:.6},0);T.to(curve,{opacity:1,duration:.4},.3);
-      const p={bw:40};T.to(p,{bw:2.6,duration:2.6,ease:'power2.inOut',onUpdate:()=>curve.setAttribute('d',cpath(p.bw))},.5);fadeIn(T,mb,.9,{st:.1})}];
+      const p={bw:60};T.to(p,{bw:3.9,duration:2.6,ease:'power2.inOut',onUpdate:()=>curve.setAttribute('d',cpath(p.bw))},.5);fadeIn(T,mb,.9,{st:.1})}];
 }});
 
-/* ---------- 12 · Validación ---------- */
+/* ---------- 22 · Validación ---------- */
 slide({kicker:K1,title:'¿Cómo sé que el modelo funciona?',build(c){
   const g=G(c.svg),r=rng(4);
   S('line',{x1:800,x2:800,y1:230,y2:790,stroke:C.line,'stroke-width':2},g);
@@ -541,11 +1031,11 @@ slide({kicker:K1,title:'¿Cómo sé que el modelo funciona?',build(c){
   const L=grid(440),R=grid(1110);
   const B1=modelBox(g,440,640,220,'Modelo'),B2=modelBox(g,1110,640,220,'Modelo');
   const o1=[tx(g,440,742,'R² = 0.71   p < 0.01','mono',{'text-anchor':'middle',fill:C.st}),tx(g,440,776,'medido con la misma muestra','sm',{'text-anchor':'middle'})];
-  const o2=[tx(g,1110,742,'± 0.6 t/ha en fincas nuevas','mono',{'text-anchor':'middle',fill:C.ml}),tx(g,1110,776,'medido con datos que el modelo no vio','sm',{'text-anchor':'middle'})];
+  const o2=[tx(g,1110,742,'± 6 puntos de IPM en municipios nuevos','mono',{'text-anchor':'middle',fill:C.ml}),tx(g,1110,776,'medido con datos que el modelo no vio','sm',{'text-anchor':'middle'})];
   const test=shuffle([...Array(100).keys()],r).slice(0,20).sort((a,b)=>a-b);
   const testEls=test.map(i=>R[i]),trainEls=R.filter((_,i)=>!test.includes(i));
   const lk=lock(g,1374,282,1.1,C.ink),lkl=tx(g,1374,596,'20 guardadas','sm',{'text-anchor':'middle'});
-  const ex=exChip(g,150,856,'100 fincas con rendimiento medido');
+  const ex=exChip(g,150,856,'100 municipios con IPM medido');
   hide(o1,o2,lk,lkl);
   return[T=>{fadeIn(T,[P1,P2],.1,{st:.1});popIn(T,L.concat(R),.3,{st:{amount:.9,from:'random'},d:.35});T.from([B1,B2],{opacity:0,duration:.5},.8);fadeIn(T,ex,1)},
     T=>{T.to(L,{attr:{fill:C.st},duration:.4,stagger:.004},0);T.to(GL,{opacity:1,duration:.01},.45);
@@ -560,37 +1050,43 @@ slide({kicker:K1,title:'¿Cómo sé que el modelo funciona?',build(c){
       T.fromTo(B2.firstChild,{attr:{'stroke-width':2}},{attr:{'stroke-width':5},duration:.2,yoyo:true,repeat:1},1.6);fadeIn(T,o2,1.8,{st:.1})}];
 }});
 
-/* ---------- 13 · Cuántas variables ---------- */
+/* ---------- 23 · Cuántas variables ---------- */
 slide({kicker:K1,title:'¿Cuántas variables caben?',build(c){
   const g=G(c.svg),r=rng(5);
   const P1=pill(g,150,262,'ESTADÍSTICA',C.st,C.stT);
-  const hd=['N','Lluvia','Rend.'].map((h,i)=>tx(g,160+i*122,318,h,'hdr'));
+  const hd=['Edad','Educ.','Ingreso'].map((h,i)=>tx(g,160+i*122,318,h,'hdr'));
   S('line',{x1:150,x2:512,y1:332,y2:332,stroke:C.frame},g);
   const rows=[];for(let i=0;i<9;i++){const y=366+i*34;rows.push(G(g));
-    [String(Math.round(40+r()*180)),String(Math.round(700+r()*900)),fmt(4+r()*4)].forEach((v,j)=>tx(rows[i],160+j*122,y,v,'cell',{style:'font-size:16px'}));}
+    [String(Math.round(18+r()*52)),String(Math.round(r()*17)),fmt(0.8+r()*3.5)].forEach((v,j)=>tx(rows[i],160+j*122,y,v,'cell',{style:'font-size:16px'}));}
   const dots=tx(g,160,690,'⋮','h3',{fill:C.muted});
   const p3=tx(g,150,760,'p = 3','monoL',{fill:C.st}),p3s=tx(g,150,796,'variables elegidas por hipótesis','sm');
-  // espectro
+  // texto como datos: cada palabra distinta es una variable
   const P2=pill(g,640,262,'MACHINE LEARNING',C.ml,C.mlT);
-  const A=axes(g,{x:650,y:320,w:830,h:250,xd:[350,2500],yd:[0,0.6],xt:[500,1000,1500,2000,2500],yt:[0,0.3,0.6],xl:'',yl:'Reflectancia'});
-  const ga=(l,m,s)=>Math.exp(-0.5*((l-m)/s)**2),sg=(l,m,s)=>1/(1+Math.exp(-(l-m)/s));
-  const refl=l=>Math.max(0.02,0.04+0.07*ga(l,550,30)+0.44*sg(l,715,14)-0.13*sg(l,1350,30)-0.14*sg(l,1900,40)-0.05*sg(l,2350,50)
-    -0.18*ga(l,1450,55)-0.26*ga(l,1940,65)-0.05*ga(l,1200,40)-0.03*ga(l,970,30));
-  const spec=S('path',{d:pathD(range(350,2500,300).map(l=>[A.sx(l),A.sy(refl(l))])),fill:'none',stroke:C.ml,'stroke-width':3.5},g);
-  prepDraw(spec);
-  const lam=tx(g,1480,628,'Longitud de onda (nm)','axl',{'text-anchor':'end'});
-  const bars=[],N=216;for(let i=0;i<N;i++){const l=350+i*10;const h=refl(l)/0.6*56;bars.push(S('rect',{x:650+i*(830/N),y:716-h,width:830/N-1,height:h,fill:C.ml},g));}
-  S('line',{x1:650,x2:1480,y1:717,y2:717,stroke:C.frame},g);
-  const pN=tx(g,1480,790,'p = 3','monoL',{'text-anchor':'end',fill:C.ml}),pNs=tx(g,1480,824,'una variable por longitud de onda','sm',{'text-anchor':'end'});
-  const ex=exChip(g,650,864,'Espectro de una hoja: 350–2 500 nm → 2 151 variables');
-  hide(P2,A.g,lam,bars,pN,pNs,ex);
+  const cita=tx(g,650,330,'','txt',{style:'font-style:italic'}),cita2=tx(g,650,362,'','txt',{style:'font-style:italic'});
+  const marca=[];
+  [[cita,[['«Garantizar el '],['agua',1],[' potable en la zona '],['rural',1],[' y mejorar las ']]],
+   [cita2,[['vías',1],[' terciarias para la '],['paz',1],[' y las '],['víctimas',1],[' del conflicto…»']]]].forEach(([e,partes])=>
+    partes.forEach(([t,m])=>{const s=S('tspan',{},e);s.textContent=t;if(m)marca.push(s);}));
+  const PAL=['agua','vías','rural','paz','víctimas','salud','educación','mujer','empleo','campesino'];
+  const cnt=PAL.map((_,i)=>Math.round(480/Math.pow(i+1,.7))),BASE=716;
+  const cols=PAL.map((w,i)=>{const gg=G(g),h=cnt[i]/cnt[0]*230,x=650+i*83;
+    S('rect',{x:x+11,y:BASE-h,width:60,height:h,rx:4,fill:C.ml},gg);
+    tx(gg,x+41,BASE-h-10,String(cnt[i]),'tick',{'text-anchor':'middle'});tx(gg,x+41,BASE+26,w,'tick',{'text-anchor':'middle',style:`fill:${C.sub}`});return gg;});
+  const N=216,bars=[];for(let i=0;i<N;i++){const h=Math.max(2,230/Math.pow(i/2+1,.7));bars.push(S('rect',{x:650+i*(830/N),y:BASE-h,width:830/N-1,height:h,fill:C.ml},g));}
+  const base=S('line',{x1:650,x2:1480,y1:BASE+1,y2:BASE+1,stroke:C.frame},g);
+  const pN=tx(g,1480,790,'p = 10','monoL',{'text-anchor':'end',fill:C.ml}),pNs=tx(g,1480,824,'una variable por palabra: cuántas veces aparece','sm',{'text-anchor':'end'});
+  const ex=exChip(g,650,864,'Planes de desarrollo municipal → 2 151 palabras distintas');
+  hide(P2,cita,cita2,cols,bars,base,pN,pNs,ex);
   return[T=>{fadeIn(T,P1,.1);fadeIn(T,hd,.2,{st:.08});fadeIn(T,rows,.4,{st:.06,dy:8});fadeIn(T,[dots,p3,p3s],1,{st:.12})},
-    T=>{fadeIn(T,[P2,A.g,lam],0,{st:.1});drawIn(T,spec,.4,2,{ease:'power1.inOut'});fadeIn(T,ex,1.8)},
-    T=>{bars.forEach((b,i)=>{const l=350+i*10;T.fromTo(b,{opacity:0,y:A.sy(refl(l))-(716-(refl(l)/0.6*56)),scaleY:.1},{opacity:1,y:0,scaleY:1,duration:.7,ease:'power2.in'},i*.006)});
-      T.to(pN,{opacity:1,duration:.3},.2);T.to(pNs,{opacity:1,duration:.4},.6);countTo(T,pN,3,2151,.2,1.8,v=>'p = '+miles(v))}];
+    T=>{fadeIn(T,[P2,cita,cita2],0,{st:.15});T.to(marca,{fill:C.ml,duration:.3,stagger:.25},.9);T.to(base,{opacity:1,duration:.3},1.2);
+      cols.forEach((k,i)=>{T.to(k,{opacity:1,duration:.01},1.4+i*.12);T.from(k.firstChild,{attr:{height:0,y:BASE},duration:.5,ease:'power2.out'},1.4+i*.12);});
+      fadeIn(T,[pN,ex],2.6,{st:.2})},
+    T=>{T.to(cols,{opacity:0,duration:.4},0);
+      bars.forEach((b,i)=>T.fromTo(b,{opacity:0,scaleY:.1,transformOrigin:'50% 100%'},{opacity:1,scaleY:1,transformOrigin:'50% 100%',duration:.6,ease:'power2.out'},.3+i*.006));
+      T.to(pNs,{opacity:1,duration:.4},.6);countTo(T,pN,10,2151,.3,1.8,v=>'p = '+miles(v))}];
 }});
 
-/* ---------- 14 · Interpretabilidad vs flexibilidad ---------- */
+/* ---------- 24 · Interpretabilidad vs flexibilidad ---------- */
 slide({kicker:K1,title:'Entender o acertar: un equilibrio',build(c){
   const g=G(c.svg),id='gr'+Math.random().toString(36).slice(2,7);
   const defs=S('defs',{},g),lg=S('linearGradient',{id,gradientUnits:'userSpaceOnUse',x1:170,x2:880,y1:0,y2:0},defs);
@@ -615,7 +1111,7 @@ slide({kicker:K1,title:'Entender o acertar: un equilibrio',build(c){
     T=>{fadeIn(T,c1,0,{st:.1})},T=>{fadeIn(T,c2,0,{st:.1})}];
 }});
 
-/* ---------- 15 · Dos culturas ---------- */
+/* ---------- 25 · Dos culturas ---------- */
 slide({kicker:K1,title:'Las dos culturas',build(c){
   const g=G(c.svg);
   const src=tx(g,96,192,'Breiman (2001), Statistical Modeling: The Two Cultures','sm');
@@ -635,7 +1131,7 @@ slide({kicker:K1,title:'Las dos culturas',build(c){
     T=>{popIn(T,br,0,{s0:.6});fadeIn(T,ex,.5)}];
 }});
 
-/* ---------- 16 · Complementariedades ---------- */
+/* ---------- 26 · Complementariedades ---------- */
 slide({kicker:K1,title:'Se complementan',build(c){
   const g=G(c.svg);
   const pos=[[96,210],[824,210],[96,530],[824,530]],W=680,H=290;
@@ -654,7 +1150,7 @@ slide({kicker:K1,title:'Se complementan',build(c){
       sel.forEach((s,j)=>T.to(ds[s],{attr:{cx:zx+sc*est[j],cy:y+80+j*28,fill:C.ml},duration:.8,ease:'power2.inOut'},1.5+j*.08));
       drawIn(T,cis,2.4,.5,{st:.08});};cards.push(k);}
   // B · Diseño
-  {const k=card(1,['El diseño estadístico','da datos confiables'],['Parcelas en bloques al azar','alimentan el modelo']),{x,y,gg}=k,r=rng(8);
+  {const k=card(1,['El diseño estadístico','da datos confiables'],['Tutoría asignada por sorteo en cada','facultad: grupos comparables para el modelo']),{x,y,gg}=k,r=rng(8);
     const cols=[C.st,'#8ea5f3',C.ml,'#f4b37d'],sq=[];
     for(let b=0;b<4;b++){const perm=shuffle([0,1,2,3],r);perm.forEach((t,j)=>sq.push(S('rect',{x:x+345+j*34,y:y+72+b*34,width:28,height:28,rx:5,fill:cols[t]},gg)));}
     const ar=S('line',{x1:x+490,x2:x+540,y1:y+140,y2:y+140,stroke:C.ink,'stroke-width':2},gg);prepDraw(ar);
@@ -662,8 +1158,8 @@ slide({kicker:K1,title:'Se complementan',build(c){
     hide(ah,mb);
     k.run=(T)=>{popIn(T,sq,.3,{st:{each:.07}});drawIn(T,ar,1.6,.4);T.to(ah,{opacity:1,duration:.2},1.9);popIn(T,mb,2,{s0:.6})};cards.push(k);}
   // C · Incertidumbre
-  {const k=card(2,['La estadística mide','la incertidumbre'],[],1),{x,y,gg}=k,r=rng(12),{xs,ys}=FERT;
-    const sx=lin(0,250,x+345,x+650),sy=lin(2,8.5,y+240,y+50);
+  {const k=card(2,['La estadística mide','la incertidumbre'],[],1),{x,y,gg}=k,r=rng(12),{xs,ys}=MUNI;
+    const sx=lin(0,250,x+345,x+650),sy=lin(10,90,y+240,y+50);
     const ds=xs.map((v,i)=>S('circle',{cx:sx(v),cy:sy(ys[i]),r:3,fill:C.dot},gg));
     const boot=()=>{const bx=[],by=[];for(let i=0;i<xs.length;i++){const j=Math.floor(r()*xs.length);bx.push(xs[j]);by.push(ys[j]);}return kreg(bx,by,22);};
     const curves=Array.from({length:22},()=>{const f=boot();return S('path',{d:pathD(range(5,245,50).map(v=>[sx(v),sy(f(v))])),fill:'none',stroke:C.ml,'stroke-width':1.6,'stroke-opacity':.35},gg);});
@@ -671,7 +1167,7 @@ slide({kicker:K1,title:'Se complementan',build(c){
     const iv=G(gg);S('line',{x1:sx(120),x2:sx(120),y1:sy(lo),y2:sy(hi),stroke:C.ink,'stroke-width':3.5},iv);
     [lo,hi].forEach(v=>S('line',{x1:sx(120)-9,x2:sx(120)+9,y1:sy(v),y2:sy(v),stroke:C.ink,'stroke-width':3.5},iv));
     S('circle',{cx:sx(120),cy:sy(pm),r:6,fill:C.ink},iv);
-    const et=txl(gg,x+32,y+226,['Lote con 120 kg N/ha:',`${fmt(pm)} ± ${fmt((hi-lo)/2)} t/ha (95 %)`],'sm',24);
+    const et=txl(gg,x+32,y+226,['Municipio a 120 km:',`IPM ${fmt(pm)} ± ${fmt((hi-lo)/2)} % (95 %)`],'sm',24);
     hide(curves,iv);
     k.run=(T)=>{popIn(T,ds,.2,{st:{amount:.4,from:'random'},d:.3});T.to(curves,{opacity:1,duration:.3,stagger:.07},.8);popIn(T,iv,2.5,{s0:.5})};cards.push(k);}
   // D · Comparar modelos
@@ -692,7 +1188,7 @@ slide({kicker:K1,title:'Se complementan',build(c){
   return cards.map(k=>T=>show(T,k));
 }});
 
-/* ---------- 17 · Flujo de trabajo ---------- */
+/* ---------- 27 · Flujo de trabajo ---------- */
 slide({kicker:K2,title:'Del dato a la decisión',build(c){
   const g=G(c.svg),X=[250,610,970,1330],Y=420,R=70,names=['Datos','Características','Entrenamiento','Evaluación'];
   const gl=G(g),gn=G(g);
@@ -724,7 +1220,7 @@ function table(p,cols,widths,rows,x0,y0,rh){
   const R=rows.map((row,ri)=>{const gr=G(p);const cells=row.map((v,ci)=>tx(gr,xs[ci]+14,y0+58+ri*rh,v,'cell'));return{g:gr,cells};});
   return{gH,R,xs,x1:x};}
 
-/* ---------- 18 · Datos · tabla ---------- */
+/* ---------- 28 · Datos · tabla ---------- */
 slide({kicker:K2,title:'Cada fila, un estudiante',stage:0,build(c){
   const g=G(c.svg),gt=G(g);
   const rows=[['4.1','18','Diurna','3.2','No','No'],['3.4','23','Nocturna','12.5','Sí','Sí'],['3.9','19','Diurna','7.8','No','No'],
@@ -745,7 +1241,7 @@ slide({kicker:K2,title:'Cada fila, un estudiante',stage:0,build(c){
     T=>{T.fromTo(yT,{opacity:0,scaleY:.2,transformOrigin:'50% 0%'},{opacity:1,scaleY:1,duration:.6,ease:'power2.out'},0);fadeIn(T,yL,.3,{st:.1});T.to(yes,{fill:C.ml,duration:.4,stagger:.1},.7)}];
 }});
 
-/* ---------- 19 · Datos · calidad ---------- */
+/* ---------- 29 · Datos · calidad ---------- */
 slide({kicker:K2,title:'Datos reales, datos sucios',stage:0,build(c){
   const g=G(c.svg),gb=G(g);
   const rows=[['4.1','18','Diurna','3.2','No'],['3.4','23','Nocturna','12.5','Sí'],['—','19','Diurna','7.8','si'],['3.1','250','Nocturna','21.0','Sí'],
@@ -773,7 +1269,7 @@ slide({kicker:K2,title:'Datos reales, datos sucios',stage:0,build(c){
       fadeIn(T,[good[0],good[1]],.9,{st:.15,dx:-20,dy:0});T.fromTo(good[3],{opacity:0,y:-rh},{opacity:1,y:-rh,duration:.4},2.4)}];
 }});
 
-/* ---------- 20 · Separar ---------- */
+/* ---------- 30 · Separar ---------- */
 slide({kicker:K2,title:'Separar antes de empezar',stage:0,build(c){
   const g=G(c.svg),r=rng(12),N=1000,sp=17,x0=170,y0=270;
   const des=new Set(shuffle([...Array(N).keys()],r).slice(0,200));
@@ -802,7 +1298,7 @@ slide({kicker:K2,title:'Separar antes de empezar',stage:0,build(c){
       T.fromTo([...dList].map(i=>dots[i]),{attr:{r:6}},{attr:{r:8.5},duration:.3,yoyo:true,repeat:1},.8)}];
 }});
 
-/* ---------- 21 · Características · transformar ---------- */
+/* ---------- 31 · Características · transformar ---------- */
 slide({kicker:K2,title:'Convertir datos en señales',stage:1,build(c){
   const g=G(c.svg);
   const H1=tx(g,150,262,'DATO CRUDO','kick'),H2=tx(g,960,262,'CARACTERÍSTICA','kick');
@@ -825,7 +1321,7 @@ slide({kicker:K2,title:'Convertir datos en señales',stage:1,build(c){
   return[T=>{fadeIn(T,[H1,H2],.2,{st:.1});const sub=gsap.timeline();run(sub,rows[0]);T.add(sub,.3);fadeIn(T,ex,1.8)},T=>run(T,rows[1]),T=>run(T,rows[2])];
 }});
 
-/* ---------- 22 · Escalar ---------- */
+/* ---------- 32 · Escalar ---------- */
 slide({kicker:K2,title:'Poner las variables en la misma escala',stage:1,build(c){
   const g=G(c.svg);
   const cx=[480,820],h=[tx(g,cx[0],292,'Ingreso familiar (COP)','hdr',{'text-anchor':'end'}),tx(g,cx[1],292,'Promedio colegio','hdr',{'text-anchor':'end'})];
@@ -855,7 +1351,7 @@ slide({kicker:K2,title:'Poner las variables en la misma escala',stage:1,build(c)
       T.call(()=>{pv[0].textContent='6 %';pv[1].textContent='94 %';},null,2.5)}];
 }});
 
-/* ---------- 23 · Crear variables ---------- */
+/* ---------- 33 · Crear variables ---------- */
 slide({kicker:K2,title:'Crear la variable que cuenta la historia',stage:1,build(c){
   const g=G(c.svg),r=rng(15),D=[];
   for(let i=0;i<120;i++){const ins=8+Math.floor(r()*13),d=r()<0.3,ratio=d?0.08+0.55*r():0.55+0.45*r(),apr=Math.round(ins*ratio);
@@ -883,7 +1379,7 @@ slide({kicker:K2,title:'Crear la variable que cuenta la historia',stage:1,build(
       T.to(thr,{opacity:1,duration:.5},1.8);fadeIn(T,h,1.9)}];
 }});
 
-/* ---------- 24 · Fuga de información ---------- */
+/* ---------- 34 · Fuga de información ---------- */
 slide({kicker:K2,title:'Cuidado con la información del futuro',stage:1,build(c){
   const g=G(c.svg);
   const chip=(y,t,col)=>{const gg=G(g);S('rect',{x:150,y:y-32,width:320,height:48,rx:24,fill:C.soft,stroke:col||'none','stroke-width':2},gg);tx(gg,176,y,t,'lab');return gg;};
@@ -914,7 +1410,7 @@ slide({kicker:K2,title:'Cuidado con la información del futuro',stage:1,build(c)
       T.to(gs,{v:82,duration:1.2,ease:'power2.inOut',onUpdate:setG},1);T.to(val,{attr:{stroke:C.ink},duration:.4},1.2);fadeIn(T,tag2,2)}];
 }});
 
-/* ---------- 25 · Entrenar ---------- */
+/* ---------- 35 · Entrenar ---------- */
 slide({kicker:K2,title:'Entrenar es reducir el error',stage:2,build(c){
   const g=G(c.svg),{xs,ys}=STUD;
   const A=axes(g,{x:150,y:250,w:640,h:460,xd:[40,100],yd:[0,5],xt:[40,55,70,85,100],yt:[0,1,2,3,4,5],xl:'Asistencia (%)',yl:'Nota final'});
@@ -940,23 +1436,23 @@ slide({kicker:K2,title:'Entrenar es reducir el error',stage:2,build(c){
     T=>{const p={k:0};T.to(p,{k:60,duration:4.5,ease:'power1.inOut',onUpdate:()=>draw(Math.round(p.k))},.1)}];
 }});
 
-/* ---------- 26 · Sub/sobreajuste ---------- */
+/* ---------- 36 · Sub/sobreajuste ---------- */
 slide({kicker:K2,title:'Ni muy simple, ni muy complejo',stage:2,build(c){
-  const g=G(c.svg),r=rng(1),f=u=>110/(1+Math.exp(-9*(u-0.45)))+5;
-  const tr=[];for(let i=0;i<14;i++){const u=(i+0.5)/14+(r()-0.5)*0.05;tr.push([u,Math.max(2,f(u)+randn(r)*7)]);}
-  const te=[];for(let i=0;i<200;i++){const u=0.02+0.96*r();te.push([u,Math.max(2,f(u)+randn(r)*7)]);}
+  const g=G(c.svg),r=rng(1),f=u=>88/(1+Math.exp(-9*(u-0.45)))+4;
+  const tr=[];for(let i=0;i<14;i++){const u=(i+0.5)/14+(r()-0.5)*0.05;tr.push([u,clamp(f(u)+randn(r)*5.6,2,100)]);}
+  const te=[];for(let i=0;i<200;i++){const u=0.02+0.96*r();te.push([u,clamp(f(u)+randn(r)*5.6,2,100)]);}
   const fits=[],err=[];for(let d=1;d<=12;d++){const p=polyfit(tr.map(q=>2*q[0]-1),tr.map(q=>q[1]),d);fits.push(p);
     const rm=s=>Math.sqrt(s.reduce((a,q)=>a+(p(2*q[0]-1)-q[1])**2,0)/s.length);err.push([rm(tr),rm(te)]);}
-  const A=axes(g,{x:150,y:250,w:620,h:460,xd:[0,60],yd:[0,130],xt:[0,20,40,60],yt:[0,40,80,120],xl:'Días después de siembra',yl:'Altura (cm)'});
+  const A=axes(g,{x:150,y:250,w:620,h:460,xd:[0,30],yd:[0,105],xt:[0,10,20,30],yt:[0,25,50,75,100],xl:'Ingreso per cápita (millones de $ al año)',yl:'Hogares con internet (%)'});
   const cid='cp'+Math.random().toString(36).slice(2,7),defs=S('defs',{},g),cp=S('clipPath',{id:cid},defs);S('rect',{x:150,y:250,width:620,height:460},cp);
   const cg=G(g,{'clip-path':`url(#${cid})`});
-  const U=u=>A.sx(u*60);
+  const U=u=>A.sx(u*30);
   const tdots=te.map(q=>S('circle',{cx:U(q[0]),cy:A.sy(q[1]),r:4,fill:'none',stroke:C.ml,'stroke-width':1.5},cg));
   const cpath=d=>pathD(range(0,1,240).map(u=>[U(u),A.sy(clamp(fits[d-1](2*u-1),-60,200))]));
   const curve=S('path',{d:cpath(1),fill:'none',stroke:C.st,'stroke-width':4,'stroke-linecap':'round'},cg);
   const dots=tr.map(q=>S('circle',{cx:U(q[0]),cy:A.sy(q[1]),r:7.5,fill:C.ink},g));
   const tag=[tx(g,770,212,'Subajuste','h3',{'text-anchor':'end',fill:C.st}),tx(g,770,212,'Ajuste adecuado','h3',{'text-anchor':'end',fill:C.ok}),tx(g,770,212,'Sobreajuste','h3',{'text-anchor':'end',fill:C.bad})];
-  const YM=25,B=axes(g,{x:960,y:290,w:500,h:320,xd:[1,12],yd:[0,YM],xt:[1,3,5,7,9,11],yt:[0,10,20],xl:'Complejidad (grado)',yl:'Error (cm)'});
+  const YM=20,B=axes(g,{x:960,y:290,w:500,h:320,xd:[1,12],yd:[0,YM],xt:[1,3,5,7,9,11],yt:[0,5,10,15,20],xl:'Complejidad (grado)',yl:'Error (puntos %)'});
   const bs=v=>B.sy(Math.min(v,YM));
   const trL=S('path',{d:pathD(err.map((e,i)=>[B.sx(i+1),bs(e[0])])),fill:'none',stroke:C.ink,'stroke-width':3},g);
   const teL=S('path',{d:pathD(err.map((e,i)=>[B.sx(i+1),bs(e[1])])),fill:'none',stroke:C.ml,'stroke-width':3},g);
@@ -964,7 +1460,7 @@ slide({kicker:K2,title:'Ni muy simple, ni muy complejo',stage:2,build(c){
   const leg=G(g);S('line',{x1:980,x2:1010,y1:716,y2:716,stroke:C.ink,'stroke-width':3},leg);tx(leg,1020,722,'con datos de entrenamiento','sm');
   const leg2=G(g);S('line',{x1:980,x2:1010,y1:748,y2:748,stroke:C.ml,'stroke-width':3},leg2);tx(leg2,1020,754,'con datos nuevos','sm');
   const deg=[1,5,12],mk=deg.map(d=>S('circle',{cx:B.sx(d),cy:bs(err[d-1][0]),r:7,fill:C.ink},g)),mkT=deg.map(d=>S('circle',{cx:B.sx(d),cy:bs(err[d-1][1]),r:7,fill:C.ml},g));
-  const ex=exChip(g,150,856,'Altura de 14 plantas medidas; 200 nuevas para evaluar');
+  const ex=exChip(g,150,856,'Acceso a internet en 14 municipios; 200 nuevos para evaluar');
   hide(tdots,curve,tag,leg,leg2,mk,mkT);
   const morph=(T,d,at)=>{T.to(curve,{attr:{d:cpath(d)},duration:1.2,ease:'power2.inOut'},at);};
   return[T=>{T.from([A.g,B.g],{opacity:0,duration:.6},.1);popIn(T,dots,.3,{st:.06});fadeIn(T,ex,1.2)},
@@ -974,7 +1470,7 @@ slide({kicker:K2,title:'Ni muy simple, ni muy complejo',stage:2,build(c){
     T=>{T.to(tdots,{opacity:1,duration:.4,stagger:{amount:.8,from:'random'}},0);T.to(leg2,{opacity:1,duration:.4},.9);popIn(T,mkT,1.1,{st:.2});drawIn(T,trL,1.8,1.2);drawIn(T,teL,2.2,1.4)}];
 }});
 
-/* ---------- 27 · Validación cruzada ---------- */
+/* ---------- 37 · Validación cruzada ---------- */
 slide({kicker:K2,title:'Validación cruzada: todos evalúan una vez',stage:2,build(c){
   const g=G(c.svg),X0=300,SW=152,GAP=8,Y=[300,380,460,540,620],sc=[.81,.79,.84,.80,.82];
   const lg=G(g);S('rect',{x:1180,y:246,width:22,height:16,rx:4,fill:C.st},lg);tx(lg,1210,260,'entrena','sm');S('rect',{x:1300,y:246,width:22,height:16,rx:4,fill:C.ml},lg);tx(lg,1330,260,'valida','sm');
@@ -997,7 +1493,7 @@ slide({kicker:K2,title:'Validación cruzada: todos evalúan una vez',stage:2,bui
     T=>{fadeIn(T,cmp,0,{st:.15});popIn(T,lk,.5);fadeIn(T,lkT,.6)}];
 }});
 
-/* ---------- 28 · Matriz de confusión ---------- */
+/* ---------- 38 · Matriz de confusión ---------- */
 slide({kicker:K2,title:'¿En qué se equivoca el modelo?',stage:3,build(c){
   const g=G(c.svg),r=rng(20);
   const lab=Array.from({length:200},(_,i)=>i<40?(i<30?'TP':'FN'):(i<55?'FP':'TN'));const ord=shuffle([...Array(200).keys()],r);
@@ -1024,7 +1520,7 @@ slide({kicker:K2,title:'¿En qué se equivoca el modelo?',stage:3,build(c){
     T=>{fadeIn(T,acc,0)}];
 }});
 
-/* ---------- 29 · Umbral y métricas ---------- */
+/* ---------- 39 · Umbral y métricas ---------- */
 slide({kicker:K2,title:'Una métrica no basta',stage:3,build(c){
   const g=G(c.svg),r=rng(21),P=[];
   for(let i=0;i<30;i++)P.push({p:0.5+0.47*r()**0.8,d:1});for(let i=0;i<10;i++)P.push({p:0.12+0.37*r(),d:1});
@@ -1058,7 +1554,7 @@ slide({kicker:K2,title:'Una métrica no basta',stage:3,build(c){
     T=>{moveTo(T,1,.1);T.to(mm[2].gg.querySelectorAll('text'),{fill:C.bad,duration:.4},1.4);fadeIn(T,warn,1.6,{st:.1})}];
 }});
 
-/* ---------- 30 · Error en regresión ---------- */
+/* ---------- 40 · Error en regresión ---------- */
 slide({kicker:K2,title:'¿Cuánto nos equivocamos, en unidades reales?',stage:3,build(c){
   const g=G(c.svg),{xs,ys}=STUD,fit=ols(xs,ys),pr=xs.map(fit.f);
   const A=axes(g,{x:180,y:250,w:460,h:460,xd:[0,5],yd:[0,5],xt:[0,1,2,3,4,5],yt:[0,1,2,3,4,5],xl:'Nota real',yl:'Nota predicha'});
@@ -1081,7 +1577,7 @@ slide({kicker:K2,title:'¿Cuánto nos equivocamos, en unidades reales?',stage:3,
       T.fromTo(mline,{opacity:0,scaleX:0,transformOrigin:'0% 50%'},{opacity:1,scaleX:1,duration:.7,ease:'power2.out'},1.9);fadeIn(T,out,2.3,{st:.1})}];
 }});
 
-/* ---------- 31 · Cierre ---------- */
+/* ---------- 41 · Cierre ---------- */
 slide({kicker:'SÍNTESIS',title:'Dos preguntas, un mismo ciclo',build(c){
   const g=G(c.svg),cx=800,cy=500,R=190,names=['Datos','Características','Entrenamiento','Evaluación'],ang=[-135,-45,45,135];
   const ring=S('circle',{cx,cy,r:R,fill:'none',stroke:C.frame,'stroke-width':2.5},g);prepDraw(ring);
@@ -1137,6 +1633,23 @@ addEventListener('keydown',e=>{
   else if(e.key==='End')render(SLIDES.length-1,-1,'instant',1);
   else if(e.key==='f'||e.key==='F'){const d=document.documentElement;if(!document.fullscreenElement)d.requestFullscreen?.().catch(()=>{});else document.exitFullscreen?.();}
 });
+/* ---------- índice: una entrada por lámina, agrupadas por su rótulo ---------- */
+(function(){
+  const btn=document.getElementById('ixBtn'),ov=document.getElementById('ixOv'),body=document.getElementById('ixBody');
+  let html='',last=null;
+  SLIDES.forEach((s,i)=>{const b=s.kicker||'INICIO';if(b!==last){if(last!==null)html+='</ul>';html+=`<div class="ix-g">${b}</div><ul>`;last=b;}
+    html+=`<li data-i="${i}"><span>${String(i+1).padStart(2,'0')}</span>${s.title||'Portada'}</li>`;});
+  body.innerHTML=html+'</ul>';
+  const items=[...body.querySelectorAll('li')];
+  const open=o=>{ov.classList.toggle('open',o);if(!o)return;items.forEach(li=>li.classList.toggle('cur',+li.dataset.i===si));
+    const c=body.querySelector('.cur');if(c)c.scrollIntoView({block:'center'});};
+  items.forEach(li=>li.onclick=()=>{const i=+li.dataset.i;open(false);if(i!==si)render(i,0,'anim',i>si?1:-1);});
+  btn.onclick=()=>open(true);document.getElementById('ixX').onclick=()=>open(false);ov.onclick=e=>{if(e.target===ov)open(false);};
+  /* en captura: con el índice abierto las teclas no mueven la presentación */
+  addEventListener('keydown',e=>{const on=ov.classList.contains('open');
+    if((e.key==='i'||e.key==='I')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){open(!on);e.stopImmediatePropagation();}
+    else if(on){if(e.key==='Escape')open(false);e.stopImmediatePropagation();}},true);
+})();
 const start=()=>render(0,0,'anim',0);
 if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(start);else start();
 </script>

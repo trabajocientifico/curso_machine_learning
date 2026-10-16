@@ -39,7 +39,7 @@ svg .mute{fill:var(--mute)}
 /*PURE*/
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 
-// ---------- Datos genéricos: dos grupos, uno forma una "isla" en el centro ----------
+// ---------- Fincas según altitud (x·3000 m) y pendiente (y·60 %): las aptas para café forman una "isla" en el centro ----------
 const RD=mulberry32(7), N=70, DATA=[];
 while(DATA.length<N){
   const x=.05+.9*RD(), y=.05+.9*RD();
@@ -170,15 +170,17 @@ function txt(parent,x,y,s,attrs={}){const t=mk('text',Object.assign({x,y},attrs)
 const SZ=400, P=190, PX=[560,800,1040], PY=120, DGY=372;
 const M2={tx:440,ty:170}, M3={tx:70,ty:150}, M6={tx:140,ty:170}, R6={tx:740,ty:170};
 const rad=c=>3.4+1.5*(c-1);
-const featL=['A','B'];
+const featL=['Alt','Pend'];
+/* umbral en unidades reales: altitud en m s. n. m., pendiente en % */
+const thrL=(f,t)=>f?`${Math.round(t*60)}%`:`${Math.round(t*30)*100}`;
 
 function axes(g,dur){
   const a=mk('g',{},g);
   drawLine(a,0,0,0,SZ,{stroke:C.line,'stroke-width':1.5},dur,0);
   drawLine(a,0,SZ,SZ,SZ,{stroke:C.line,'stroke-width':1.5},dur,0);
   const l=mk('g',{opacity:0},a);
-  txt(l,SZ/2,SZ+36,'Variable A',{'text-anchor':'middle','font-size':15,'font-weight':600,class:'mute'});
-  txt(l,0,0,'Variable B',{'text-anchor':'middle','font-size':15,'font-weight':600,class:'mute',transform:`translate(-26,${SZ/2}) rotate(-90)`});
+  txt(l,SZ/2,SZ+36,'Altitud (m s. n. m.)',{'text-anchor':'middle','font-size':15,'font-weight':600,class:'mute'});
+  txt(l,0,0,'Pendiente del terreno (%)',{'text-anchor':'middle','font-size':15,'font-weight':600,class:'mute',transform:`translate(-26,${SZ/2}) rotate(-90)`});
   tw(l,{opacity:1},500,dur*.6);
 }
 const HC=document.createElement('canvas');HC.width=HC.height=SZ;const HX=HC.getContext('2d');
@@ -220,8 +222,8 @@ function datos(){
   S.main.setAttribute('opacity',1);
   axes(S.mAxes,700);
   const lg=S.mLeg;lg.setAttribute('opacity',0);
-  mk('circle',{cx:SZ-176,cy:-26,r:6,fill:C.c0},lg);txt(lg,SZ-164,-21,'Grupo 1',{'font-size':14,'font-weight':600});
-  mk('circle',{cx:SZ-76,cy:-26,r:6,fill:C.c1},lg);txt(lg,SZ-64,-21,'Grupo 2',{'font-size':14,'font-weight':600});
+  mk('circle',{cx:SZ-236,cy:-26,r:6,fill:C.c0},lg);txt(lg,SZ-224,-21,'No apta',{'font-size':14,'font-weight':600});
+  mk('circle',{cx:SZ-136,cy:-26,r:6,fill:C.c1},lg);txt(lg,SZ-124,-21,'Apta para café',{'font-size':14,'font-weight':600});
   tw(lg,{opacity:1},500,1300);
   S.mp=DATA.map((d,i)=>{
     const c=mk('circle',{cx:d.x*SZ,cy:(1-d.y)*SZ,r:0,fill:CLS[d.c],stroke:C.bg,'stroke-width':1.5},S.mPts);
@@ -262,9 +264,9 @@ function sampleAnim(ti,stagger,dur,d0){
 }
 function makePill(D,n,delay){
   const g=tf(mk('g',{opacity:0},D.ng),n.x,n.y,.6);
-  const r=mk('rect',{x:-23,y:-10,width:46,height:20,rx:10,fill:C.bg,stroke:C.ink,'stroke-width':1.2},g);
-  const t=txt(g,0,4,'',{'text-anchor':'middle','font-size':11.5,'font-weight':600,class:'mono'});
-  const fin=`${featL[n.f]}≤${n.t.toFixed(2).slice(1)}`;
+  const r=mk('rect',{x:-26,y:-10,width:52,height:20,rx:10,fill:C.bg,stroke:C.ink,'stroke-width':1.2},g);
+  const t=txt(g,0,4,'',{'text-anchor':'middle','font-size':10.5,'font-weight':600,class:'mono'});
+  const fin=`${featL[n.f]}≤${thrL(n.f,n.t)}`;
   if(INSTANT)t.textContent=fin;
   else{
     t.textContent='?≤···';

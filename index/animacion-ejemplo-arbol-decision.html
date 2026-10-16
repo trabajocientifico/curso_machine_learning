@@ -22,7 +22,8 @@ svg{width:100%;height:100%;display:block}
 .t-leg{font:500 14px var(--sans);fill:var(--ink)}
 .t-tick{font:400 12px var(--mono);fill:var(--muted)}
 .t-axis{font:500 18px var(--mono);fill:var(--ink)}
-.t-cond{font:500 18px var(--mono);fill:var(--ink)}
+.t-cond{font:500 15px var(--mono);fill:var(--ink)}
+.t-axl{font:500 14px var(--sans);fill:var(--muted)}
 .t-n{font:400 11px var(--mono);fill:var(--muted)}
 .t-edge{font:500 13px var(--sans);fill:var(--muted)}
 .t-gini{font:500 11px var(--mono);fill:var(--muted);letter-spacing:.06em}
@@ -59,7 +60,8 @@ function makeData(seed){
   while(pts.length<84&&tries<20000){tries++;
     const x=0.4+r()*9.2,y=0.4+r()*9.2;
     if(pts.some(p=>Math.hypot(p.x-x,p.y-y)<0.62))continue;
-    const c=x<=5?(y<=6?0:1):(y<=3?1:(x<=7.5?0:1));
+    // x = aprobación (×10 %), y = distancia a la sede (×5 km); 1 = deserta
+    const c=x<=4?(y<=2.4?0:1):(y<=7?0:(x<=7.5?1:0));
     pts.push({x,y,c});
   }
   const idx=[...pts.keys()].sort(()=>r()-0.5).slice(0,5);
@@ -93,23 +95,23 @@ function buildTree(pts){
   return{root,order};
 }
 
-const DATA=makeData(21);
+const DATA=makeData(14);
 const {root:ROOT,order:ORDER}=buildTree(DATA);
 const NSPLIT=ORDER.length;
-const QPTS=[{x:2.1,y:7.0},{x:2.8,y:3.1}];
+const QPTS=[{x:2.1,y:7.0},{x:6.2,y:3.1}];
 const LAST=2+2*NSPLIT+2; // pasos: 0 puntos · 1 raíz · búsqueda/corte por división · final · 2 predicciones
 const maj=n=>n.pts.filter(p=>p.c===0).length*2>=n.pts.length?0:1;
 const fracA=n=>n.pts.length?n.pts.filter(p=>p.c===0).length/n.pts.length:0;
 
 /* ---------- escalas y geometría del escenario ---------- */
 const C={ink:'#161a23',muted:'#8a90a0',line:'#e7e9ef',frame:'#cfd3dc',a:'#2f5bea',b:'#f07a1f',aT:'#eaf0fe',bT:'#fef0e4',white:'#ffffff'};
-const CLS=[C.a,C.b],CLST=[C.aT,C.bT],CLSN=['Clase A','Clase B'];
+const CLS=[C.a,C.b],CLST=[C.aT,C.bT],CLSN=['Continúa','Deserta'];
 const P={x0:120,x1:800,y0:80,y1:760},U=68;
 const sx=v=>P.x0+v*U, sy=v=>P.y1-v*U;
 let GS=[0,0.5]; // escala Gini de la división activa (mín … Gini del nodo)
 const gn=g=>Math.max(0,Math.min(1,(g-GS[0])/(GS[1]-GS[0]||1)));
-const gyX=g=>866-gn(g)*68;   // franja Gini bajo el eje X₁
-const gxY=g=>12+gn(g)*68;    // franja Gini a la izquierda del eje X₂
+const gyX=g=>866-gn(g)*68;   // franja Gini bajo el eje de aprobación
+const gxY=g=>12+gn(g)*68;    // franja Gini a la izquierda del eje de distancia
 const NW=118,NH=72;
 
 (function layout(){
@@ -124,7 +126,9 @@ function inB(p,b){return p.x>=b.x0&&p.x<=b.x1&&p.y>=b.y0&&p.y<=b.y1;}
 function rectB(b){return{x:sx(b.x0),y:sy(b.y1),width:(b.x1-b.x0)*U,height:(b.y1-b.y0)*U};}
 function qPath(q){let n=ROOT;const p=[n];while(n.l){n=(n.ax?q.y:q.x)<=n.t?n.l:n.r;p.push(n);}return p;}
 function edgeD(c){const p=c.parent,x1=p.pos.x,y1=p.pos.y+NH/2,x2=c.pos.x,y2=c.pos.y-NH/2,my=(y1+y2)/2;return`M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;}
-function condTxt(n){return`${n.ax?'X₂':'X₁'} ≤ ${n.t.toFixed(1)}`;}
+/* las coordenadas van de 0 a 10; en pantalla, aprobación en % y distancia en km */
+const UX=v=>`${Math.round(v*10)} %`,UY=v=>`${Math.round(v*5)} km`;
+function condTxt(n){return n.ax?`Dist. ≤ ${UY(n.t)}`:`Aprob. ≤ ${UX(n.t)}`;}
 
 /* ---------- SVG ---------- */
 const NS='http://www.w3.org/2000/svg';
@@ -137,13 +141,14 @@ const L={};['fills','grid','cuts','focus','search','points','marks','hover','pre
   for(let v=0;v<=10;v+=2){
     el('line',{x1:sx(v),x2:sx(v),y1:P.y0,y2:P.y1,stroke:C.line,'stroke-width':1},g);
     el('line',{x1:P.x0,x2:P.x1,y1:sy(v),y2:sy(v),stroke:C.line,'stroke-width':1},g);
-    el('text',{x:sx(v),y:782,'text-anchor':'middle',class:'t-tick'},g).textContent=v;
-    el('text',{x:112,y:sy(v)+4,'text-anchor':'end',class:'t-tick'},g).textContent=v;
+    el('text',{x:sx(v),y:782,'text-anchor':'middle',class:'t-tick'},g).textContent=v*10;
+    el('text',{x:112,y:sy(v)+4,'text-anchor':'end',class:'t-tick'},g).textContent=v*5;
   }
   el('rect',{x:P.x0,y:P.y0,width:P.x1-P.x0,height:P.y1-P.y0,fill:'none',stroke:C.frame,'stroke-width':1.2},g);
-  el('text',{x:P.x1+12,y:P.y1+6,class:'t-axis'},g).textContent='X₁';
-  el('text',{x:P.x0,y:P.y0-14,class:'t-axis'},g).textContent='X₂';
-  el('text',{x:30,y:40,class:'t-title'},g).textContent='Árbol de decisión';
+  el('text',{x:P.x1+12,y:P.y1-10,class:'t-axl'},g).textContent='Aprobación';
+  el('text',{x:P.x1+12,y:P.y1+8,class:'t-axl'},g).textContent='(%)';
+  el('text',{x:P.x0,y:P.y0-14,class:'t-axl'},g).textContent='Distancia a la sede (km)';
+  el('text',{x:30,y:40,class:'t-title'},g).textContent='Árbol de decisión · ¿quién deserta?';
   [0,1].forEach(c=>{const x=630+c*96;
     el('circle',{cx:x,cy:40,r:7,fill:CLS[c],stroke:C.white,'stroke-width':1.5},g);
     el('text',{x:x+14,y:45,class:'t-leg'},g).textContent=CLSN[c];});
@@ -245,7 +250,7 @@ function drawSearch(n,T){
   const win=parts[n.ax],lose=parts[1-n.ax];
   const wl=cutLine(n,G,{stroke:C.ink,'stroke-width':2.2,'stroke-dasharray':'9 6'});
   const thr=n.ax?el('text',{x:P.x1+10,y:sy(n.t)+5,class:'t-thr'},G):el('text',{x:sx(n.t),y:P.y0-12,'text-anchor':'middle',class:'t-thr'},G);
-  thr.textContent=n.t.toFixed(1);
+  thr.textContent=n.ax?UY(n.t):UX(n.t);
 
   if(!T){parts.forEach(p=>p.upd(1));lose.grp.setAttribute('opacity',0.25);win.minDot.setAttribute('fill',C.ink);return;}
   let at=0.4;

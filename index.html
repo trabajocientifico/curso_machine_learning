@@ -73,79 +73,70 @@ h2{ font-size:clamp(28px,3.8vw,50px); font-weight:700; line-height:1.08; letter-
 .hl{ color:var(--st); }
 .hl2{ color:var(--ml); }
 .slide-head{ text-align:center; }
-.slide-head .lead{ margin:12px auto 0; color:var(--sub); font-size:15px; max-width:760px; line-height:1.55; }
+.slide-head .lead{ margin:12px auto 0; color:var(--sub); font-size:16px; max-width:760px; line-height:1.55; }
 .slide-head .lead b{ color:var(--ink); font-weight:600; }
 .wrapA{ width:100%; max-width:1180px; }
-.note-foot{ text-align:center; margin-top:20px; font-size:13.5px; color:var(--sub); }
-.note-foot b{ color:var(--ml); }
 @keyframes reveal{ from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:none;} }
 
 /* ==========================================================================
-   PORTADA
+   PORTADA · el nombre y un clasificador que aprende en vivo
    ========================================================================== */
-.hero{ text-align:center; }
-.hero-top{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:26px; flex-wrap:wrap;
-  opacity:0; animation:reveal .8s .15s forwards; }
+.slide.hero{ padding:9vh 6vw 9vh; }
+.hero-grid{ width:100%; max-width:1520px; display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr); gap:5vw; align-items:center; }
+.hero-top{ display:flex; align-items:center; gap:10px; margin-bottom:3.4vh; flex-wrap:wrap; opacity:0; animation:reveal .8s .15s forwards; }
 .hero-top .badge{ font-family:var(--mono); padding:7px 15px; border-radius:99px; background:var(--st-soft);
   border:1px solid rgba(47,91,234,.28); color:var(--st); font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; }
 .hero-top .badge.alt{ background:var(--ml-soft); border-color:rgba(234,115,23,.32); color:var(--ml); }
 .mc-name{ opacity:0; animation:reveal 1s .35s forwards; }
-.mc-name h1{ font-size:clamp(46px,min(10vw,21vh),168px); line-height:.92; font-weight:800; letter-spacing:-.04em; }
-.mc-name .ln1{ display:block; font-family:var(--mono); font-size:clamp(10px,1.05vw,14px); font-weight:600; color:var(--sub);
-  letter-spacing:.22em; text-transform:uppercase; margin-bottom:22px; line-height:1.5; }
-.mc-name .ln2{ display:block; }
+.mc-name .ln1{ display:block; font-family:var(--mono); font-size:clamp(10px,1vw,14px); font-weight:600; color:var(--sub);
+  letter-spacing:.2em; text-transform:uppercase; margin-bottom:2.6vh; line-height:1.5; }
+.mc-name h1{ font-size:clamp(58px,min(8.6vw,17.5vh),178px); line-height:.86; font-weight:800; letter-spacing:-.045em; }
+.mc-name h1 span{ display:block; }
 .grad{ background:linear-gradient(100deg,var(--st),var(--ml),var(--st)); background-size:200% 100%;
-  -webkit-background-clip:text; background-clip:text; color:transparent; animation:shimmer 9s linear infinite; }
+  -webkit-background-clip:text; background-clip:text; color:transparent; animation:shimmer 9s linear infinite; padding-bottom:.06em; }
 @keyframes shimmer{ to{ background-position:200% 0;} }
-.mc-name .ln3{ display:block; font-size:.26em; font-weight:500; margin-top:14px; color:var(--sub); letter-spacing:-.01em; line-height:1.1; }
-.hero-author{ display:flex; flex-direction:column; align-items:center; gap:7px; margin-top:26px;
-  opacity:0; animation:reveal .8s .7s forwards; }
-.hero-author .ha-name{ font-weight:700; font-size:clamp(17px,1.7vw,22px); }
-.hero-author .ha-role{ font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--ml); }
+.mc-name .ln3{ display:block; font-size:clamp(24px,min(2.7vw,5.4vh),50px); font-weight:500; margin-top:2.2vh; color:var(--sub); letter-spacing:-.02em; }
+.hero-author{ display:flex; align-items:center; gap:14px; margin-top:4.4vh; opacity:0; animation:reveal .8s .7s forwards; }
+.hero-author::before{ content:""; width:42px; height:2px; background:var(--ml); }
+.hero-author .ha-name{ font-weight:700; font-size:clamp(16px,1.5vw,21px); }
+.hero-author .ha-role{ font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--ml); }
 
-/* portada · el código se escribe y la gráfica responde */
-.hero-demo{ display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr); gap:16px;
-  width:min(820px,90vw); margin:30px auto 0; text-align:left; opacity:0; animation:reveal .8s 1s forwards; }
-.hd-code{ background:var(--ink); border-radius:14px; overflow:hidden; box-shadow:0 18px 40px -22px rgba(21,24,31,.45); }
-.hd-top{ display:flex; align-items:center; gap:6px; padding:9px 12px; border-bottom:1px solid rgba(255,255,255,.08); }
-.hd-top i{ width:9px; height:9px; border-radius:50%; background:#ff5f56; }
-.hd-top i:nth-child(2){ background:#ffbd2e; } .hd-top i:nth-child(3){ background:#27c93f; }
-.hd-top em{ margin-left:6px; font-family:var(--mono); font-style:normal; font-size:10px; color:#8a90a0; }
-.hd-code pre{ margin:0; padding:14px 15px; font-family:var(--mono); font-size:12px; line-height:1.65;
-  color:#e6e9f0; min-height:148px; white-space:pre-wrap; }
-.hd-code .k{ color:#ff9d4d; } .hd-code .s{ color:#8fd6a8; } .hd-code .f{ color:#8eaaff; }
-.hd-cur{ display:inline-block; width:7px; background:#8eaaff; animation:hdBlink 1s steps(1) infinite; }
-@keyframes hdBlink{ 0%,50%{opacity:1} 51%,100%{opacity:0} }
-.hd-chart{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 15px;
-  display:flex; flex-direction:column; justify-content:center; gap:9px; }
-.hd-cap{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
-.hd-row{ display:grid; grid-template-columns:108px 1fr; align-items:center; gap:9px; }
-.hd-row i{ font-style:normal; font-size:10.5px; color:var(--sub); text-align:right; }
-.hd-track{ height:11px; background:var(--soft); border-radius:99px; overflow:hidden; }
-.hd-track b{ display:block; height:100%; width:0; border-radius:99px; background:var(--st); transition:width 1s cubic-bezier(.2,.8,.2,1); }
+.learn{ position:relative; width:min(100%,70vh); aspect-ratio:1; justify-self:center; border-radius:30px; overflow:hidden; background:#fff;
+  border:1px solid var(--line); box-shadow:0 30px 70px -40px rgba(21,24,31,.45); opacity:0; animation:reveal 1s .9s forwards; }
+.learn canvas{ display:block; width:100%; height:100%; }
+.learn-tag{ position:absolute; top:16px; left:18px; font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--sub); background:rgba(255,255,255,.88); padding:6px 11px; border-radius:99px; }
+.learn-hud{ position:absolute; left:16px; right:16px; bottom:16px; display:flex; justify-content:space-between; gap:10px;
+  font-family:var(--mono); font-size:12.5px; font-weight:600; color:var(--ink); background:rgba(255,255,255,.9);
+  border:1px solid var(--line); padding:9px 14px; border-radius:14px; }
+.learn-hud b{ color:var(--st); }
+.learn-hud em{ font-style:normal; color:var(--ml); }
 
 /* ==========================================================================
    PERFIL DEL DOCENTE
    ========================================================================== */
-.pf{ width:100%; max-width:1240px; }
-.pf-grid{ display:grid; grid-template-columns:300px 1fr; gap:32px; align-items:start; }
+.slide.perfil{ padding:8vh 4vw 8vh; }
+.pf{ width:100%; max-width:1320px; }
+.pf-grid{ display:grid; grid-template-columns:260px 1fr; gap:30px; align-items:start; }
 .pf-frame{ border-radius:22px; overflow:hidden; border:1px solid var(--line); aspect-ratio:1/1.05; background:var(--soft);
   box-shadow:0 22px 46px -28px rgba(21,24,31,.4); }
 .pf-frame img{ width:100%; height:100%; object-fit:cover; display:block; }
 .pf-edu,.pf-social,.pf-box,.pf-stat{ background:#fff; border:1px solid var(--line); border-radius:18px; }
-.pf-edu{ margin-top:18px; padding:16px 16px 14px; }
+.pf-edu{ margin-top:14px; padding:14px 16px 10px; }
 .pf-edu-t{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--st); margin-bottom:11px; }
-.pf-edu-row{ display:grid; grid-template-columns:24px 1fr; gap:2px 10px; padding:7px 0; border-top:1px solid var(--line); }
+.pf-edu-row{ display:grid; grid-template-columns:24px 1fr; gap:2px 10px; padding:6px 0; border-top:1px solid var(--line); }
 .pf-edu-row:first-of-type{ border-top:none; }
 .pf-edu-row .n{ grid-row:span 2; font-family:var(--mono); font-size:10.5px; color:var(--muted); padding-top:3px; }
 .pf-edu-row .lv{ font-family:var(--mono); font-size:9.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ml); }
 .pf-edu-row .dg{ font-size:12.5px; color:var(--ink); line-height:1.3; }
-.pf-edu-row.phd .dg{ color:var(--st); font-weight:700; }
-.pf-social{ margin-top:14px; padding:16px 16px 14px; }
-.pf-soc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.pf-social .soc{ display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:12px; background:var(--soft);
+.pf-edu-row.hl .dg{ color:var(--st); font-weight:700; }
+.pf-social{ margin-top:12px; padding:12px 14px; }
+.pf-soc-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.pf-social .pf-edu-t{ margin-bottom:8px; }
+.pf-social .soc span{ display:none; }
+.pf-social .soc{ display:flex; align-items:center; justify-content:center; gap:9px; padding:9px 10px; border-radius:12px; background:var(--soft);
   border:1px solid transparent; color:var(--sub); text-decoration:none; font-size:12px; font-weight:600; transition:all .2s; }
-.pf-social .soc svg{ width:17px; height:17px; flex:none; }
+.pf-social .soc svg{ width:19px; height:19px; flex:none; }
 .pf-social .soc:hover{ transform:translateY(-2px); background:#fff; }
 .pf-social .soc.yt:hover{ color:#e62117; border-color:rgba(230,33,23,.4); }
 .pf-social .soc.li:hover{ color:#0a66c2; border-color:rgba(10,102,194,.4); }
@@ -154,16 +145,16 @@ h2{ font-size:clamp(28px,3.8vw,50px); font-weight:700; line-height:1.08; letter-
 .pf-name{ font-size:clamp(30px,4vw,50px); line-height:1.02; font-weight:800; letter-spacing:-.03em; margin-top:6px; }
 .pf-phd{ display:inline-block; vertical-align:super; margin-left:10px; font-family:var(--mono); font-size:.3em; font-weight:600;
   letter-spacing:.1em; color:var(--ml); border:1px solid rgba(234,115,23,.4); border-radius:8px; padding:3px 8px; }
-.pf-bio{ margin-top:12px; font-size:14.5px; line-height:1.65; color:var(--sub); max-width:72ch; }
+.pf-bio{ margin-top:10px; font-size:14.5px; line-height:1.6; color:var(--sub); max-width:96ch; }
 .pf-bio b{ color:var(--ink); font-weight:700; }
-.pf-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:20px; }
-.pf-stat{ padding:14px 14px 12px; border-radius:16px; }
-.pf-stat .v{ font-size:30px; font-weight:800; color:var(--st); line-height:1; letter-spacing:-.03em; }
+.pf-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:14px; }
+.pf-stat{ padding:11px 14px 10px; border-radius:16px; }
+.pf-stat .v{ font-size:27px; font-weight:800; color:var(--st); line-height:1; letter-spacing:-.03em; }
 .pf-stat .k{ margin-top:6px; font-size:11px; color:var(--sub); line-height:1.35; }
-.pf-cols{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
-.pf-box{ padding:16px 16px 14px; }
+.pf-cols{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px; }
+.pf-box{ padding:15px 16px 13px; }
 .pf-box-t{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--ml); margin-bottom:10px; }
-.pf-list{ list-style:none; display:flex; flex-direction:column; gap:9px; }
+.pf-list{ list-style:none; display:flex; flex-direction:column; gap:6px; }
 .pf-list li{ font-size:13px; line-height:1.3; padding-left:13px; position:relative; color:var(--ink); }
 .pf-list li::before{ content:""; position:absolute; left:0; top:6px; width:5px; height:5px; border-radius:50%; background:var(--st); }
 .pf-list li b{ font-weight:700; }
@@ -172,59 +163,100 @@ h2{ font-size:clamp(28px,3.8vw,50px); font-weight:700; line-height:1.08; letter-
   letter-spacing:.1em; text-transform:uppercase; color:var(--ok); background:rgba(27,154,104,.1); border-radius:99px; padding:2px 7px; }
 .pf-inv{ margin-top:11px; padding-top:10px; border-top:1px solid var(--line); font-size:11.5px; line-height:1.45; color:var(--sub); }
 .pf-inv b{ color:var(--ink); font-weight:700; }
-.pf-skills{ display:flex; flex-direction:column; gap:8px; margin-top:16px; }
-.pf-sk{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.pf-sk .c{ min-width:112px; font-family:var(--mono); font-size:9.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.pf-skills{ display:grid; grid-template-columns:repeat(4,auto); justify-content:space-between; gap:12px 18px; margin-top:12px; }
+.pf-sk{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pf-sk .c{ width:100%; font-family:var(--mono); font-size:9.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
 .pf-sk .s{ font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:99px; background:var(--soft); border:1px solid var(--line); color:var(--ink); }
-.pf-links{ display:flex; align-items:center; gap:10px 18px; flex-wrap:wrap; margin-top:20px; }
+.pf-links{ display:flex; align-items:center; gap:10px 18px; flex-wrap:wrap; margin-top:10px; }
 .pf-links a{ font-size:12.5px; font-weight:600; color:var(--sub); text-decoration:none; transition:color .2s; }
 .pf-links a:hover{ color:var(--st); }
 
 /* ==========================================================================
-   EL MÓDULO · dos preguntas + resultados de aprendizaje
+   EL OBJETIVO · la misma nube leída de dos maneras
    ========================================================================== */
-.duo{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; align-items:stretch; }
-.pane{ padding:22px 24px; border-radius:20px; background:#fff; border:1px solid var(--line); border-top:3px solid var(--st); }
-.pane.ml{ border-top-color:var(--ml); }
-.pane .tag{ font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; font-weight:600; color:var(--st); }
-.pane.ml .tag{ color:var(--ml); }
-.pane h3{ font-size:22px; font-weight:700; letter-spacing:-.02em; margin-top:8px; line-height:1.15; }
-.pane p{ font-size:13.5px; color:var(--sub); line-height:1.6; margin-top:8px; }
-.ra-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:16px; }
-.ra{ padding:14px 16px; border-radius:16px; background:var(--soft); }
-.ra b{ display:block; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.16em; color:var(--muted); margin-bottom:6px; }
-.ra span{ font-size:12.5px; line-height:1.45; color:var(--ink); }
+.obj{ max-width:1240px; }
+.obj-txt{ margin:0 auto; max-width:1120px; font-size:clamp(21px,min(2.3vw,4.4vh),36px); font-weight:600; line-height:1.28; letter-spacing:-.015em; text-align:center; }
+.obj-txt .hl,.obj-txt .hl2{ font-weight:700; }
+.cmp{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:4.5vh; }
+.cmp-pane{ border:1px solid var(--line); border-radius:22px; background:#fff; padding:18px 20px 12px; border-top:4px solid var(--st); }
+.cmp-pane.ml{ border-top-color:var(--ml); }
+.cmp-pane .tag{ font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--st); }
+.cmp-pane.ml .tag{ color:var(--ml); }
+.cmp-pane h3{ font-size:clamp(20px,1.9vw,27px); font-weight:700; letter-spacing:-.02em; margin-top:4px; }
+.cmp-pane svg{ display:block; width:100%; height:auto; max-height:34vh; margin-top:6px; }
+.cmp text{ font-family:var(--mono); }
+.cmp .tk{ font-size:12px; fill:var(--muted); }
+.cmp .ax{ stroke:#d2d6de; stroke-width:1.5; }
+.cmp .pt{ fill:#9199a6; }
+.cmp .fit{ fill:none; stroke-width:4; stroke-linecap:round; stroke-dasharray:1; }
+.cmp .lab{ font-size:16px; font-weight:600; }
+/* cada vez que se entra a la lámina la animación vuelve a empezar */
+@keyframes draw{ from{ stroke-dashoffset:1; } to{ stroke-dashoffset:0; } }
+@keyframes pop{ from{ opacity:0; transform:scale(.2); } to{ opacity:1; transform:none; } }
+@keyframes show{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes drop{ from{ opacity:0; transform:translateY(-60px); } to{ opacity:1; transform:none; } }
+.slide.active .cmp .pt{ transform-box:fill-box; transform-origin:center; animation:pop .4s calc(var(--d) * 1s) both; }
+.slide.active .cmp .fit{ animation:draw 1.4s 1.3s both; }
+.slide.active .cmp .ml .fit{ animation:draw 1.8s 1.6s both; }
+.slide.active .cmp .band{ animation:show .8s 2.4s both; }
+.slide.active .cmp .late{ animation:show .6s 2.9s both; }
+.slide.active .cmp .new{ transform-box:fill-box; transform-origin:center; animation:drop .7s 3.2s cubic-bezier(.3,1.4,.5,1) both; }
+.slide.active .cmp .later{ animation:show .6s 3.8s both; }
 
 /* ==========================================================================
-   LA RUTA · temas del módulo
+   LA RUTA · temas del módulo, en grande
    ========================================================================== */
-.slide.ruta{ padding-top:9vh; padding-bottom:8vh; }
-.ruta .eyebrow{ margin-bottom:10px; }
-.mod-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:20px; }
-.mod-card{ position:relative; display:flex; flex-direction:column; padding:15px 16px 14px 20px; border-radius:18px;
+.slide.ruta{ padding:7vh 4vw 7vh; }
+.ruta .wrapA{ max-width:1640px; }
+.ruta h2{ font-size:clamp(26px,min(3vw,5.2vh),46px); }
+.mod-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:2.4vh; }
+.mod-card{ position:relative; display:flex; flex-direction:column; padding:16px 18px 14px 24px; border-radius:20px;
   background:#fff; border:1px solid var(--line); overflow:hidden; transition:transform .25s, border-color .25s, box-shadow .25s; }
-.mod-card::before{ content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--st); }
+.mod-card::before{ content:""; position:absolute; inset:0 auto 0 0; width:5px; background:var(--st); }
 .mod-card:hover{ transform:translateY(-3px); border-color:rgba(47,91,234,.35); box-shadow:0 18px 36px -26px rgba(21,24,31,.4); }
-.mod-card .mod-n{ font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--st); }
-.mod-card h3{ font-size:17px; font-weight:700; letter-spacing:-.01em; line-height:1.2; margin-top:6px; }
-.mod-card p{ flex:1; font-size:12.5px; color:var(--sub); margin-top:7px; line-height:1.45; }
-.mod-card p code{ font-family:var(--mono); font-size:.92em; color:var(--ink); }
-.mod-temas{ display:flex; flex-direction:column; gap:5px; margin-top:10px; }
-.mod-tema{ display:flex; align-items:center; gap:10px; text-decoration:none; padding:6px 11px; border-radius:10px;
+.mod-card .mod-n{ font-family:var(--mono); font-size:12.5px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--st); }
+.mod-card h3{ font-size:clamp(18px,min(1.6vw,2.9vh),31px); font-weight:700; letter-spacing:-.015em; line-height:1.18; margin-top:6px; }
+.mod-card p{ flex:1; font-size:clamp(13px,min(1vw,1.85vh),19px); color:var(--sub); margin-top:8px; line-height:1.45; }
+.mod-card p code{ font-family:var(--mono); font-size:.9em; color:var(--ink); }
+.mod-temas{ display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+.mod-tema{ display:flex; align-items:center; gap:12px; text-decoration:none; padding:7px 12px; border-radius:11px;
   background:var(--soft); border:1px solid transparent; transition:border-color .2s, background .2s; }
-.mod-tema b{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.06em; color:var(--st); white-space:nowrap; }
-.mod-tema span{ flex:1; font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.25; }
-.mod-tema i{ font-style:normal; color:var(--st); opacity:.5; transition:transform .25s, opacity .25s; }
+.mod-tema b{ font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.08em; color:var(--st); white-space:nowrap; }
+.mod-tema span{ flex:1; font-size:clamp(13px,min(1vw,1.85vh),19px); font-weight:600; color:var(--ink); line-height:1.25; }
+.mod-tema i{ font-style:normal; color:var(--st); opacity:.55; transition:transform .25s, opacity .25s; }
 a.mod-tema:hover{ border-color:var(--st); background:var(--st-soft); }
 a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
-.mod-go{ margin-top:12px; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-.mod-card.soon::before{ background:var(--line); }
+.mod-go{ margin-top:10px; font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.mod-card.soon::before{ background:#cfd4dd; }
 .mod-card.soon .mod-n{ color:var(--muted); }
+.mod-card.soon h3{ color:#3a404c; }
 .mod-card.soon:hover{ transform:none; border-color:var(--line); box-shadow:none; }
 /* ejercicios prácticos: notebooks, no mazos */
 .mod-card.lab::before{ background:var(--ml); }
 .mod-card.lab .mod-n, .mod-card.lab .mod-tema b{ color:var(--ml); }
 .mod-card.lab:hover{ border-color:rgba(234,115,23,.4); }
+
+/* ==========================================================================
+   CONOCER EL CURSO · formulario de entrada
+   ========================================================================== */
+.qr-duo{ display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:4vh; align-items:stretch; }
+.qr-pane{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center;
+  padding:26px 24px; border-radius:22px; background:#fff; border:1px solid var(--line); }
+.qr-pane .tag{ font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--st); }
+.qr-pane h3{ font-size:clamp(24px,2.4vw,34px); font-weight:700; letter-spacing:-.02em; }
+.qr-pane p{ font-size:15px; color:var(--sub); line-height:1.5; }
+.qr-frame{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:10px; width:min(100%,36vh,320px);
+  box-shadow:0 18px 40px -28px rgba(21,24,31,.45); }
+.qr-frame img{ display:block; width:100%; height:auto; border-radius:10px; image-rendering:pixelated; }
+.qr-pane.pc{ background:var(--ml-soft); border-color:rgba(234,115,23,.35); }
+.qr-pane.pc .tag{ color:var(--ml); }
+.btn-primary{ display:inline-flex; align-items:center; gap:10px; margin-top:8px; padding:18px 40px; border-radius:99px; background:var(--ml); color:#fff;
+  font-weight:700; font-size:16px; letter-spacing:.08em; text-transform:uppercase; text-decoration:none; transition:transform .2s, background .2s;
+  box-shadow:0 16px 34px -18px rgba(234,115,23,.8); }
+.btn-primary:hover{ transform:translateY(-3px); background:var(--st); box-shadow:0 16px 34px -18px rgba(47,91,234,.8); }
+.btn-ghost{ display:inline-flex; align-items:center; padding:12px 24px; border-radius:99px; border:1px solid var(--line); background:#fff;
+  color:var(--sub); font-weight:600; font-size:13px; letter-spacing:.12em; text-transform:uppercase; text-decoration:none; transition:border-color .2s, color .2s; }
+.btn-ghost:hover{ border-color:var(--st); color:var(--st); }
 
 /* ==========================================================================
    ÍNDICE / MENÚ
@@ -259,16 +291,17 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
    ========================================================================== */
 @media (max-width:1080px){
   .pf-grid{ grid-template-columns:230px 1fr; gap:24px; }
-  .pf-stats,.ra-grid{ grid-template-columns:repeat(2,1fr); }
+  .pf-stats{ grid-template-columns:repeat(2,1fr); }
+  .pf-skills{ grid-template-columns:1fr 1fr; justify-content:stretch; }
   .mod-grid{ grid-template-columns:repeat(2,1fr); }
 }
 @media (max-width:820px){
-  .slide{ padding:9vh 5vw 11vh; align-items:flex-start; }
+  .slide,.slide.hero,.slide.ruta,.slide.perfil{ padding:9vh 5vw 11vh; align-items:flex-start; }
   .block-tag{ display:none; }
-  .pf-grid,.pf-cols,.duo,.mod-grid,.hero-demo{ grid-template-columns:1fr; }
+  .hero-grid,.pf-grid,.pf-cols,.pf-skills,.cmp,.mod-grid,.qr-duo{ grid-template-columns:1fr; }
+  .mod-grid{ grid-auto-rows:auto; }
+  .learn{ width:min(100%,46vh); }
   .pf-frame{ max-width:240px; margin:0 auto; }
-  .pf-sk .c{ min-width:0; width:100%; }
-  .hd-code pre{ min-height:0; }
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{ animation-duration:.001ms !important; animation-delay:0s !important; transition-duration:.001ms !important; }
@@ -304,43 +337,34 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
 
 <!-- 01 · PORTADA -->
 <section class="slide hero active" data-block="Presentación" data-title="Portada" data-sub="Machine Learning para la Investigación">
-  <div class="slide-scroll">
-    <div class="hero-top">
-      <span class="badge">Módulo 2</span>
-      <span class="badge alt">30 horas · 100 % virtual</span>
-      <span class="badge">CENES · UPTC</span>
-    </div>
-    <div class="mc-name">
-      <h1>
+  <div class="hero-grid">
+    <div class="hero-txt">
+      <div class="hero-top">
+        <span class="badge">Módulo 2</span>
+        <span class="badge alt">30 horas · 100 % virtual</span>
+        <span class="badge">CENES · UPTC</span>
+      </div>
+      <div class="mc-name">
         <span class="ln1">Diplomado en Inteligencia Artificial para la Investigación</span>
-        <span class="ln2">Machine <span class="grad">Learning</span></span>
+        <h1><span>Machine</span><span class="grad">Learning</span></h1>
         <span class="ln3">para la Investigación</span>
-      </h1>
-    </div>
-    <div class="hero-author">
-      <span class="ha-name">Oscar Iván Vargas Pineda</span>
-      <span class="ha-role">Docente</span>
-    </div>
-    <div class="hero-demo">
-      <div class="hd-code">
-        <div class="hd-top"><i></i><i></i><i></i><em>pobreza_municipal.py</em></div>
-        <pre id="hdCode"></pre>
       </div>
-      <!-- cifras del ejercicio 1: importancia por permutación (0,426 · 0,346 · 0,076 · 0,043 · 0,022) -->
-      <div class="hd-chart" id="hdChart">
-        <div class="hd-cap">pérdida de R² al permutar</div>
-        <div class="hd-row"><i>Régimen subsidiado</i><div class="hd-track"><b></b></div></div>
-        <div class="hd-row"><i>Educación media</i><div class="hd-track"><b></b></div></div>
-        <div class="hd-row"><i>Luces nocturnas</i><div class="hd-track"><b></b></div></div>
-        <div class="hd-row"><i>Región Caribe</i><div class="hd-track"><b></b></div></div>
-        <div class="hd-row"><i>Aseguramiento</i><div class="hd-track"><b></b></div></div>
+      <div class="hero-author">
+        <span class="ha-name">Oscar Iván Vargas Pineda</span>
+        <span class="ha-role">Docente</span>
       </div>
+    </div>
+    <!-- una regresión logística con rasgos polinomiales se entrena aquí mismo, en el navegador -->
+    <div class="learn">
+      <canvas id="learn" aria-label="Un modelo de clasificación aprendiendo a separar dos grupos de puntos"></canvas>
+      <span class="learn-tag" id="lData">un modelo aprendiendo</span>
+      <div class="learn-hud"><span>época <b id="lEpoch">0</b></span><span>acierto <em id="lAcc">–</em></span></div>
     </div>
   </div>
 </section>
 
 <!-- 02 · PERFIL DEL DOCENTE -->
-<section class="slide" data-block="Presentación" data-title="Quién dicta el módulo" data-sub="Oscar Iván Vargas Pineda, PhD">
+<section class="slide perfil" data-block="Presentación" data-title="Quién dicta el módulo" data-sub="Oscar Iván Vargas Pineda, PhD">
   <div class="slide-scroll pf">
     <div class="pf-grid">
 
@@ -354,8 +378,8 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
           <div class="pf-edu-row"><span class="n">01</span><span class="lv">Pregrado</span><span class="dg">Ingeniero Agroindustrial</span></div>
           <div class="pf-edu-row"><span class="n">02</span><span class="lv">Especialista</span><span class="dg">Gestión del Agua</span></div>
           <div class="pf-edu-row"><span class="n">03</span><span class="lv">Magíster</span><span class="dg">Gestión Ambiental Sostenible</span></div>
-          <div class="pf-edu-row"><span class="n">04</span><span class="lv">Magíster</span><span class="dg">Inteligencia Artificial Aplicada</span></div>
-          <div class="pf-edu-row phd"><span class="n">05</span><span class="lv">Doctor</span><span class="dg">Ciencias Agrarias</span></div>
+          <div class="pf-edu-row hl"><span class="n">04</span><span class="lv">Magíster <em class="pf-now">En curso</em></span><span class="dg">Inteligencia Artificial Aplicada</span></div>
+          <div class="pf-edu-row"><span class="n">05</span><span class="lv">Doctor</span><span class="dg">Ciencias Agrarias</span></div>
         </div>
 
         <div class="pf-social">
@@ -398,18 +422,21 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
           <div class="pf-box">
             <div class="pf-box-t">Docencia universitaria</div>
             <ul class="pf-list">
-              <li><b>Universidad de los Llanos</b><span>Ingeniería Agroindustrial</span></li>
-              <li><b>Universidad Santo Tomás</b><span>Ingeniería Industrial</span></li>
-              <li><b>Universidad Jorge Tadeo Lozano</b><span>Posgrado · Diseño y Creación con IA</span></li>
-              <li><b>Universidad Central</b><span>Pregrado y posgrado</span></li>
+              <li><b>Universidad de los Llanos</b></li>
+              <li><b>Universidad Santo Tomás</b></li>
+              <li><b>Universidad Jorge Tadeo Lozano</b></li>
+              <li><b>Universidad Central</b></li>
+              <li><b>Universidad Autónoma de Occidente</b></li>
+              <li><b>Universidad Pedagógica y Tecnológica de Colombia</b></li>
             </ul>
-            <div class="pf-inv">Invitado: <b>Politécnica de Madrid</b> (España) · <b>Montpellier</b> (Francia) · <b>El Bosque</b> (Colombia)</div>
+            <div class="pf-inv">Invitado: <b>Politécnica de Madrid</b> (España) · <b>Montpellier</b> (Francia)</div>
           </div>
 
           <div class="pf-box">
             <div class="pf-box-t">Consultoría en datos</div>
             <ul class="pf-list">
-              <li><b>Earth Innovation Institute</b><span>Científico de datos · IA aplicada a sostenibilidad <em class="pf-now">Actual</em></span></li>
+              <li><b>Universidad Nacional de Colombia · DNIA</b><span>Experto en IA para la investigación científica <em class="pf-now">Actual</em></span></li>
+              <li><b>Earth Innovation Institute</b><span>Científico de datos · IA aplicada a sostenibilidad</span></li>
               <li><b>Banco Mundial</b><span>Análisis de datos</span></li>
               <li><b>Banco Interamericano de Desarrollo</b><span>Análisis de datos</span></li>
               <li><b>ECOPETROL</b> · <b>Fundación ALISOS</b><span>Datos para industria y modelamiento</span></li>
@@ -435,33 +462,25 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
   </div>
 </section>
 
-<!-- 03 · EL MÓDULO -->
-<section class="slide" data-block="Presentación" data-title="El punto de partida" data-sub="Objetivo y resultados de aprendizaje">
-  <div class="slide-scroll wrapA">
+<!-- 03 · EL OBJETIVO -->
+<section class="slide" data-block="Presentación" data-title="El objetivo" data-sub="Explicar y predecir con los mismos datos">
+  <div class="slide-scroll wrapA obj">
     <div class="slide-head">
-      <span class="eyebrow">El punto de partida</span>
-      <h2>No viene a memorizar algoritmos.<br>Viene a <span class="hl">responder preguntas</span> de investigación</h2>
-      <p class="lead">El objetivo del módulo es <b>implementar y evaluar modelos de aprendizaje supervisado y no supervisado</b> para predecir, clasificar y segmentar, e interpretar y comunicar sus resultados en lenguaje científico y de política pública.</p>
+      <span class="eyebrow">El objetivo del módulo</span>
+      <p class="obj-txt">Implementar y evaluar modelos de aprendizaje supervisado y no supervisado para <span class="hl">predecir, clasificar y segmentar</span> en investigación aplicada, e <span class="hl2">interpretar y comunicar</span> sus resultados en lenguaje científico y de política pública.</p>
     </div>
-    <div class="duo">
-      <div class="pane">
+    <div class="cmp" id="cmp">
+      <div class="cmp-pane st">
         <span class="tag">Estadística tradicional</span>
         <h3>¿Por qué ocurre?</h3>
-        <p>El investigador propone la forma del modelo, estima sus parámetros y contrasta hipótesis. El resultado se lee en coeficientes e intervalos de confianza.</p>
+        <svg viewBox="0 0 560 300" id="cmpSt"></svg>
       </div>
-      <div class="pane ml">
-        <span class="tag">Machine Learning</span>
+      <div class="cmp-pane ml">
+        <span class="tag">Machine learning</span>
         <h3>¿Qué va a ocurrir?</h3>
-        <p>El algoritmo busca la forma del modelo en los datos y se juzga por lo bien que acierta en casos que no ha visto. El resultado se lee en errores de predicción.</p>
+        <svg viewBox="0 0 560 300" id="cmpMl"></svg>
       </div>
     </div>
-    <div class="ra-grid">
-      <div class="ra"><b>RESULTADO 1</b><span>Entrena y evalúa modelos de ML para predicción y clasificación.</span></div>
-      <div class="ra"><b>RESULTADO 2</b><span>Segmenta individuos, empresas o territorios con algoritmos de clustering.</span></div>
-      <div class="ra"><b>RESULTADO 3</b><span>Interpreta los modelos y los comunica en lenguaje académico y de política.</span></div>
-      <div class="ra"><b>RESULTADO 4</b><span>Selecciona el modelo adecuado según el problema y la naturaleza de los datos.</span></div>
-    </div>
-    <p class="note-foot"><b>Las dos miradas se complementan:</b> en investigación casi siempre se necesitan ambas.</p>
   </div>
 </section>
 
@@ -469,7 +488,6 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
 <section class="slide ruta" data-block="Contenidos" data-title="La ruta" data-sub="Los cinco temas y los ejercicios prácticos">
   <div class="slide-scroll wrapA">
     <div class="slide-head">
-      <span class="eyebrow">Cómo vamos a avanzar</span>
       <h2>De los <span class="hl">fundamentos</span> a las <span class="hl2">redes neuronales</span></h2>
     </div>
     <div class="mod-grid">
@@ -524,11 +542,40 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
   </div>
 </section>
 
+<!-- 05 · FORMULARIO: CONOCER EL CURSO -->
+<section class="slide" data-block="Antes de empezar" data-title="Conocer el curso" data-sub="Formulario de entrada">
+  <div class="slide-scroll wrapA">
+    <div class="slide-head">
+      <span class="eyebrow">Antes de empezar</span>
+      <h2>Conocer <span class="hl">el curso</span></h2>
+      <p class="lead">Un formulario corto para saber quiénes somos, qué traemos y qué esperamos. <b>Toma un par de minutos.</b></p>
+    </div>
+    <div class="qr-duo">
+      <div class="qr-pane">
+        <span class="tag">Desde el celular</span>
+        <div class="qr-frame"><img src="QR-formulario.png" alt="Código QR del formulario Conocer el curso"></div>
+        <p>Abra la cámara y apunte al código.</p>
+      </div>
+      <div class="qr-pane pc">
+        <span class="tag">Desde el computador</span>
+        <h3>Ábralo con un clic</h3>
+        <p>El mismo formulario, en una pestaña nueva.</p>
+        <a class="btn-primary" href="https://script.google.com/macros/s/AKfycbwCeJiwU81LKgdUHcfWWFnDKkHA3_5UmqyJohXd9seYQzyDNI9cDPbrWME8TnEc1mEsSg/exec" target="_blank" rel="noopener">Contestar <span aria-hidden="true">&rarr;</span></a>
+        <a class="btn-ghost" href="https://script.google.com/macros/s/AKfycbwCeJiwU81LKgdUHcfWWFnDKkHA3_5UmqyJohXd9seYQzyDNI9cDPbrWME8TnEc1mEsSg/exec?vista=dashboard" target="_blank" rel="noopener">Respuestas</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 </div>
 
 <script>
 const mobileMQ = window.matchMedia('(max-width:820px)');
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* generador pseudoaleatorio con semilla: las figuras salen iguales en cada carga */
+function rng(seed){ return () => { seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return((t^t>>>14)>>>0)/4294967296; }; }
+function gauss(r){ let u=0; while(!u) u=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(6.283*r()); }
 
 /* ================================================================
    FONDO DE NODOS (canvas)
@@ -645,54 +692,143 @@ menuOverlay.onclick = e => { if(e.target === menuOverlay) openMenu(false); };
 
 
 /* ================================================================
-   PORTADA · el código se escribe y la gráfica responde
+   PORTADA · un clasificador que aprende a la vista
+   Regresión logística con rasgos polinomiales de grado 3, entrenada
+   con Adam sobre tres conjuntos de datos que se turnan.
    ================================================================ */
 (function(){
-  const pre    = document.getElementById('hdCode');
-  const barras = [...document.querySelectorAll('#hdChart .hd-track b')];
-  if(!pre || !barras.length) return;
+  const cv = document.getElementById('learn'); if(!cv) return;
+  const ctx = cv.getContext('2d'), box = cv.parentElement;
+  const elEpoch = document.getElementById('lEpoch'), elAcc = document.getElementById('lAcc'), elData = document.getElementById('lData');
+  const r = rng(7), N = 140, EPOCAS = 260, PASOS = 1, G = 46;
+  const AZUL = [47,91,234], NAR = [234,115,23];
 
-  /* cada línea: texto plano para teclear y html coloreado al terminar */
-  const LINEAS = [
-    ['from sklearn.ensemble import RandomForestRegressor', '<span class="k">from</span> sklearn.ensemble <span class="k">import</span> RandomForestRegressor'],
-    ['',                                                   ''],
-    ['rf = RandomForestRegressor(random_state=42)',        'rf = <span class="f">RandomForestRegressor</span>(random_state=<span class="s">42</span>)'],
-    ['rf.fit(X_tr, y_tr)',                                 'rf.<span class="f">fit</span>(X_tr, y_tr)'],
-    ['',                                                   ''],
-    ['permutation_importance(rf, X_te, y_te)',             '<span class="f">permutation_importance</span>(rf, X_te, y_te)']
+  /* datos en el cuadrado [-1, 1]²; clase 0 azul, clase 1 naranja */
+  const CONJUNTOS = [
+    ['dos lunas', () => Array.from({length:N}, (_,i) => { const c = i%2, t = Math.PI*r();
+      const x = c ? 1-Math.cos(t) : Math.cos(t), y = c ? .5-Math.sin(t) : Math.sin(t);
+      return [(x-.5)/1.65 + gauss(r)*.07, (y-.25)/1.65 + gauss(r)*.07, c]; })],
+    ['dos anillos', () => Array.from({length:N}, (_,i) => { const c = i%2, a = 6.283*r(), d = (c ? .74 : .3) + gauss(r)*.07;
+      return [Math.cos(a)*d, Math.sin(a)*d, c]; })],
+    ['cuatro grupos', () => Array.from({length:N}, (_,i) => { const sx = i%2 ? 1 : -1, sy = (i>>1)%2 ? 1 : -1;
+      return [sx*.48 + gauss(r)*.17, sy*.48 + gauss(r)*.17, sx*sy > 0 ? 0 : 1]; })]
   ];
-  /* importancia por permutación del ejercicio 1, relativa a la mayor (0,426) */
-  const IMPORTANCIA = [100, 81, 18, 10, 5];
+  const rasgos = (x,y) => [1, x, y, x*x, x*y, y*y, x*x*x, x*x*y, x*y*y, y*y*y];
+  const sig = z => 1/(1+Math.exp(-z));
 
-  const pintar = v => barras.forEach((b,i) => { b.style.width = v[i] + '%'; });
-  const dormir = ms => new Promise(r => setTimeout(r, ms));
-
-  if(reduceMotion){                 /* sin movimiento: estado final y ya */
-    pre.innerHTML = LINEAS.map(l => l[1]).join('\n');
-    pintar(IMPORTANCIA);
-    return;
+  let W = 0, k = 0, D, F, w, m, v, epoca, t0, fase, pausa;
+  function nuevo(){
+    const [nombre, gen] = CONJUNTOS[k++ % CONJUNTOS.length];
+    D = gen(); F = D.map(p => rasgos(p[0], p[1]));
+    w = Array.from({length:10}, () => gauss(r)*.6); m = Array(10).fill(0); v = Array(10).fill(0);
+    epoca = 0; fase = 'entra'; t0 = performance.now(); elData.textContent = nombre;
   }
+  function paso(){   /* una época de Adam sobre todos los puntos */
+    const g = Array(10).fill(0);
+    F.forEach((f,i) => { const e = sig(f.reduce((s,x,j) => s + x*w[j], 0)) - D[i][2]; f.forEach((x,j) => g[j] += e*x/N); });
+    epoca++;
+    for(let j=0;j<10;j++){ m[j] = .9*m[j] + .1*g[j]; v[j] = .999*v[j] + .001*g[j]*g[j];
+      w[j] -= .12 * (m[j]/(1-.9**epoca)) / (Math.sqrt(v[j]/(1-.999**epoca)) + 1e-8); }
+  }
+  const prob = (x,y) => sig(rasgos(x,y).reduce((s,f,j) => s + f*w[j], 0));
+  const acierto = () => D.reduce((s,p) => s + ((prob(p[0],p[1]) > .5) === (p[2] === 1)), 0) / N;
 
-  async function ciclo(){
-    while(true){
-      pre.innerHTML = '';
-      let hecho = '';
-      for(const [plano, coloreado] of LINEAS){
-        for(let i = 1; i <= plano.length; i++){
-          pre.innerHTML = hecho + plano.slice(0, i) + '<span class="hd-cur">&nbsp;</span>';
-          await dormir(22);
-        }
-        hecho += coloreado + '\n';
-        pre.innerHTML = hecho + '<span class="hd-cur">&nbsp;</span>';
-        await dormir(plano ? 170 : 60);
-      }
-      pintar(IMPORTANCIA);            /* "ejecuta": la gráfica responde */
-      await dormir(5200);
-      barras.forEach(b => b.style.width = '0%');
-      await dormir(900);
+  function tam(){ const dpr = Math.min(2, devicePixelRatio||1); W = box.clientWidth; cv.width = W*dpr; cv.height = W*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+  const X = u => (u+1.12)/2.24*W, Y = u => (1.12-u)/2.24*W;   /* deja un margen alrededor de los datos */
+
+  function dibujar(alfa, entrada){
+    ctx.clearRect(0,0,W,W);
+    const c = W/G, P = [];
+    for(let i=0;i<=G;i++){ P.push([]); for(let j=0;j<=G;j++) P[i].push(prob(-1.12+2.24*j/G, 1.12-2.24*i/G)); }
+    /* fondo: cada celda se tiñe según la clase que el modelo cree y qué tan seguro está */
+    for(let i=0;i<G;i++) for(let j=0;j<G;j++){
+      const p = (P[i][j]+P[i+1][j+1])/2, col = p > .5 ? NAR : AZUL;
+      ctx.fillStyle = `rgba(${col},${(Math.abs(p-.5)*2*.30*alfa).toFixed(3)})`; ctx.fillRect(j*c, i*c, c+.6, c+.6);
     }
+    /* frontera p = 0.5, trazada celda a celda (marching squares) */
+    ctx.strokeStyle = `rgba(21,24,31,${.85*alfa})`; ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.beginPath();
+    const cruce = (a,b) => (.5-a)/(b-a);
+    for(let i=0;i<G;i++) for(let j=0;j<G;j++){
+      const q = [P[i][j], P[i][j+1], P[i+1][j+1], P[i+1][j]], pts = [];
+      if((q[0]>.5) !== (q[1]>.5)) pts.push([(j+cruce(q[0],q[1]))*c, i*c]);
+      if((q[1]>.5) !== (q[2]>.5)) pts.push([(j+1)*c, (i+cruce(q[1],q[2]))*c]);
+      if((q[3]>.5) !== (q[2]>.5)) pts.push([(j+cruce(q[3],q[2]))*c, (i+1)*c]);
+      if((q[0]>.5) !== (q[3]>.5)) pts.push([j*c, (i+cruce(q[0],q[3]))*c]);
+      for(let s=0;s+1<pts.length;s+=2){ ctx.moveTo(pts[s][0],pts[s][1]); ctx.lineTo(pts[s+1][0],pts[s+1][1]); }
+    }
+    ctx.stroke();
+    /* puntos; los mal clasificados llevan un aro oscuro */
+    const rad = W*.0135;
+    D.forEach((p,i) => { const e = Math.min(1, Math.max(0, entrada*1.6 - i/N*.6)); if(!e) return;
+      const bien = (prob(p[0],p[1]) > .5) === (p[2] === 1);
+      ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), rad*e, 0, 6.283);
+      ctx.fillStyle = `rgba(${p[2] ? NAR : AZUL},${alfa})`; ctx.fill();
+      ctx.lineWidth = bien ? 1.6 : 2.6; ctx.strokeStyle = bien ? `rgba(255,255,255,${alfa})` : `rgba(21,24,31,${alfa})`; ctx.stroke(); });
   }
-  ciclo();
+  const hud = () => { elEpoch.textContent = epoca; elAcc.textContent = Math.round(acierto()*100) + ' %'; };
+
+  tam(); nuevo();
+  if(reduceMotion){ while(epoca < EPOCAS) paso(); hud(); dibujar(1, 1); return; }
+  addEventListener('resize', () => { tam(); });
+
+  let raf;
+  function cuadro(now){
+    raf = requestAnimationFrame(cuadro);
+    if(!slides[0].classList.contains('active') || document.hidden) return;   /* solo trabaja en la portada */
+    const dt = now - t0;
+    if(fase === 'entra'){ dibujar(1, Math.min(1, dt/900)); if(dt > 1100){ fase = 'aprende'; } hud(); return; }
+    if(fase === 'aprende'){ for(let s=0;s<PASOS;s++) paso(); hud(); dibujar(1, 1);
+      if(epoca >= EPOCAS){ fase = 'pausa'; pausa = now; } return; }
+    if(fase === 'pausa'){ if(now - pausa > 3200){ fase = 'sale'; pausa = now; } return; }
+    if(fase === 'sale'){ const a = 1 - (now - pausa)/600; if(a <= 0){ nuevo(); return; } dibujar(a, 1); }
+  }
+  raf = requestAnimationFrame(cuadro);
+})();
+
+
+/* ================================================================
+   EL OBJETIVO · la misma nube leída de dos maneras
+   (la animación la hace el CSS cuando la lámina está activa)
+   ================================================================ */
+(function(){
+  const NS = 'http://www.w3.org/2000/svg';
+  const S = (tag, a, p) => { const e = document.createElementNS(NS, tag); for(const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+  const T = (p, x, y, t, a) => { const e = S('text', a||{}, p); e.setAttribute('x', x); e.setAttribute('y', y); e.textContent = t; return e; };
+  const r = rng(21), n = 46, xs = [], ys = [];
+  for(let i=0;i<n;i++){ const x = 5 + r()*235; xs.push(x); ys.push(Math.min(95, Math.max(5, 22 + .42*x - .00105*x*x + gauss(r)*6))); }
+  /* mínimos cuadrados y su error estándar */
+  const mx = xs.reduce((a,b)=>a+b)/n, my = ys.reduce((a,b)=>a+b)/n;
+  let sxx = 0, sxy = 0; xs.forEach((x,i) => { sxx += (x-mx)**2; sxy += (x-mx)*(ys[i]-my); });
+  const b = sxy/sxx, a = my - b*mx, sse = ys.reduce((s,y,i) => s + (y-a-b*xs[i])**2, 0), s = Math.sqrt(sse/(n-2));
+  const tval = b/(s/Math.sqrt(sxx)), ci = x => 2*s*Math.sqrt(1/n + (x-mx)**2/sxx);
+  /* regresión por núcleo: la curva flexible que se aprende de los datos */
+  const kr = x => { let p = 0, q = 0; xs.forEach((v,i) => { const w = Math.exp(-.5*((x-v)/24)**2); p += w*ys[i]; q += w; }); return p/q; };
+  const sx = x => 56 + x/250*480, sy = y => 262 - (y-10)/80*236;
+  const path = f => Array.from({length:90}, (_,i) => { const x = 4 + i*242/89; return (i?'L':'M') + sx(x).toFixed(1) + ',' + sy(f(x)).toFixed(1); }).join('');
+  function base(svg){
+    S('line', {x1:56, y1:262, x2:536, y2:262, class:'ax'}, svg); S('line', {x1:56, y1:20, x2:56, y2:262, class:'ax'}, svg);
+    [0,100,200].forEach(v => T(svg, sx(v), 284, v, {class:'tk', 'text-anchor':'middle'}));
+    [30,50,70,90].forEach(v => T(svg, 46, sy(v)+4, v, {class:'tk', 'text-anchor':'end'}));
+    T(svg, 536, 250, 'distancia a la capital (km)', {class:'tk', 'text-anchor':'end'}); T(svg, 64, 26, 'pobreza multidimensional, IPM (%)', {class:'tk'});
+  }
+  const pts = svg => xs.forEach((x,i) => S('circle', {cx:sx(x), cy:sy(ys[i]), r:5.5, class:'pt', style:`--d:${(.1 + r()*.9).toFixed(2)}`}, svg));
+
+  const st = document.getElementById('cmpSt'); base(st);
+  const banda = Array.from({length:60}, (_,i) => 4 + i*242/59);
+  S('path', {class:'band', fill:'rgba(47,91,234,.12)', d: banda.map((x,i) => (i?'L':'M') + sx(x) + ',' + sy(a+b*x+ci(x))).join('') +
+    banda.slice().reverse().map(x => 'L' + sx(x) + ',' + sy(a+b*x-ci(x))).join('') + 'Z'}, st);
+  pts(st);
+  S('path', {class:'fit', d:path(x => a+b*x), stroke:'#2f5bea', pathLength:1}, st);
+  T(st, 80, 58, `+${(b*100).toFixed(1)} puntos de IPM por cada 100 km`, {class:'lab late', fill:'#2f5bea'});
+  T(st, 80, 82, tval > 3.5 ? 'p < 0.001 → la relación existe' : 'p < 0.05 → la relación existe', {class:'tk late'});
+
+  const ml = document.getElementById('cmpMl'); base(ml); pts(ml);
+  S('path', {class:'fit', d:path(kr), stroke:'#ea7317', pathLength:1}, ml);
+  const q = 120, qy = kr(q);
+  S('line', {x1:sx(q), x2:sx(q), y1:262, y2:sy(qy), stroke:'#ea7317', 'stroke-width':2, 'stroke-dasharray':'6 6', class:'later'}, ml);
+  S('circle', {cx:sx(q), cy:sy(qy), r:11, fill:'#fff', stroke:'#ea7317', 'stroke-width':4, class:'new'}, ml);
+  T(ml, 80, 58, `municipio a 120 km → IPM ≈ ${qy.toFixed(1)} %`, {class:'lab later', fill:'#ea7317'});
+  T(ml, 80, 82, 'se juzga por el error en casos nuevos', {class:'tk later'});
 })();
 
 /* arranque: #n abre en la lámina n */
