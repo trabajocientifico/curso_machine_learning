@@ -35,7 +35,8 @@ button,input,textarea,select{ font:inherit; color:inherit; }
   --python:#4b8bbe;
   --vscode:#0098ff;
   --node:#3c873a;
-  --git:#f05133;
+  --codex:#10a37f;
+  --antigravity:#4285f4;
   --github:#8b5cf6;
   --font-display:'Fraunces',Georgia,serif;
   --font-body:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
@@ -487,7 +488,8 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
 .t-node   .ag-logo{ background:rgba(60,135,58,.2);  color:#5fc45c; }        .ag-card.t-node:hover{ border-color:#5fc45c; }
 .t-claude .ag-logo{ background:rgba(217,119,87,.16); color:var(--claude); } .ag-card.t-claude:hover{ border-color:var(--claude); }
 .t-freebuff .ag-logo{ background:rgba(0,245,212,.14); color:var(--freebuff); } .ag-card.t-freebuff:hover{ border-color:var(--freebuff); }
-.t-git    .ag-logo{ background:rgba(240,81,51,.16); color:var(--git); }     .ag-card.t-git:hover{ border-color:var(--git); }
+.t-codex  .ag-logo{ background:rgba(16,163,127,.16); color:var(--codex); }  .ag-card.t-codex:hover{ border-color:var(--codex); }
+.t-antigravity .ag-logo{ background:rgba(66,133,244,.16); color:var(--antigravity); } .ag-card.t-antigravity:hover{ border-color:var(--antigravity); }
 .t-github .ag-logo{ background:rgba(139,92,246,.16); color:var(--github); } .ag-card.t-github:hover{ border-color:var(--github); }
 .ag-others{ margin-top:18px; padding:14px 18px; border-radius:16px; background:rgba(255,255,255,.02); border:1px dashed var(--line); }
 .ag-others .ol{ font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:11px; text-align:center; }
@@ -1075,12 +1077,12 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
 
 <div id="stage">
 
-<section class="slide active" data-block="Instalación de herramientas" data-title="Tu estación de trabajo" data-sub="Las 7 piezas y su orden">
+<section class="slide active" data-block="Instalación de herramientas" data-title="Tu estación de trabajo" data-sub="Las 8 piezas y su orden">
   <div class="slide-scroll ag-wrap">
     <div class="slide-head">
       <span class="eyebrow">Herramientas de trabajo</span>
       <h2>Tu <span class="hl">estación de trabajo</span></h2>
-      <p class="lead">Siete piezas, cada una con un papel distinto. Se instalan <b>en este orden</b> porque unas dependen de otras. Toca una tarjeta para ir directo a su instalación.</p>
+      <p class="lead">Ocho piezas, cada una con un papel distinto. Codex y Antigravity tienen una interfaz visual, pensada para cualquier usuario. Toca una tarjeta para ir directo a su instalación.</p>
     </div>
     <div class="tool-grid">
       <div class="ag-card t-python" onclick="goTitle('Instalación paso a paso','python')">
@@ -1107,29 +1109,29 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
         <h3>Claude Code</h3><div class="maker">Agente · Anthropic</div>
         <div class="see">Ver instalación →</div>
       </div>
-      <div class="ag-card t-freebuff" onclick="goTitle('Instalación paso a paso','freebuff')">
+            <div class="ag-card t-codex" onclick="goTitle('Instalación paso a paso','codex')">
         <span class="step-idx">05</span>
+        <div class="ag-logo"><i class="fa-solid fa-terminal"></i></div>
+        <h3>Codex</h3><div class="maker">App de escritorio · OpenAI</div>
+        <div class="see">Ver instalación →</div>
+      </div>
+      <div class="ag-card t-antigravity" onclick="goTitle('Instalación paso a paso','antigravity')">
+        <span class="step-idx">06</span>
+        <div class="ag-logo"><i class="fa-solid fa-rocket"></i></div>
+        <h3>Antigravity</h3><div class="maker">Editor con agentes · Google</div>
+        <div class="see">Ver instalación →</div>
+      </div>
+      <div class="ag-card t-freebuff" onclick="goTitle('Instalación paso a paso','freebuff')">
+        <span class="step-idx">07</span>
         <div class="ag-logo">FB</div>
         <h3>FreeBuff</h3><div class="maker">Opción gratuita</div>
         <div class="see">Ver instalación →</div>
       </div>
-      <div class="ag-card t-git" onclick="goTitle('Instalación paso a paso','git')">
-        <span class="step-idx">06</span>
-        <div class="ag-logo"><i class="fa-brands fa-git-alt"></i></div>
-        <h3>Git</h3><div class="maker">Control de versiones</div>
-        <div class="see">Ver instalación →</div>
-      </div>
       <div class="ag-card t-github" onclick="goTitle('Instalación paso a paso','github')">
-        <span class="step-idx">07</span>
+        <span class="step-idx">08</span>
         <div class="ag-logo"><i class="fa-brands fa-github"></i></div>
         <h3>GitHub</h3><div class="maker">Tu código en la nube</div>
         <div class="see">Ver instalación →</div>
-      </div>
-      <div class="ag-card" style="border-style:dashed;cursor:default">
-        <span class="step-idx">✓</span>
-        <div class="ag-logo" style="background:rgba(0,245,212,.12);color:var(--accent)"><i class="fa-solid fa-clipboard-check"></i></div>
-        <h3>Verificación</h3><div class="maker">Antes del primer ejercicio</div>
-        <div class="see" style="color:var(--muted)">Que a todos les funcione</div>
       </div>
     </div>
   </div>
@@ -1147,8 +1149,9 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
       <button class="inst-tab" data-key="vscode"><span class="tl" style="background:var(--vscode)">&lt;&gt;</span> VS Code</button>
       <button class="inst-tab" data-key="node"><span class="tl" style="background:var(--node)">JS</span> Node.js</button>
       <button class="inst-tab" data-key="claude"><span class="tl" style="background:var(--claude)">✳</span> Claude Code</button>
+      <button class="inst-tab" data-key="codex"><span class="tl" style="background:var(--codex)">Cx</span> Codex</button>
+      <button class="inst-tab" data-key="antigravity"><span class="tl" style="background:var(--antigravity)">Ag</span> Antigravity</button>
       <button class="inst-tab" data-key="freebuff"><span class="tl" style="background:var(--freebuff)">FB</span> FreeBuff</button>
-      <button class="inst-tab" data-key="git"><span class="tl" style="background:var(--git)">⑂</span> Git</button>
       <button class="inst-tab" data-key="github"><span class="tl" style="background:var(--github)">GH</span> GitHub</button>
     </div>
     <div class="inst-body2">
@@ -1170,13 +1173,11 @@ h2{ font-size:clamp(28px,4vw,52px); font-weight:700; line-height:1.08; letter-sp
     <div class="slide-head">
       <span class="eyebrow">Para tu contexto</span>
       <h2>No son los únicos: <span class="hl">el mapa completo</span></h2>
-      <p class="lead">Instalamos dos agentes porque con dos basta para aprender a dirigirlos. Estos son otros que verás mencionados: la lógica de uso es la misma en todos.</p>
+      <p class="lead">Instalamos cuatro agentes: dos de terminal (Claude Code y FreeBuff) y dos con interfaz visual (Codex y Antigravity). Estos son otros que verás mencionados: la lógica de uso es la misma en todos.</p>
     </div>
     <div class="ag-others" style="margin-top:26px">
       <div class="ol">Otras opciones · <b>alternativas de agentes de IA para código</b></div>
       <div class="ag-others-grid">
-        <span class="oth"><i style="background:#19c37d">Cx</i> Codex · OpenAI</span>
-        <span class="oth"><i style="background:#4285f4">Ag</i> Antigravity · Google</span>
         <span class="oth"><i style="background:#0d0d0d">Cu</i> Cursor</span>
         <span class="oth"><i style="background:#6e5494">GC</i> GitHub Copilot</span>
         <span class="oth"><i style="background:#09b6a2">W</i> Windsurf</span>
@@ -1311,6 +1312,36 @@ const installs = {
       'Inicia sesión cuando lo pida<small>Se abre el navegador para autorizar el acceso.</small>',
       'Pruébalo: "crea un archivo hola.py que salude por pantalla"'
     ]},
+  codex:{ name:'Codex', brand:'#10a37f', kind:'app', promptChar:'▸',
+    meta:[['Descarga','openai.com/codex'],['Cuenta','ChatGPT']],
+    lines:[
+      {cmd:'Descargar  →  openai.com/codex'},
+      {cmd:'Instalar la app (Windows o macOS)'},
+      {cmd:'Iniciar sesión con la cuenta de ChatGPT', out:'✓ sesión iniciada', ok:true},
+      {cmd:'Abrir la carpeta  →  ml-investigacion', out:'✓ proyecto listo', ok:true}
+    ],
+    steps:[
+      'Entra a <b>openai.com/codex</b> y descarga la app<small>Hay versión para Windows y macOS; también funciona en la web y dentro de VS Code.</small>',
+      'Instálala como cualquier programa',
+      'Inicia sesión con tu cuenta de <b>ChatGPT</b><small>Revisa en la página qué planes de ChatGPT lo incluyen.</small>',
+      'Elige la carpeta <b>ml-investigacion</b> como proyecto',
+      'Pídele la tarea en lenguaje natural: "crea un archivo hola.py que salude por pantalla"<small>Revisa los cambios que propone antes de aceptarlos.</small>'
+    ]},
+  antigravity:{ name:'Antigravity', brand:'#4285f4', kind:'app', promptChar:'▸',
+    meta:[['Descarga','antigravity.google'],['Costo','Gratis · cuenta de Google']],
+    lines:[
+      {cmd:'Descargar  →  antigravity.google/download'},
+      {cmd:'Instalar con opciones por defecto'},
+      {cmd:'Iniciar sesión con Google', out:'✓ sesión iniciada', ok:true},
+      {cmd:'Abrir la carpeta  →  ml-investigacion', out:'✓ agente listo', ok:true}
+    ],
+    steps:[
+      'Entra a <b>antigravity.google/download</b><small>Hay instalador para Windows, macOS y Linux.</small>',
+      'Instala con las opciones por defecto',
+      'Inicia sesión con tu cuenta de <b>Google</b> (Gmail)<small>Es gratuito.</small>',
+      'Ten <b>Chrome</b> instalado<small>El agente lo usa para probar en el navegador lo que construye.</small>',
+      'Abre la carpeta <b>ml-investigacion</b> y escribe la tarea en el panel del agente'
+    ]},
   freebuff:{ name:'FreeBuff', brand:'#00f5d4', kind:'cli', promptChar:'$',
     meta:[['Requisito','Node.js'],['Costo','100% gratis']],
     lines:[
@@ -1324,33 +1355,17 @@ const installs = {
       'Empieza sin API key ni tarjeta<small>No necesitas registrar medio de pago para usarlo.</small>',
       'Repite el mismo ejercicio que con Claude Code<small>Así comparas cómo responde cada agente.</small>'
     ]},
-  git:{ name:'Git', brand:'#f05133', kind:'cli', promptChar:'$',
-    meta:[['Descarga','git-scm.com'],['Para qué','Historial del código']],
-    lines:[
-      {cmd:'git --version', out:'git version 2.47.1', ok:true},
-      {cmd:'git config --global user.name "Tu Nombre"', out:'✓ guardado', ok:true},
-      {cmd:'git config --global user.email "tu@correo.com"', out:'✓ guardado', ok:true},
-      {cmd:'git config --list', out:'user.name=Tu Nombre · user.email=tu@correo.com', ok:true}
-    ],
-    steps:[
-      'Descarga desde <b>git-scm.com/downloads</b><small>En Mac suele venir: prueba primero <code>git --version</code>.</small>',
-      'Instala con las opciones por defecto<small>Siguiente en todas las pantallas.</small>',
-      'Verifica en una terminal nueva: <code>git --version</code>',
-      'Configura tu nombre<small><code>git config --global user.name "Tu Nombre"</code></small>',
-      'Configura tu correo<small>Usa el mismo con el que crearás GitHub.</small>',
-      'Revisa todo con <code>git config --list</code>'
-    ]},
   github:{ name:'GitHub', brand:'#8b5cf6', kind:'app', promptChar:'▸',
     meta:[['Sitio','github.com'],['Costo','Gratis']],
     lines:[
       {cmd:'Entrar  →  github.com  ·  Sign up'},
-      {cmd:'Registrarse con el mismo correo de Git'},
+      {cmd:'Registrarse con tu correo'},
       {cmd:'Verificar el correo con el código'},
       {cmd:'New repository  →  ml-investigacion', out:'✓ repositorio creado', ok:true}
     ],
     steps:[
       'Entra a <b>github.com</b> y haz clic en <b>Sign up</b>',
-      'Regístrate con el mismo correo que configuraste en Git<small>Elige un usuario profesional: te acompañará años.</small>',
+      'Regístrate con tu correo<small>Elige un usuario profesional: te acompañará años.</small>',
       'Verifica tu correo con el código que te envían',
       'Crea tu primer repositorio: <b>New</b> → <code>ml-investigacion</code><small>Público y con un README.</small>',
       'Ahí podrás guardar tus notebooks del módulo y compartirlos'
