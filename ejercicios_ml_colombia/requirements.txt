@@ -6,3 +6,4 @@ scipy
 matplotlib
 geopandas
 jupyter
+openpyxl

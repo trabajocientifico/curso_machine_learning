@@ -68,7 +68,14 @@ body{font-family:var(--display);-webkit-font-smoothing:antialiased;user-select:n
 .td{font-size:14.5px;line-height:1.4;color:var(--soft);max-height:0;opacity:0;transition:max-height .55s cubic-bezier(.2,.8,.2,1),opacity .45s,margin .45s}
 .tc.on{border-color:var(--c);background:var(--ct);box-shadow:0 10px 26px -20px var(--c)}
 .tc.on::before{transform:scaleY(1)}
-.tc.on .td{max-height:90px;opacity:1;margin-top:5px}
+.tc.on .td{max-height:190px;opacity:1;margin-top:5px}
+/* cuándo conviene y cuándo no cada técnica */
+.sn{margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);display:grid;gap:3px}
+.sn p{margin:0;font-size:13.5px;line-height:1.34}
+.ok{color:#13916A;font-weight:650}.ko{color:#D8432C;font-weight:650}
+.practica{display:inline-block;margin-top:14px;font:600 13px var(--mono);letter-spacing:.06em;color:#fff;background:#121A2C;padding:10px 18px;border-radius:99px;text-decoration:none}
+.practica:hover{background:#2A4DD6}
+.gd .practica{position:absolute;right:64px;top:56px;margin:0}
 .tc.off{opacity:.42}
 .tc:hover{border-color:var(--c)}
 
@@ -178,6 +185,45 @@ body{font-family:var(--display);-webkit-font-smoothing:antialiased;user-select:n
 .gd li{font-size:13.2px;line-height:1.25;padding-left:14px;position:relative}
 .gd li::before{content:"";position:absolute;left:0;top:5px;width:7px;height:7px;border-radius:2px;background:var(--c)}
 .gd li span{display:block;font-size:11.8px;color:var(--soft)}
+/* ---------- esquema de apertura (antes un HTML aparte): 0 raíz · 1–8 situaciones · 9–16 técnicas · 17 vista completa ---------- */
+.esq{cursor:pointer;--ez:cubic-bezier(.2,.8,.2,1)}
+.esq .e-kick,.esq .e-by{position:absolute;left:0;right:0;text-align:center;transition:opacity .6s,transform .9s var(--ez)}
+.esq .e-kick{top:236px;font:600 13px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--soft)}
+.esq .e-by{top:452px;font:500 13px var(--mono);color:var(--mute);letter-spacing:.06em}
+.esq .e-rainbow{position:absolute;left:50%;top:420px;width:300px;height:5px;margin-left:-150px;border-radius:9px;
+  background:linear-gradient(90deg,#D8432C,#E39A10,#7B3FD1,#0E8FA8,#C9367A,#2A4DD6,#13916A,#6E8A0E);transition:opacity .6s,transform .9s var(--ez)}
+.esq .e-root{position:absolute;left:50%;top:44px;padding:17px 38px;border-radius:18px;background:var(--ink);color:#fff;
+  font-size:31px;font-weight:720;letter-spacing:-.02em;white-space:nowrap;
+  transform:translate(-50%,0);transition:transform 1.1s var(--ez),box-shadow .6s;box-shadow:0 18px 40px -26px rgba(18,26,44,.7)}
+.esq.intro .e-root{transform:translate(-50%,244px) scale(1.6)}
+.esq.intro .e-rainbow{transform:none}
+.esq:not(.intro) .e-kick,.esq:not(.intro) .e-by{opacity:0;transform:translateY(-14px)}
+.esq:not(.intro) .e-rainbow{opacity:0;transform:scaleX(.2)}
+.esq.intro .e-kick,.esq.intro .e-by,.esq.intro .e-rainbow{animation:rise .9s var(--ez) both}
+.esq.intro .e-by{animation-delay:.25s}
+.esq svg{position:absolute;overflow:visible;pointer-events:none}
+.esq .e-ln{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 1;stroke-dashoffset:1;transition:stroke-dashoffset .7s var(--ez)}
+.esq .e-ln.on{stroke-dashoffset:0}
+.esq .e-bus .e-ln{stroke:var(--ink);stroke-width:2.2}
+.esq .e-col{position:absolute;top:150px;height:560px;transition:opacity .6s}
+.esq.focus .e-col:not(.act){opacity:.28}
+.esq .e-col .e-ln{stroke:var(--c)}
+.esq .e-node{margin-top:34px;height:124px;box-sizing:border-box;border:1.5px solid var(--line);border-radius:16px;background:#fff;padding:14px 10px 12px 11px;
+  display:flex;flex-direction:column;gap:6px;overflow:hidden;
+  opacity:0;transform:translateY(-14px) scale(.94);transition:opacity .55s,transform .7s var(--ez),background .6s,border-color .6s,box-shadow .6s}
+.esq .e-node .n{font:600 13px var(--mono);letter-spacing:.12em;color:var(--c);display:flex;align-items:center;gap:7px}
+.esq .e-node .n i{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.esq .e-node .t{font-size:16.5px;line-height:1.16;font-weight:690;letter-spacing:-.01em}
+.esq .e-col.show .e-node{opacity:1;transform:none;border-color:var(--c);transition-delay:.35s,.35s,0s,0s,0s}
+.esq .e-col.open .e-node{background:var(--ct)}
+.esq .e-col.act .e-node{box-shadow:0 18px 36px -22px var(--c);transform:translateY(-3px)}
+.esq .e-lvs{margin-top:28px}
+.esq .e-lf{padding:7px 0}
+.esq .e-chip{font-size:14.5px;line-height:1.18;font-weight:560;padding:9px 9px;border:1.5px solid var(--line);border-radius:11px;background:#fff;
+  opacity:0;transform:translateX(-10px);transition:opacity .45s,transform .6s var(--ez),border-color .5s}
+.esq .e-chip.g{font:600 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--c);border-style:dashed;padding:8px 9px}
+.esq .e-col.open .e-chip{opacity:1;transform:none;border-color:var(--c);transition-delay:var(--d)}
+.esq .e-col.open .e-chip.g{border-color:var(--c)}
 </style>
 </head>
 <body>
@@ -515,55 +561,55 @@ function vNew(){
 /* ===================== contenido ===================== */
 const SIT=[
  {c:'#D8432C',title:'Manejo de datos faltantes',short:'Celdas vacías en la tabla',problem:'Celdas incompletas en la tabla de datos.',goal:'Que cada registro tenga un valor utilizable sin distorsionar la información.',
-  techs:[{n:'Descarte (eliminación)',d:'Se eliminan las filas con celdas vacías. Es simple, pero reduce la muestra.'},
-         {n:'Imputación',d:'Se asigna o estima el valor faltante: media, mediana, moda, vecinos (KNN) o un modelo.'}],
+  techs:[{n:'Descarte (eliminación)',d:'Se eliminan las filas con celdas vacías. Es simple, pero reduce la muestra.',si:'faltan pocas filas (menos del 5 %) y al azar.',no:'el vacío dice algo (por ejemplo, no responden los más ricos) o se perdería mucha muestra.'},
+         {n:'Imputación',d:'Se asigna o estima el valor faltante: media, mediana, moda, vecinos (KNN) o un modelo.',si:'descartar costaría mucha muestra.',no:'a la variable le falta la mayoría de los datos: conviene dejarla por fuera.'}],
   steps:[{t:-1,cap:'<b>Punto de partida:</b> 7 registros con 3 celdas vacías.'},{t:0,cap:'<b>Descarte:</b> quedan 4 de 7 registros; se pierde el 43 % de los datos.'},
-    {t:1,sub:'media',cap:'<b>Imputación por media</b> en las numéricas y por <b>moda</b> en la categórica.'},{t:1,sub:'mediana',cap:'<b>Mediana:</b> menos sensible a valores extremos que la media.'},
-    {t:1,sub:'knn',cap:'<b>KNN (k = 2):</b> toma el valor de los dos registros más parecidos.'}],
+    {t:1,sub:'media',cap:'<b>Imputación por media</b> en las numéricas y por <b>moda</b> en la categórica. <span class="ok">✓</span> Media: variables simétricas. <span class="ko">✗</span> Con cola larga o atípicos.'},{t:1,sub:'mediana',cap:'<b>Mediana:</b> menos sensible a valores extremos que la media. <span class="ok">✓</span> Variables sesgadas o con atípicos, como el ingreso. <span class="ko">✗</span> Si los que faltan son un grupo distinto del resto.'},
+    {t:1,sub:'knn',cap:'<b>KNN (k = 2):</b> toma el valor de los dos registros más parecidos. <span class="ok">✓</span> Hay variables relacionadas y pocos datos. <span class="ko">✗</span> Con muchas filas o columnas (es lento) o sin escalar antes.'}],
   viz:vMissing,guide:[['Descarte','elimina filas incompletas'],['Imputación','media · mediana · moda · KNN']]},
  {c:'#E39A10',title:'Codificación de variables categóricas',short:'Texto que el modelo no puede operar',problem:'Columnas con texto que el modelo no puede operar.',goal:'Convertir categorías en números sin perder ni inventar significado.',
-  techs:[{g:'Nominales · sin orden (ciudad)',n:'One-Hot Encoding',d:'Una columna binaria (0/1) por categoría. No impone ningún orden.'},
-         {g:'',n:'Label Encoding',d:'Un número por categoría. Es compacto, pero sugiere un orden que no existe.'},
-         {g:'Ordinales · con orden (nivel educativo)',n:'Label Encoding',d:'Números que respetan la jerarquía: bachiller 0 < técnico 1 < profesional 2 < posgrado 3.'}],
+  techs:[{g:'Nominales · sin orden (ciudad)',n:'One-Hot Encoding',d:'Una columna binaria (0/1) por categoría. No impone ningún orden.',si:'la variable es nominal y tiene pocas categorías.',no:'tiene cientos de categorías (municipios, códigos): la tabla se vuelve enorme.'},
+         {g:'',n:'Label Encoding',d:'Un número por categoría. Es compacto, pero sugiere un orden que no existe.',si:'el modelo es de árboles, que solo corta por umbrales.',no:'el modelo es lineal, KNN o una red: leerá un orden falso.'},
+         {g:'Ordinales · con orden (nivel educativo)',n:'Label Encoding',d:'Números que respetan la jerarquía: bachiller 0 < técnico 1 < profesional 2 < posgrado 3.',si:'las categorías tienen un orden real (educación, estrato).',no:'los saltos entre niveles son muy desiguales y el modelo es lineal.'}],
   steps:[{t:-1,cap:'<b>Punto de partida:</b> dos columnas de texto; el modelo solo opera números.'},{t:0,cap:'<b>One-Hot:</b> cada ciudad se vuelve una columna binaria, sin orden entre ellas.'},
     {t:1,cap:'<b>Label Encoding en nominales:</b> compacto, pero introduce un orden que no existe.'},{t:2,cap:'<b>Label Encoding en ordinales:</b> los números siguen la jerarquía real.'}],
   viz:vCat,guide:[['One-Hot','nominales · una columna 0/1 por categoría'],['Label Encoding','nominales · un número por categoría'],['Label Encoding','ordinales · respeta la jerarquía']]},
  {c:'#7B3FD1',title:'Transformación de distribución',short:'Distribuciones lejos de la normal',problem:'Variables asimétricas, lejos de la curva normal.',goal:'Aproximar la forma gaussiana que asumen muchos modelos.',
-  techs:[{n:'Transformación matemática',d:'Se aplica una función a cada valor: raíz, logaritmo, Box-Cox o Yeo-Johnson (esta admite ceros y negativos).'}],
-  steps:[{t:-1,sub:'orig',cap:'<b>Punto de partida:</b> ingreso con cola larga a la derecha.'},{t:0,sub:'sqrt',cap:'<b>Raíz cuadrada:</b> suaviza la cola, pero queda asimetría.'},
-    {t:0,sub:'log',cap:'<b>Logaritmo:</b> comprime los valores grandes; la forma se acerca a la campana.'},{t:0,sub:'bc',cap:'<b>Box-Cox:</b> busca el λ que mejor simetriza; aquí λ ≈ 0, casi un logaritmo.'}],
+  techs:[{n:'Transformación matemática',d:'Se aplica una función a cada valor: raíz, logaritmo, Box-Cox o Yeo-Johnson (esta admite ceros y negativos).',si:'la variable tiene cola larga y el modelo es lineal o asume normalidad.',no:'el modelo es de árboles: el orden de los datos no cambia y no gana nada.'}],
+  steps:[{t:-1,sub:'orig',cap:'<b>Punto de partida:</b> ingreso con cola larga a la derecha.'},{t:0,sub:'sqrt',cap:'<b>Raíz cuadrada:</b> suaviza la cola, pero queda asimetría. <span class="ok">✓</span> Conteos y asimetría moderada. <span class="ko">✗</span> Colas muy largas: no alcanza.'},
+    {t:0,sub:'log',cap:'<b>Logaritmo:</b> comprime los valores grandes; la forma se acerca a la campana. <span class="ok">✓</span> Valores positivos con cola larga (ingresos, precios). <span class="ko">✗</span> Hay ceros o negativos: use log(1 + x) o Yeo-Johnson.'},{t:0,sub:'bc',cap:'<b>Box-Cox:</b> busca el λ que mejor simetriza; aquí λ ≈ 0, casi un logaritmo. <span class="ok">✓</span> Valores estrictamente positivos. <span class="ko">✗</span> Ceros o negativos: ahí va Yeo-Johnson.'}],
   viz:vDist,guide:[['Transformación matemática','√x · log(x) · Box-Cox · Yeo-Johnson']]},
  {c:'#0E8FA8',title:'Discretización de variables numéricas',short:'Continuas que conviene agrupar',problem:'Una variable continua con demasiado detalle para el análisis.',goal:'Agrupar los valores en rangos que funcionen como categorías.',
-  techs:[{n:'Agrupación en intervalos',d:'Se definen cortes y cada valor pasa a su grupo: por criterio del dominio, por ancho igual o por frecuencia igual (cuantiles).'}],
-  steps:[{t:-1,cap:'<b>Punto de partida:</b> 40 edades como variable continua.'},{t:0,sub:'dom',cap:'<b>Criterio del dominio:</b> cortes con sentido para el problema (grupos etarios).'},
-    {t:0,sub:'ancho',cap:'<b>Ancho igual:</b> intervalos del mismo tamaño; los grupos quedan desbalanceados.'},{t:0,sub:'cuant',cap:'<b>Frecuencia igual:</b> cuantiles con el mismo número de registros por grupo.'}],
+  techs:[{n:'Agrupación en intervalos',d:'Se definen cortes y cada valor pasa a su grupo: por criterio del dominio, por ancho igual o por frecuencia igual (cuantiles).',si:'hay umbrales con sentido o hay que comunicar por grupos.',no:'la variable continua puede entrar al modelo tal cual: agrupar pierde información.'}],
+  steps:[{t:-1,cap:'<b>Punto de partida:</b> 40 edades como variable continua.'},{t:0,sub:'dom',cap:'<b>Criterio del dominio:</b> cortes con sentido para el problema (grupos etarios). <span class="ok">✓</span> Hay cortes conocidos (etapas de vida, rangos de ley). <span class="ko">✗</span> No hay un criterio que los justifique.'},
+    {t:0,sub:'ancho',cap:'<b>Ancho igual:</b> intervalos del mismo tamaño; los grupos quedan desbalanceados. <span class="ok">✓</span> Variables más o menos uniformes. <span class="ko">✗</span> Colas largas: quedan grupos casi vacíos.'},{t:0,sub:'cuant',cap:'<b>Frecuencia igual:</b> cuantiles con el mismo número de registros por grupo. <span class="ok">✓</span> Comparar grupos del mismo tamaño. <span class="ko">✗</span> Si los cortes deben significar algo fuera de la muestra.'}],
   viz:vBins,guide:[['Agrupación en intervalos','dominio · ancho igual · cuantiles']]},
  {c:'#C9367A',title:'Manejo de valores atípicos',short:'Valores extremos que distorsionan',problem:'Valores extremos (outliers) que distorsionan estadísticos y modelos.',goal:'Decidir si el atípico es ruido que se corrige o señal que se conserva.',
-  techs:[{n:'Eliminación',d:'Se borra el registro completo que contiene el valor atípico.'},
-         {n:'Recorte (capping)',d:'El valor se ajusta al límite inferior o superior habitual, por ejemplo Q1 − 1.5·IQR y Q3 + 1.5·IQR.'},
-         {n:'Evaluación comparativa',d:'Se entrena el modelo con y sin atípicos y se comparan las métricas en validación.'},
-         {n:'No hacer nada (preservación)',d:'Se mantienen cuando son la información clave, como en detección de anomalías.'}],
+  techs:[{n:'Eliminación',d:'Se borra el registro completo que contiene el valor atípico.',si:'son errores comprobados (digitación, valores imposibles).',no:'son casos reales: se borra justo la variación que importa.'},
+         {n:'Recorte (capping)',d:'El valor se ajusta al límite inferior o superior habitual, por ejemplo Q1 − 1.5·IQR y Q3 + 1.5·IQR.',si:'son reales pero extremos y se quiere conservar la fila.',no:'el atípico es la señal que se estudia.'},
+         {n:'Evaluación comparativa',d:'Se entrena el modelo con y sin atípicos y se comparan las métricas en validación.',si:'hay duda sobre qué hacer.',no:'hay muy pocos datos de validación para comparar.'},
+         {n:'No hacer nada (preservación)',d:'Se mantienen cuando son la información clave, como en detección de anomalías.',si:'se buscan anomalías, fraudes o errores.',no:'el modelo es sensible (lineal, Min-Max) y nadie revisa los casos.'}],
   steps:[{t:-1,cap:'<b>Punto de partida:</b> 2 atípicos jalan la recta y cambian la pendiente.'},{t:0,cap:'<b>Eliminación:</b> sin los 2 registros, la recta recupera la tendencia.'},
     {t:1,cap:'<b>Recorte:</b> los atípicos se llevan al límite superior Q3 + 1.5·IQR.'},{t:2,cap:'<b>Evaluación comparativa:</b> se queda la versión con menor error en validación.'},
     {t:3,cap:'<b>Preservación:</b> en detección de anomalías, el atípico es justo lo que se busca.'}],
   viz:vOut,guide:[['Eliminación','borra el registro'],['Recorte (capping)','lleva al límite habitual'],['Evaluación comparativa','con vs. sin atípicos'],['Preservación','si el atípico es la señal']]},
  {c:'#2A4DD6',title:'Escalamiento de datos',short:'Rangos numéricos muy distintos',problem:'Variables en rangos muy distintos: años, pesos, conteos.',goal:'Homogeneizar las escalas para que ninguna domine por su magnitud.',
-  techs:[{n:'Estandarización',d:'Restar la media y dividir por la desviación estándar: media 0, desviación 1.'},
-         {n:'Escalamiento Min-Max',d:'Lleva los valores a un rango fijo, como [0, 1] o [−1, 1].'},
-         {n:'Rango intercuartil (robusto)',d:'Restar la mediana y dividir por el IQR: mediana 0, IQR 1. Resiste los atípicos.'}],
+  techs:[{n:'Estandarización',d:'Restar la media y dividir por la desviación estándar: media 0, desviación 1.',si:'modelos lineales, KNN, SVM, PCA o redes.',no:'árboles y bosques: no lo necesitan.'},
+         {n:'Escalamiento Min-Max',d:'Lleva los valores a un rango fijo, como [0, 1] o [−1, 1].',si:'se necesita un rango fijo (redes, imágenes) y no hay atípicos.',no:'hay atípicos: aplastan al resto contra un extremo.'},
+         {n:'Rango intercuartil (robusto)',d:'Restar la mediana y dividir por el IQR: mediana 0, IQR 1. Resiste los atípicos.',si:'hay atípicos que no se quieren borrar.',no:'la variable es binaria o casi constante (IQR = 0).'}],
   steps:[{t:-1,sub:'raw',cap:'<b>Punto de partida:</b> en la escala del ingreso, edad e hijos quedan aplastados en 0.'},{t:0,sub:'z',cap:'<b>Estandarización:</b> todas centradas en 0 con desviación 1.'},
-    {t:1,sub:'mm01',cap:'<b>Min-Max [0, 1]:</b> el atípico de 38 M comprime el resto del ingreso cerca de 0.'},{t:1,sub:'mm11',cap:'<b>Min-Max [−1, 1]:</b> el mismo principio con un rango simétrico.'},
+    {t:1,sub:'mm01',cap:'<b>Min-Max [0, 1]:</b> el atípico de 38 M comprime el resto del ingreso cerca de 0. <span class="ok">✓</span> Entradas de redes neuronales, variables no negativas.'},{t:1,sub:'mm11',cap:'<b>Min-Max [−1, 1]:</b> el mismo principio con un rango simétrico. <span class="ok">✓</span> Variables centradas o redes con activación simétrica. <span class="ko">✗</span> Igual que [0, 1]: no con atípicos.'},
     {t:2,sub:'iqr',cap:'<b>Rango intercuartil:</b> el grueso de cada variable conserva su dispersión pese al atípico.'}],
   viz:vScale,guide:[['Estandarización','media 0 · desviación 1'],['Min-Max','rango [0, 1] o [−1, 1]'],['Rango intercuartil','mediana 0 · IQR 1 · robusto']]},
  {c:'#13916A',title:'Selección de características',short:'Columnas que no aportan',problem:'Muchas columnas; no todas aportan y algunas solo meten ruido.',goal:'Conservar las variables más relevantes para el objetivo.',
-  techs:[{n:'Métodos de filtrado',d:'Puntúan cada variable por separado (correlación, χ², información mutua) sin entrenar el modelo.'},
-         {n:'Métodos wrapper (envolventes)',d:'Prueban subconjuntos de variables con el modelo y conservan el de mejor desempeño.'},
-         {n:'Métodos embebidos',d:'La selección ocurre al entrenar: importancia en árboles y Random Forest, coeficientes en Lasso.'}],
+  techs:[{n:'Métodos de filtrado',d:'Puntúan cada variable por separado (correlación, χ², información mutua) sin entrenar el modelo.',si:'hay muchas variables y se quiere un primer descarte rápido.',no:'importan las combinaciones: mira cada variable sola.'},
+         {n:'Métodos wrapper (envolventes)',d:'Prueban subconjuntos de variables con el modelo y conservan el de mejor desempeño.',si:'hay pocas variables (decenas) y tiempo de cómputo.',no:'hay cientos de variables: el número de pruebas se dispara.'},
+         {n:'Métodos embebidos',d:'La selección ocurre al entrenar: importancia en árboles y Random Forest, coeficientes en Lasso.',si:'el modelo ya lo trae (Lasso, árboles).',no:'se necesita una selección independiente del modelo; en bosques, la importancia puede premiar el ruido.'}],
   steps:[{t:-1,cap:'<b>Punto de partida:</b> 8 columnas candidatas; no todas aportan.'},{t:0,cap:'<b>Filtrado:</b> cada variable recibe su puntaje; las que no superan el umbral salen.'},
     {t:1,cap:'<b>Wrapper:</b> el modelo evalúa subconjuntos y se queda con el de mejor desempeño.'},{t:2,cap:'<b>Embebido:</b> el modelo aprende la importancia de cada variable mientras entrena.'}],
   viz:vSel,guide:[['Filtrado','puntaje sin modelo'],['Wrapper','subconjuntos evaluados con el modelo'],['Embebidos','durante el entrenamiento']]},
  {c:'#6E8A0E',title:'Creación de características',short:'Información repartida en varias columnas',problem:'La información útil está repartida entre varias columnas.',goal:'Construir variables nuevas con sentido en el dominio del problema.',
-  techs:[{n:'Combinación de variables',d:'Dos o más variables existentes forman una nueva más informativa: personas y cuartos → hacinamiento.'}],
+  techs:[{n:'Combinación de variables',d:'Dos o más variables existentes forman una nueva más informativa: personas y cuartos → hacinamiento.',si:'hay una razón del dominio para combinar (por persona, por cuarto).',no:'se combinan variables sin sentido solo para ver si sirven: se fabrica ruido.'}],
   steps:[{t:-1,cap:'<b>Punto de partida:</b> personas y cuartos por separado no expresan la relación que importa.'},{t:0,cap:'<b>Nueva variable:</b> el hacinamiento combina ambas y se interpreta directamente; es una de las privaciones del IPM.'},
     {t:0,cap:'<b>La clave es el dominio:</b> cada área tiene sus combinaciones con sentido.'}],
   viz:vNew,guide:[['Combinación de variables','personas y cuartos → hacinamiento']]}
@@ -571,14 +617,67 @@ const SIT=[
 
 /* ===================== construcción de diapositivas ===================== */
 const SL=[];let cur=0,st=0,started=false;
+/* posición de la situación k en el mazo: no depende de cuántas láminas haya antes (esquema, portada) */
+const sitSL=k=>SL.findIndex(o=>o.sit===k);
 function setColor(el,c){el.style.setProperty('--c',c);el.style.setProperty('--ct',tint(c,.09));}
 function cardHTML(s,k,full){return`<div class="n">${pad(k+1)}</div><h3>${s.title}</h3><p>${full?s.problem:s.short}</p>`+(full?'<ul>'+s.guide.map(([a,b])=>`<li>${a}<span>${b}</span></li>`).join('')+'</ul>':`<div class="dots">${s.techs.map(()=>'<i></i>').join('')}</div>`);}
+
+/* esquema de apertura: el mapa de las 8 situaciones y sus técnicas, armado paso a paso */
+(function(){
+  const NS='http://www.w3.org/2000/svg',el=H('section','slide esq intro',null,stage);
+  el.innerHTML='<div class="e-kick">Machine Learning · Contenido del componente</div><div class="e-root">Ingeniería de características</div>'+
+    '<div class="e-rainbow"></div><div class="e-by">Oscar Iván Vargas Pineda · Trabajo Científico</div>';
+  const P=(d,parent)=>{const p=document.createElementNS(NS,'path');p.setAttribute('d',d);p.setAttribute('pathLength','1');p.setAttribute('class','e-ln');parent.appendChild(p);return p;};
+  const bus=document.createElementNS(NS,'svg');bus.setAttribute('class','e-bus');bus.setAttribute('width',1280);bus.setAttribute('height',200);bus.style.left=0;bus.style.top=0;el.appendChild(bus);
+  /* solo nombres, como en el esquema original (columnas angostas: textos cortos) */
+  const T=[
+   {c:'#D8432C',t:'Manejo de datos faltantes',k:['Descarte (eliminación)','Imputación']},
+   {c:'#E39A10',t:'Codificación de variables categóricas',k:[{g:'Nominales',k:['One-Hot Encoding','Label Encoding']},{g:'Ordinales',k:['Label Encoding']}]},
+   {c:'#7B3FD1',t:'Transfor\u00ADmación de distribución',k:['Ajuste a la distribución normal']},
+   {c:'#0E8FA8',t:'Discreti\u00ADzación de variables numéricas',k:['Agrupación en rangos o intervalos']},
+   {c:'#C9367A',t:'Manejo de valores atípicos',k:['Eliminación','Recorte (capping)','Evaluación comparativa','Preservación']},
+   {c:'#2A4DD6',t:'Escalamiento de datos',k:['Estandari\u00ADzación','Min-Max','Rango intercuartil']},
+   {c:'#13916A',t:'Selección de características',k:['Métodos de filtrado','Métodos wrapper','Métodos embebidos']},
+   {c:'#6E8A0E',t:'Creación de características',k:['Combinación de variables']}
+  ];
+  const ML=24,GAP=10,N=T.length,CW=(1280-2*ML-GAP*(N-1))/N,cx=i=>ML+i*(CW+GAP)+CW/2,ROOT_B=114,BUS_Y=150;
+  const stem=P(`M640 ${ROOT_B} V${BUS_Y}`,bus),busL=P(`M640 ${BUS_Y} H${cx(0)}`,bus),busR=P(`M640 ${BUS_Y} H${cx(N-1)}`,bus);
+  const COLS=T.map((s,i)=>{
+    const col=H('div','e-col',null,el);col.style.left=(ML+i*(CW+GAP))+'px';col.style.width=CW+'px';
+    col.style.setProperty('--c',s.c);col.style.setProperty('--ct',tint(s.c,.1));
+    const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',CW);svg.setAttribute('height',560);svg.style.left=0;svg.style.top=0;col.appendChild(svg);
+    const node=H('div','e-node',`<span class="n"><i></i>${pad(i+1)}</span><span class="t">${s.t}</span>`,col);
+    const lvs=H('div','e-lvs',null,col),items=[];
+    (function add(list,parent,depth){list.forEach(it=>{const lf=H('div','e-lf',null,lvs);lf.style.marginLeft=(18*depth)+'px';
+      const ch=H('div','e-chip'+(it.g?' g':''),null,lf);ch.textContent=it.g||it;items.push({ch,parent});if(it.g)add(it.k,ch,depth+1);});})(s.k,node,1);
+    return{col,svg,node,items,drop:null,paths:[]};});
+  /* conectores internos: se calculan con la maqueta real */
+  function wire(){COLS.forEach(C=>{C.svg.innerHTML='';C.drop=P(`M${CW/2} 0 V34`,C.svg);
+    C.paths=C.items.map((it,k)=>{const p=it.parent,ch=it.ch,ax=p.offsetLeft+9,ay=p.offsetTop+p.offsetHeight,cy=ch.offsetTop+ch.offsetHeight/2,x1=ch.offsetLeft;
+      const path=P(`M${ax} ${ay} V${cy-6} Q${ax} ${cy} ${ax+6} ${cy} H${x1}`,C.svg);path.style.transitionDelay=(k*140)+'ms';ch.style.setProperty('--d',(k*140+260)+'ms');return path;});});}
+  let st=0;
+  function render(){
+    el.classList.toggle('intro',st===0);
+    const lineOn=(p,on,delay)=>{p.style.transitionDelay=on?(delay||0)+'ms':'0ms';p.classList.toggle('on',on);};
+    lineOn(stem,st>=1,900);lineOn(busL,st>=1,1150);lineOn(busR,st>=1,1150);
+    const focus=st>N&&st<=2*N;el.classList.toggle('focus',focus);
+    COLS.forEach((C,i)=>{const shown=st>=i+1,open=st>=N+1+i,act=focus&&st===N+1+i;
+      C.col.classList.toggle('show',shown);C.col.classList.toggle('open',open);C.col.classList.toggle('act',act);
+      C.drop.style.transitionDelay=shown?(st===1?'1500ms':'0ms'):'0ms';C.drop.classList.toggle('on',shown);
+      C.node.style.transitionDelay=shown&&st===1?'1.7s':'';
+      C.paths.forEach((p,k)=>{p.style.transitionDelay=open?(k*140)+'ms':'0ms';p.classList.toggle('on',open);});});}
+  el.addEventListener('click',()=>next());
+  el.addEventListener('contextmenu',e=>{e.preventDefault();prev();});
+  wire();
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{wire();render();});
+  SL.push({el,steps:2+2*N,render(i){st=i;render();}});
+})();
 
 /* portada */
 (function(){const el=H('section','slide cv',null,stage);
   el.innerHTML='<div class="cv-kick">Machine Learning · Preparación de datos</div><h1>Ingeniería de<br><em>características</em></h1><p class="cv-sub">Ocho situaciones frecuentes en una tabla de datos y las técnicas para resolverlas antes de entrenar un modelo.</p><div class="cv-grid"></div><div class="cv-by">Oscar Iván Vargas Pineda · Trabajo Científico</div>';
   const g=el.querySelector('.cv-grid');
-  SIT.forEach((s,k)=>{const c=H('div','card',cardHTML(s,k,false),g);setColor(c,s.c);c.style.setProperty('--i',k);c.addEventListener('click',()=>go(k+1,0));});
+  SIT.forEach((s,k)=>{const c=H('div','card',cardHTML(s,k,false),g);setColor(c,s.c);c.style.setProperty('--i',k);c.addEventListener('click',()=>go(sitSL(k),0));});
   SL.push({el,steps:1,render(){}});})();
 
 /* situaciones */
@@ -587,12 +686,13 @@ SIT.forEach((s,k)=>{const el=H('section','slide sit',null,stage);setColor(el,s.c
   L.innerHTML=`<div class="kick"><i></i>Situación ${pad(k+1)}</div><h2>${s.title}</h2><div class="pb"><span>Problema</span><p>${s.problem}</p></div><div class="pb"><span>Objetivo</span><p>${s.goal}</p></div><div class="techs"></div>`;
   const tl=L.querySelector('.techs'),cards=[];
   s.techs.forEach((t,j)=>{if(t.g)H('div','grp',t.g,tl);
-    const c=H('div','tc',`<div class="tn"><b>${String.fromCharCode(65+j)}</b>${t.n}</div><div class="td">${t.d}</div>`,tl);
-    c.addEventListener('click',()=>{const idx=s.steps.findIndex(x=>x.t===j);go(k+1,idx);});cards.push(c);});
+    const sn=t.si?`<div class="sn"><p><b class="ok">✓ Úsela si</b> ${t.si}</p><p><b class="ko">✗ Evítela si</b> ${t.no}</p></div>`:'';
+    const c=H('div','tc',`<div class="tn"><b>${String.fromCharCode(65+j)}</b>${t.n}</div><div class="td">${t.d}${sn}</div>`,tl);
+    c.addEventListener('click',()=>{const idx=s.steps.findIndex(x=>x.t===j);go(sitSL(k),idx);});cards.push(c);});
   const vz=H('div','viz',null,el),cap=H('div','cap',null,el);
-  const V=s.viz(),ctx={c:s.c,goSub:sub=>{const idx=s.steps.findIndex(x=>x.sub===sub);if(idx>=0)go(k+1,idx);}};
+  const V=s.viz(),ctx={c:s.c,goSub:sub=>{const idx=s.steps.findIndex(x=>x.sub===sub);if(idx>=0)go(sitSL(k),idx);}};
   V.build(vz,ctx);H('div','sim','datos simulados',vz);
-  SL.push({el,steps:s.steps.length,
+  SL.push({el,sit:k,steps:s.steps.length,
     enter(){V.enter&&V.enter();},
     render(i){const x=s.steps[i];cards.forEach((c,j)=>{c.classList.toggle('on',x.t===j);c.classList.toggle('off',x.t>=0&&x.t!==j);});
       cap.innerHTML=x.cap;cap.classList.remove('go');void cap.offsetWidth;cap.classList.add('go');V.render(x,i);},
@@ -601,9 +701,10 @@ SIT.forEach((s,k)=>{const el=H('section','slide sit',null,stage);setColor(el,s.c
 
 /* guía completa */
 (function(){const el=H('section','slide gd',null,stage);
-  el.innerHTML='<div class="gk">Guía completa</div><h2>Ingeniería de características</h2><div class="gd-grid"></div>';
+  el.innerHTML='<div class="gk">Guía completa</div><h2>Ingeniería de características</h2><div class="gd-grid"></div>'+
+    '<a class="practica" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-1-ingenieria-caracteristicas.ipynb" target="_blank" rel="noopener">Práctica: notebook 2-1 con la base de hogares en Excel →</a>';
   const g=el.querySelector('.gd-grid');
-  SIT.forEach((s,k)=>{const c=H('div','card',cardHTML(s,k,true),g);setColor(c,s.c);c.style.setProperty('--i',k);c.addEventListener('click',()=>go(k+1,0));});
+  SIT.forEach((s,k)=>{const c=H('div','card',cardHTML(s,k,true),g);setColor(c,s.c);c.style.setProperty('--i',k);c.addEventListener('click',()=>go(sitSL(k),0));});
   SL.push({el,steps:1,render(){}});})();
 
 /* ===================== navegación ===================== */

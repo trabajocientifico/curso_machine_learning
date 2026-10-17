@@ -12,7 +12,7 @@
 
 <style>
 /* ==========================================================================
-   RESET + VARIABLES · misma paleta que index/FUNDAMENTOS.html
+   RESET + VARIABLES · misma paleta que index/2-1-clase-fundamentos.html
    ========================================================================== */
 *{ margin:0; padding:0; box-sizing:border-box; }
 button{ font:inherit; color:inherit; }
@@ -237,6 +237,7 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
 .mod-card.lab:hover{ border-color:rgba(234,115,23,.4); }
 .mod-card.lab .mod-tema i{ color:var(--ml); }
 .mod-card.lab a.mod-tema:hover{ border-color:var(--ml); background:var(--ml-soft); }
+.mod-card.lab .mod-temas{ display:grid; grid-template-columns:1fr 1fr; }   /* cuatro ejercicios en 2 × 2: la lámina cabe en pantallas bajas */
 /* herramientas de trabajo: franja de ancho completo bajo la rejilla, para no dejar una tarjeta suelta */
 .mod-tools{ flex-direction:row; align-items:center; gap:24px; margin-top:12px; padding:9px 14px 9px 24px; }
 .mod-tools::before{ background:var(--ink); }
@@ -382,7 +383,7 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
       <!-- columna izquierda: foto + formación -->
       <aside class="pf-side">
         <div class="pf-frame">
-          <img src="oscar-vargas.png" alt="Oscar Iván Vargas Pineda" loading="lazy">
+          <img src="index/img/oscar-vargas.png" alt="Oscar Iván Vargas Pineda" loading="lazy">
         </div>
         <div class="pf-edu">
           <div class="pf-edu-t">Formación académica</div>
@@ -507,10 +508,10 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
         <h3>Fundamentos del Machine Learning</h3>
         <p>ML frente a estadística, flujo de trabajo, partición de datos y validación cruzada, sobreajuste y selección de variables.</p>
         <div class="mod-temas">
-          <a class="mod-tema" href="index/FUNDAMENTOS.html"><b>CLASE</b><span>Fundamentos de ML para investigación</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="index/FUNDAMENTOS-TECNICAS-GENERALIDADES.html"><b>CLASE</b><span>Mapa de técnicas</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="index/esquema-ingenieria-caracteristicas.html"><b>ESQUEMA</b><span>Ingeniería de características: el mapa</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="index/ingenieria-caracteristicas.html"><b>CLASE</b><span>Ingeniería de características</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-1-clase-fundamentos.html"><b>CLASE</b><span>Fundamentos de ML para investigación</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-1-clase-mapa-tecnicas.html"><b>CLASE</b><span>Mapa de técnicas</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-1-clase-ingenieria-caracteristicas.html"><b>CLASE</b><span>Ingeniería de características</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-1-ingenieria-caracteristicas.ipynb" target="_blank" rel="noopener"><b>PRÁCTICA</b><span>Ingeniería de características · hogares</span><i>&rarr;</i></a>
         </div>
       </div>
       <div class="mod-card">
@@ -518,9 +519,10 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
         <h3>Aprendizaje supervisado</h3>
         <p>Regresión lineal y logística, árboles y Random Forest, Gradient Boosting, métricas de evaluación e interpretabilidad con SHAP.</p>
         <div class="mod-temas">
-          <a class="mod-tema" href="index/animacion-ejemplo-regresion-lineal-simple.html"><b>DEMO</b><span>Regresión lineal simple</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="index/animacion-ejemplo-arbol-decision.html"><b>DEMO</b><span>Árbol de decisión</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="index/animacion-ejemplo-random-forest-animado.html"><b>DEMO</b><span>Random Forest</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-clase-regresion-lineal.html"><b>CLASE</b><span>Regresión lineal simple y múltiple</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-2-regresion-lineal.ipynb" target="_blank" rel="noopener"><b>PRÁCTICA</b><span>Regresión lineal · ingresos</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-demo-arbol-decision.html"><b>DEMO</b><span>Árbol de decisión</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-demo-random-forest.html"><b>DEMO</b><span>Random Forest</span><i>&rarr;</i></a>
         </div>
       </div>
       <div class="mod-card soon">
@@ -543,12 +545,13 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
       </div>
       <div class="mod-card lab">
         <div class="mod-n">Ejercicios prácticos</div>
-        <h3>Tres notebooks con datos de Colombia</h3>
-        <p>Se ven con sus resultados en GitHub; para ejecutarlos, descargue la carpeta <code>ejercicios_ml_colombia</code>.</p>
+        <h3>Cuatro notebooks con datos</h3>
+        <p>Resultados en GitHub · carpeta <code>ejercicios_ml_colombia</code></p>
         <div class="mod-temas">
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/01_random_forest_pobreza_municipal.ipynb" target="_blank" rel="noopener"><b>01</b><span>Random Forest · pobreza municipal</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/02_kmeans_pca_tipologias_municipales.ipynb" target="_blank" rel="noopener"><b>02</b><span>PCA y K-Means · tipologías de municipios</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/03_arima_vs_gradient_boosting_trm.ipynb" target="_blank" rel="noopener"><b>03</b><span>ARIMA y Gradient Boosting · TRM</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-1-ingenieria-caracteristicas.ipynb" target="_blank" rel="noopener"><b>2.1</b><span>Ingeniería de características</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/01_random_forest_pobreza_municipal.ipynb" target="_blank" rel="noopener"><b>01</b><span>Random Forest · pobreza</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/02_kmeans_pca_tipologias_municipales.ipynb" target="_blank" rel="noopener"><b>02</b><span>PCA y K-Means · municipios</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/03_arima_vs_gradient_boosting_trm.ipynb" target="_blank" rel="noopener"><b>03</b><span>ARIMA y Boosting · TRM</span><i>&rarr;</i></a>
         </div>
       </div>
     </div>
@@ -557,7 +560,7 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
         <div class="mod-n">Antes de empezar</div>
         <p>Python, VS Code, Codex, Antigravity y GitHub: lo que necesita instalado para los ejercicios, paso a paso.</p>
       </div>
-      <a class="tools-btn" href="index/herramientas.html">Herramientas de trabajo <span aria-hidden="true">&rarr;</span></a>
+      <a class="tools-btn" href="index/0-0-herramientas-de-trabajo.html">Herramientas de trabajo <span aria-hidden="true">&rarr;</span></a>
     </div>
   </div>
 </section>
@@ -573,7 +576,7 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
     <div class="qr-duo">
       <div class="qr-pane">
         <span class="tag">Desde el celular</span>
-        <div class="qr-frame"><img src="QR-formulario.png" alt="Código QR del formulario Conocer el curso"></div>
+        <div class="qr-frame"><img src="index/img/QR-formulario.png" alt="Código QR del formulario Conocer el curso"></div>
         <p>Abra la cámara y apunte al código.</p>
       </div>
       <div class="qr-pane pc">
