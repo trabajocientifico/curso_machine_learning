@@ -182,6 +182,23 @@ function entrada(c,o){
       paradas.forEach((p,i)=>{popIn(T,p.children[0],.3+i*.45,{s0:.3});fadeIn(T,p,.3+i*.45,{dy:10});});
       fadeIn(T,meta,.5+paradas.length*.45,{dx:-20,dy:0});}];
 }
+/* separador de subtema: número grande, título, pregunta, lo que viene y barra de avance */
+const SECS=['El modelo','Mínimos cuadrados','Leer y revisar','Regresión múltiple','Entrenar y medir'];
+function seccion(c,o){
+  const g=G(c.svg),h=c.svg.querySelector('.ttl');if(h)h.remove();   // el título solo sirve para el índice
+  const num=tx(g,96,560,String(o.n).padStart(2,'0'),'hero',{style:`fill:${C.ml};font-size:200px`});
+  const tit=txl(g,470,330,o.titulo,'hero',76,{style:'font-size:64px'});
+  const y1=330+76*(o.titulo.length-1)+64;
+  const preg=tx(g,470,y1,o.pregunta,'txt',{style:`font-size:26px;fill:${C.ink}`});
+  const kk=tx(g,470,y1+70,'EN ESTA PARTE','kick',{style:'font-size:13px'});
+  const items=o.temas.map((t,i)=>{const gg=G(g),y=y1+110+i*40;S('circle',{cx:478,cy:y-7,r:5,fill:C.ml},gg);tx(gg,496,y,t,'lab');return gg;});
+  const W=(1408-4*14)/5,seg=SECS.map((s,i)=>{const gg=G(g),x=96+i*(W+14),col=i<o.n-1?C.sub:i===o.n-1?C.ml:C.line;
+    const r=S('rect',{x,y:808,width:W,height:8,rx:4,fill:col},gg);tx(gg,x,844,(i+1)+' · '+s,'sm',{style:i===o.n-1?`fill:${C.ml};font-weight:600`:''});return{gg,r};});
+  hide(tit,preg,kk,items);
+  return[T=>{fadeIn(T,num,.1,{dx:-30,dy:0,d:.7});fadeIn(T,tit,.35,{st:.1,dx:-20,dy:0});fadeIn(T,preg,.75);
+    fadeIn(T,kk,1);fadeIn(T,items,1.1,{st:.12,dx:-12,dy:0});
+    seg.forEach((s,i)=>T.from(s.r,{attr:{width:0},duration:.4,ease:'power2.out'},.4+i*.12));}];
+}
 /* punto del puntero en coordenadas del SVG (el escenario está escalado) */
 function svgPt(svg,e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
 /* arrastre con el puntero: on(dx,dy) mientras se mueve; fin(dx,dy) al soltar */
@@ -226,6 +243,7 @@ const pesos=v=>'$'+miles(v*1e6);
    ===================================================================== */
 const SLIDES=[];
 const slide=o=>SLIDES.push(o);
+const K1='1 · EL MODELO',K2='2 · MÍNIMOS CUADRADOS',K3='3 · LEER Y REVISAR',K4='4 · REGRESIÓN MÚLTIPLE',K5='5 · ENTRENAR Y MEDIR';
 const KA='REGRESIÓN LINEAL',KS='REGRESIÓN SIMPLE',KM='REGRESIÓN MÚLTIPLE',KE='MÉTRICAS',KH='HIPERPARÁMETROS',KC='CIERRE';
 const X1=TRAB.map(d=>d.educ),Y1=TRAB.map(d=>d.ing),FIT=ols(X1,Y1);
 
@@ -250,8 +268,8 @@ slide({kicker:KA,title:'Lo que vamos a construir',build(c){
   return entrada(c,{gancho:'¿Cuánto más gana una persona por cada año de estudio?',
     sub:'Cinco preguntas para entender la regresión lineal:',meta:'Al final, una herramienta',reto:'un prompt para pedirle el modelo a una IA',
     paradas:[{q:['¿Qué es','el modelo?'],d:'la recta y su ecuación'},{q:['¿Cómo se','encuentra?'],d:'mínimos cuadrados'},
-      {q:['¿Cómo se','lee?'],d:'β₀, β₁ y supuestos'},{q:['¿Y con dos','variables?'],d:'un plano en 3D'},
-      {q:['¿Qué tan','bien predice?'],d:'MAE y R²'}]});
+      {q:['¿Cómo se lee','y se revisa?'],d:'β y supuestos'},{q:['¿Y con dos','variables?'],d:'un plano en 3D'},
+      {q:['¿Funciona con','datos nuevos?'],d:'entrenar, validar y medir'}]});
 }});
 
 /* ---------- 3 · Ficha técnica ---------- */
@@ -261,7 +279,7 @@ slide({kicker:KA,title:'Ficha técnica del modelo',build(c){
     ['ECUACIÓN',C.st,['Simple:   ŷ = β₀ + β₁x','Múltiple: ŷ = β₀ + β₁x₁ + β₂x₂ …'],1],
     ['PARÁMETROS',C.st,['β₀: intercepto · β₁, β₂ …: pendientes','Los calcula el algoritmo con los datos']],
     ['HIPERPARÁMETROS',C.ml,['Ninguno','La recta óptima es única: no hay perillas']],
-    ['MÉTRICAS',C.ml,['MAE (en pesos) · R² (en %)','Siempre en datos que el modelo no vio']],
+    ['MÉTRICAS',C.ml,['MAE · RMSE · R² · R² ajustado','Se entrena con unos datos y se mide en otros']],
     ['CUÁNDO SÍ · CUÁNDO NO',C.ok,['✓ La relación es aproximadamente lineal','✓ Se quiere interpretar cada efecto','✗ Hay umbrales o curvas fuertes','✗ La Y es categórica (use logística)'],2]];
   const cards=F.map(([k,col,ls,mono],i)=>{const x=96+(i%3)*476,y=230+Math.floor(i/3)*290,gg=G(g);
     S('rect',{x,y,width:452,height:262,rx:22,fill:C.soft},gg);S('rect',{x,y,width:452,height:6,rx:3,fill:col},gg);
@@ -273,8 +291,13 @@ slide({kicker:KA,title:'Ficha técnica del modelo',build(c){
   return[T=>{popIn(T,cards,.3,{st:.18,s0:.9,ease:'back.out(1.4)'});}];
 }});
 
-/* ---------- 4 · De la tabla al gráfico: cada fila se vuelve un punto ---------- */
-slide({kicker:KS,title:'De la tabla al gráfico',build(c){
+/* ---------- 4 · Separador 1 ---------- */
+slide({kicker:K1,title:'El modelo: de los datos a la recta',build(c){
+  return seccion(c,{n:1,titulo:['El modelo:', 'de los datos a la recta'],pregunta:'¿Cómo se convierte una tabla en una ecuación?',temas:['De la tabla al gráfico', 'De los puntos a la recta: β₀, β₁, ŷ y ε']});
+}});
+
+/* ---------- 5 · De la tabla al gráfico: cada fila se vuelve un punto ---------- */
+slide({kicker:K1,title:'De la tabla al gráfico',build(c){
   const g=G(c.svg),N=8,FI=TRAB.slice(0,N);
   const A=axes(g,{x:720,y:230,w:780,h:540,xd:[0,20],yd:[0,5],xt:[0,4,8,12,16,20],yt:[0,1,2,3,4,5],fy:v=>'$'+v+' M',xl:'x · años de educación',yl:'y · ingreso mensual'});
   const CX=[130,300,480],Y0=300,DY=50;
@@ -319,8 +342,8 @@ slide({kicker:KS,title:'De la tabla al gráfico',build(c){
       decir(T,['Con las 60 personas aparece una nube:','a más educación, más ingreso.'],.2);}];
 }});
 
-/* ---------- 5 · De los puntos a la recta ---------- */
-slide({kicker:KS,title:'De los puntos a la recta',build(c){
+/* ---------- 6 · De los puntos a la recta ---------- */
+slide({kicker:K1,title:'De los puntos a la recta',build(c){
   const g=G(c.svg),my=mean(Y1),fc=(v,d)=>fmt(v,d).replace('.',',');
   const A=axes(g,{x:150,y:230,w:900,h:560,xd:[0,20],yd:[-1,5],xt:[0,4,8,12,16,20],yt:[0,1,2,3,4,5],fy:v=>'$'+v+' M',xl:'Años de educación',yl:'Ingreso mensual (millones)'});
   const cid='cr'+Math.random().toString(36).slice(2,7),cp=S('clipPath',{id:cid},S('defs',{},g));S('rect',{x:150,y:230,width:900,height:560},cp);
@@ -378,8 +401,13 @@ slide({kicker:KS,title:'De los puntos a la recta',build(c){
       pon(T,['ε · el residuo'],['Lo observado menos lo predicho:','lo que la recta no explica.','¿Cuál recta deja menos residuo?'],.1);}];
 }});
 
-/* ---------- 6 · Mínimos cuadrados: cómo se busca la recta ---------- */
-slide({kicker:KS,title:'Mínimos cuadrados: cómo se encuentra la mejor recta',build(c){
+/* ---------- 7 · Separador 2 ---------- */
+slide({kicker:K2,title:'Mínimos cuadrados: cómo se encuentra la recta',build(c){
+  return seccion(c,{n:2,titulo:['Mínimos cuadrados:', 'cómo se encuentra la recta'],pregunta:'De todas las rectas posibles, ¿cuál es la mejor?',temas:['La suma de cuadrados y su mínimo', 'Las dos fórmulas de β₀ y β₁']});
+}});
+
+/* ---------- 8 · Mínimos cuadrados: cómo se busca la recta ---------- */
+slide({kicker:K2,title:'Mínimos cuadrados: cómo se encuentra la mejor recta',build(c){
   const g=G(c.svg),D=TRAB.slice(0,12),xs=D.map(d=>d.educ),ys=D.map(d=>d.ing),mx=mean(xs),my=mean(ys),F12=ols(xs,ys),fc=(v,d)=>fmt(v,d).replace('.',',');
   // la recta gira sobre el punto de medias: para cada pendiente, una suma de cuadrados
   const sse=b=>D.reduce((s,d)=>s+(d.ing-(my+b*(d.educ-mx)))**2,0),B0=F12.b-.13,B1=F12.b+.13;
@@ -429,8 +457,8 @@ slide({kicker:KS,title:'Mínimos cuadrados: cómo se encuentra la mejor recta',b
       pon(T,'Inténtelo usted',['Mueva la pendiente: ninguna recta baja','del mínimo. Las fórmulas llegan directo.'],.1);}];
 }});
 
-/* ---------- 7 · Cómo se estima ---------- */
-slide({kicker:KS,title:'Cómo se estiman β₀ y β₁',build(c){
+/* ---------- 9 · Cómo se estima ---------- */
+slide({kicker:K2,title:'Cómo se estiman β₀ y β₁',build(c){
   const g=G(c.svg),mx=mean(X1),my=mean(Y1);
   const f1=[tx(g,96,250,'β₁ = Σ (x − x̄)(y − ȳ) / Σ (x − x̄)²','mono',{style:'font-size:30px'}),tx(g,96,300,'β₀ = ȳ − β₁ · x̄','mono',{style:'font-size:30px'})];
   const nota=tx(g,96,346,'Es todo el algoritmo: dos sumas y una división. No hay iteraciones ni azar.','sm');
@@ -451,8 +479,13 @@ slide({kicker:KS,title:'Cómo se estiman β₀ y β₁',build(c){
       countTo(T,res[1],0,FIT.a,1.6,1,v=>`β₀ = ${fmt(my,2)} − ${fmt(FIT.b,3)} · ${fmt(mx,2)} = ${fmt(v,2)}`);}];
 }});
 
-/* ---------- 8 · Cómo se lee ---------- */
-slide({kicker:KS,title:'Cómo se leen los coeficientes',build(c){
+/* ---------- 10 · Separador 3 ---------- */
+slide({kicker:K3,title:'Leer y revisar el modelo',build(c){
+  return seccion(c,{n:3,titulo:['Leer y revisar', 'el modelo'],pregunta:'¿Qué dicen los coeficientes y cuándo confiar en ellos?',temas:['Cómo se leen β₀ y β₁', 'El gráfico de residuos', 'Los supuestos: qué mirar y qué decidir']});
+}});
+
+/* ---------- 11 · Cómo se lee ---------- */
+slide({kicker:K3,title:'Cómo se leen los coeficientes',build(c){
   const g=G(c.svg);
   const A=axes(g,{x:150,y:250,w:640,h:470,xd:[0,20],yd:[-1,5],xt:[0,5,10,15,20],yt:[-1,0,1,2,3,4,5],xl:'Años de educación',yl:'Ingreso (millones)'});
   const xmin=Math.min(...X1),zona=S('rect',{x:A.sx(0),y:250,width:A.sx(xmin)-A.sx(0),height:470,fill:C.badT},g);
@@ -471,110 +504,345 @@ slide({kicker:KS,title:'Cómo se leen los coeficientes',build(c){
     T=>{fadeIn(T,c3,0,{dx:20,dy:0});}];
 }});
 
-/* ---------- 9 · Supuestos ---------- */
-slide({kicker:KS,title:'Supuestos: lo que hay que revisar en los residuos',build(c){
-  const g=G(c.svg),r=rng(7);
-  const P=[['L','Linealidad','Los residuos forman una curva','Agregue x², transforme o use un modelo no lineal',i=>{const x=i/59;return[x,(x-.5)**2*4-.33+randn(r)*.12];}],
-    ['I','Independencia','Los residuos siguen un patrón en el tiempo','Use modelos de series de tiempo o efectos por grupo',i=>{const x=i/59;return[x,Math.sin(x*12)*.45+randn(r)*.1];}],
-    ['N','Normalidad','Cola larga: unos pocos errores enormes','Transforme la Y (logaritmo)',i=>{const x=i/59;return[x,(r()<.12?1+r()*1.5:0)+randn(r)*.18-.15];}],
-    ['E','Igual varianza','Forma de embudo: el error crece con ŷ','Logaritmo o errores estándar robustos',i=>{const x=i/59;return[x,randn(r)*(.05+.55*x)];}]];
-  const pan=P.map(([L,n,mal,rem,gen],k)=>{const x0=96+(k%2)*712,y0=225+Math.floor(k/2)*320,gg=G(g);
-    S('rect',{x:x0,y:y0,width:688,height:296,rx:20,fill:C.soft},gg);tx(gg,x0+28,y0+70,L,'monoXL',{style:`fill:${C.ml};font-size:56px`});
-    tx(gg,x0+94,y0+48,n,'h3');tx(gg,x0+94,y0+78,mal,'sm');
-    const ax={x:x0+330,y:y0+30,w:330,h:170},sx=lin(0,1,ax.x,ax.x+ax.w),sy=lin(-1.2,1.6,ax.y+ax.h,ax.y);
-    S('line',{x1:ax.x,x2:ax.x+ax.w,y1:sy(0),y2:sy(0),stroke:C.frame,'stroke-width':1.5},gg);
-    for(let i=0;i<60;i++){const [a,b]=gen(i);S('circle',{cx:sx(a),cy:sy(clamp(b,-1.2,1.6)),r:3.5,fill:C.bad,'fill-opacity':.75},gg);}
-    tx(gg,ax.x,ax.y+ax.h+24,'ŷ (o el tiempo) →','tick');tx(gg,ax.x-8,ax.y+10,'residuo','tick',{'text-anchor':'end'});
-    txl(gg,x0+28,y0+238,['Remedio: '+rem],'sm',0,{style:`fill:${C.ink}`});return gg;});
-  const ok=tx(g,800,872,'Si no se ve ningún patrón, la recta y sus intervalos son confiables.','lab',{'text-anchor':'middle'});
-  hide(pan,ok);
-  return[...pan.map((p,i)=>T=>{fadeIn(T,p,0,{dy:16});}),T=>{fadeIn(T,ok,0);}];
+/* ---------- 12 · De dónde sale el gráfico de residuos ---------- */
+slide({kicker:K3,title:'Supuestos: primero, el gráfico de residuos',build(c){
+  const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',',');
+  const box={x:150,y:240,w:860,h:540};
+  // dos juegos de ejes en el mismo lugar: antes (educación, ingreso) y después (ŷ, residuo)
+  const A1=axes(g,{...box,xd:[0,20],yd:[0,5],xt:[0,4,8,12,16,20],yt:[0,1,2,3,4,5],fy:v=>'$'+v+' M',xl:'x · años de educación',yl:'y · ingreso mensual (millones)'});
+  const A2=axes(g,{...box,xd:[0,3],yd:[-1.5,3],xt:[0,.5,1,1.5,2,2.5,3],fx:v=>fc(v,1),yt:[-1,0,1,2,3],fy:v=>(v>0?'+':'')+v,xl:'ŷ · ingreso predicho (millones)',yl:'residuo = y − ŷ (millones)'});
+  A2.g.style.opacity=0;
+  const P=TRAB.map(d=>{const yh=FIT.f(d.educ),r=d.ing-yh;return{a:[A1.sx(d.educ),A1.sy(d.ing),A1.sy(yh)],b:[A2.sx(yh),A2.sy(r),A2.sy(0)]};});
+  const line=S('line',{x1:A1.sx(0),y1:A1.sy(FIT.f(0)),x2:A1.sx(20),y2:A1.sy(FIT.f(20)),stroke:C.ml,'stroke-width':5,'stroke-linecap':'round'},g);
+  const res=P.map(p=>S('line',{x1:p.a[0],x2:p.a[0],y1:p.a[1],y2:p.a[2],stroke:C.bad,'stroke-width':2.2},g));
+  const dots=P.map(p=>S('circle',{cx:p.a[0],cy:p.a[1],r:7,fill:C.st,'fill-opacity':.85},g));
+  const banda=S('rect',{x:box.x,y:A2.sy(.9),width:box.w,height:A2.sy(-.9)-A2.sy(.9),fill:C.okT,opacity:0},g);g.insertBefore(banda,line);
+  const X=1090,paso=txl(g,X,262,['',''],'h3',32),expl=txl(g,X,340,['','','','',''],'txt',28);
+  const pon=(T,a,b,at)=>{T.call(()=>{paso[0].textContent=a[0];paso[1].textContent=a[1]||'';b.forEach((l,j)=>expl[j].textContent=l);for(let j=b.length;j<5;j++)expl[j].textContent='';},null,at);
+    T.fromTo([...paso,...expl],{opacity:0,y:8},{opacity:1,y:0,duration:.45,stagger:.05},at);};
+  hide(res,line);
+  return[
+    T=>{T.from(A1.g,{opacity:0,duration:.4},.1);popIn(T,dots,.2,{st:{amount:.5,from:'random'},d:.3});T.to(line,{opacity:1,duration:.4},.7);T.to(res,{opacity:1,duration:.4,stagger:.008},1);
+      pon(T,['Partimos de la recta','y sus residuos'],['Cada línea roja es lo que la recta','no explicó de una persona.','Los supuestos se revisan','mirando esas líneas rojas.'],.5);},
+    T=>{T.to(A1.g,{opacity:0,duration:.4},0);T.to(A2.g,{opacity:1,duration:.5},1.6);
+      T.to(line,{attr:{x1:A2.sx(0),y1:A2.sy(0),x2:A2.sx(3),y2:A2.sy(0)},duration:1.6,ease:'power2.inOut'},.2);
+      P.forEach((p,i)=>{T.to(dots[i],{attr:{cx:p.b[0],cy:p.b[1]},duration:1.6,ease:'power2.inOut'},.2);
+        T.to(res[i],{attr:{x1:p.b[0],x2:p.b[0],y1:p.b[1],y2:p.b[2]},duration:1.6,ease:'power2.inOut'},.2);});
+      pon(T,['Acostamos la recta'],['Eje x: lo que predice el modelo (ŷ).','Eje y: cuánto se equivocó (el residuo).','La recta queda en el 0: arriba, el','modelo se quedó corto; abajo, se pasó.'],.1);},
+    T=>{T.to(banda,{opacity:1,duration:.6},0);
+      pon(T,['Qué se espera ver'],['Una nube pareja alrededor del 0,','sin curvas, sin olas y sin embudos.','Si se abre en embudo, vea en la lámina','siguiente el supuesto de igual varianza.'],.1);}];
 }});
 
-/* ---------- 10 · Dos X numéricas: el plano en 3D ---------- */
-slide({kicker:KM,title:'Dos X numéricas: el modelo es un plano',build(c){
-  const g=G(c.svg),M=olsM(BIG.map(d=>[d.educ,d.exp]),BIG.map(d=>d.ing)),[b0,b1,b2]=M.beta,pl=(e,x)=>b0+b1*e+b2*x,fc=(v,d)=>fmt(v,d).replace('.',',');
-  const P3=BIG.slice(0,90),halo='paint-order:stroke;stroke:#fff;stroke-width:6px;stroke-linejoin:round;';
+/* ---------- 13 · Supuestos: qué mirar y qué decidir ---------- */
+slide({kicker:K3,title:'Supuestos: qué mirar y qué decidir',build(c){
+  const g=G(c.svg),r=rng(7);
+  // parte un texto en renglones de a lo sumo n caracteres
+  const wrap=(t,n)=>t.split(' ').reduce((L,w)=>{const u=L[L.length-1];if((u+' '+w).trim().length>n)L.push(w);else L[L.length-1]=(u+' '+w).trim();return L;},['']);
+  const P=[['L','Linealidad','ŷ (predicho)',i=>{const x=i/59;return[x,(x-.5)**2*4-.33+randn(r)*.12];},'curva',
+      'Los residuos forman una curva en U.','La relación no es recta: el modelo se equivoca siempre en los extremos.','Agregar x² o transformar x; o usar un modelo no lineal.'],
+    ['I','Independencia','orden en el tiempo',i=>{const x=i/59;return[x,Math.sin(x*12)*.45+randn(r)*.1];},'ola',
+      'En orden de tiempo, suben y bajan en olas.','Un error arrastra al siguiente (meses, mismo hogar o municipio).','Usar modelos de series de tiempo o efectos por grupo.'],
+    ['N','Normalidad','ŷ (predicho)',i=>{const x=i/59;return[x,(r()<.12?1+r()*1.5:0)+randn(r)*.18-.15];},'cola',
+      'Unos pocos residuos enormes hacia un solo lado.','Los intervalos y los valores p dejan de ser confiables.','Transformar la Y (logaritmo) y revisar los atípicos.'],
+    ['E','Igual varianza','ŷ (predicho)',i=>{const x=i/59;return[x,randn(r)*(.05+.55*x)];},'embudo',
+      'La nube se abre como un embudo.','Se predice bien a unos y mal a otros; los errores estándar fallan.','Logaritmo de la Y o errores estándar robustos.']];
+  const W=340,GAP=17;
+  const cols=P.map(([L,n,xl,gen,forma,ve,sig,dec],k)=>{const x0=96+k*(W+GAP),y0=205,gg=G(g),rb=rng(40+k);
+    S('rect',{x:x0,y:y0,width:W,height:670,rx:20,fill:C.soft},gg);
+    tx(gg,x0+24,y0+50,L,'monoL',{style:`fill:${C.ml};font-size:34px`});tx(gg,x0+62,y0+46,n,'h3');
+    const ax={x:x0+56,y:y0+96,w:W-80,h:180},sx=lin(0,1,ax.x,ax.x+ax.w),sy=lin(-1.2,1.6,ax.y+ax.h,ax.y);
+    S('line',{x1:ax.x,x2:ax.x,y1:ax.y,y2:ax.y+ax.h,stroke:C.frame,'stroke-width':1.5},gg);S('line',{x1:ax.x,x2:ax.x+ax.w,y1:ax.y+ax.h,y2:ax.y+ax.h,stroke:C.frame,'stroke-width':1.5},gg);
+    S('line',{x1:ax.x,x2:ax.x+ax.w,y1:sy(0),y2:sy(0),stroke:C.sub,'stroke-width':1.5,'stroke-dasharray':'5 5'},gg);
+    tx(gg,ax.x-8,sy(0)+4,'0','tick',{'text-anchor':'end'});tx(gg,ax.x,ax.y-12,'residuo','tick');tx(gg,ax.x+ax.w,ax.y+ax.h+22,xl+' →','tick',{'text-anchor':'end'});
+    for(let i=0;i<60;i++)S('circle',{cx:sx(i/59),cy:sy(clamp(randn(rb)*.22,-1.1,1.1)),r:3,fill:C.dot,'fill-opacity':.35},gg);   // así se vería bien
+    const bad=G(gg);for(let i=0;i<60;i++){const [a,b]=gen(i);S('circle',{cx:sx(a),cy:sy(clamp(b,-1.2,1.6)),r:3.6,fill:C.bad,'fill-opacity':.8},bad);}
+    // la forma que delata el problema
+    const sh={curva:()=>S('path',{d:pathD(Array.from({length:30},(_,i)=>{const x=i/29;return[sx(x),sy((x-.5)**2*4-.33)];})),fill:'none',stroke:C.ml,'stroke-width':3},bad),
+      ola:()=>S('path',{d:pathD(Array.from({length:60},(_,i)=>{const x=i/59;return[sx(x),sy(Math.sin(x*12)*.45)];})),fill:'none',stroke:C.ml,'stroke-width':3},bad),
+      cola:()=>{S('path',{d:`M${sx(.5)},${sy(1.55)} l0,${sy(.9)-sy(1.55)}`,stroke:C.ml,'stroke-width':3},bad);return tx(bad,sx(.46),sy(1.2),'cola larga','tick',{'text-anchor':'end',style:`fill:${C.ml};font-weight:600;paint-order:stroke;stroke:#f5f6f8;stroke-width:5px`});},
+      embudo:()=>S('path',{d:`M${sx(0)},${sy(.15)} L${sx(1)},${sy(1.3)} M${sx(0)},${sy(-.15)} L${sx(1)},${sy(-1.15)}`,fill:'none',stroke:C.ml,'stroke-width':3},bad)};
+    sh[forma]();
+    const T0=y0+340,bl=[['QUÉ SE VE',ve,C.bad],['QUÉ SIGNIFICA',sig,C.sub],['QUÉ DECIDIR',dec,C.ok]];let yy=T0;
+    const txts=bl.map(([k,t,col])=>{const b=G(gg);tx(b,x0+24,yy,k,'kick',{style:`font-size:12.5px;fill:${col}`});const ls=wrap(t,34);
+      txl(b,x0+24,yy+26,ls,'sm',22,{style:k==='QUÉ DECIDIR'?`fill:${C.ink};font-weight:600`:''});yy+=26+ls.length*22+30;return b;});
+    return{gg,bad,txts};});
+  const nota=tx(g,1504,190,'gris: así se ve bien · rojo: el problema','sm',{'text-anchor':'end'});
+  hide(cols.map(c=>c.gg),nota);
+  return[T=>{fadeIn(T,nota,.3);},...cols.map(cl=>T=>{fadeIn(T,cl.gg,0,{dy:16});T.from(cl.bad,{opacity:0,duration:.5},.5);fadeIn(T,cl.txts,.8,{st:.25,dy:8});})];
+}});
+
+/* ---------- 14 · Separador 4 ---------- */
+slide({kicker:K4,title:'Regresión múltiple: dos X, un plano',build(c){
+  return seccion(c,{n:4,titulo:['Regresión múltiple:', 'dos X, un plano'],pregunta:'¿Qué cambia cuando el modelo tiene más de una X?',temas:['El plano en 3D', 'Cómo se lee cada β con lo demás constante']});
+}});
+
+/* ---------- 15 · Dos X numéricas: el plano en 3D ---------- */
+slide({kicker:K4,title:'Dos X numéricas: el modelo es un plano',build(c){
+  const g=G(c.svg),M=olsM(BIG.map(d=>[d.educ,d.exp]),BIG.map(d=>d.ing)),[b0,b1,b2]=M.beta,pl=(e,x)=>b0+b1*e+b2*x;
+  const halo='paint-order:stroke;stroke:#fff;stroke-width:6px;stroke-linejoin:round;';
   const eqT=tx(g,96,226,'ŷ = β₀ + β₁ · educación + β₂ · experiencia','mono',{style:'font-size:26px'});
   // proyección: educación 0–20, experiencia 0–45 e ingreso −0,5–5 M van a un cubo de −1 a 1; th gira sobre el eje vertical
-  const CX=560,CY=505,SC=200,PHI=.42;let th=.6;
-  const pr=(e,x,y)=>{const u=(e-10)/10,v=(x-22.5)/22.5,w=(y-2.25)/2.75,X=u*Math.cos(th)-v*Math.sin(th),Z=u*Math.sin(th)+v*Math.cos(th);
-    return[CX+SC*X,CY-SC*(w*Math.cos(PHI)+Z*Math.sin(PHI))];};
+  const CX=555,CY=545,SC=215,SV=.85,PHI=.35,E=[0,20],XX=[0,45],Y=[-.5,5];let th=.6;
+  const uvw=(e,x,y)=>[(e-10)/10,(x-22.5)/22.5,(y-2.25)/2.75];
+  const rot=(u,v)=>[u*Math.cos(th)-v*Math.sin(th),u*Math.sin(th)+v*Math.cos(th)];
+  const pr=(e,x,y)=>{const [u,v,w]=uvw(e,x,y),[X,Z]=rot(u,v);return[CX+SC*X,CY-SC*(SV*w*Math.cos(PHI)+Z*Math.sin(PHI))];};
+  const prof=(e,x)=>{const [u,v]=uvw(e,x,0);return rot(u,v)[1];};          // mayor = más lejos
   const seg=(el,p,q)=>{el.setAttribute('x1',p[0]);el.setAttribute('y1',p[1]);el.setAttribute('x2',q[0]);el.setAttribute('y2',q[1]);};
   const put=(el,p,dx=0,dy=0)=>{el.setAttribute('x',p[0]+dx);el.setAttribute('y',p[1]+dy);};
-  const gFloor=G(g),gAx=G(g),gPlane=G(g),gStem=G(g),gPts=G(g),gArr=G(g);
-  const fl=[...[0,5,10,15,20].map(e=>[[e,0],[e,45]]),...[0,15,30,45].map(x=>[[0,x],[20,x]])].map(s=>({s,el:S('line',{stroke:C.line,'stroke-width':1.5},gFloor)}));
-  const ax=[[[0,0,-.5],[21.5,0,-.5]],[[0,0,-.5],[0,48,-.5]],[[0,0,-.5],[0,0,5.2]]].map(s=>({s,el:S('line',{stroke:C.sub,'stroke-width':2.2},gAx)}));
-  const axT=[['educación →',[23,0,-.5]],['experiencia →',[0,52,-.5]],['ingreso',[0,0,5.6]]].map(([t,p])=>({p,el:tx(gAx,0,0,t,'axl',{'text-anchor':'middle',style:halo})}));
-  const tk=[...[0,10,20].map(e=>[String(e),[e,-4,-.5]]),...[0,20,40].map(x=>[String(x),[-1.6,x,-.5]]),...[1,2,3,4,5].map(y=>['$'+y+' M',[0,0,y]])]
-    .map(([t,p],i)=>({p,dx:i>=6?-12:0,el:tx(gAx,0,0,t,'tick',{'text-anchor':i>=6?'end':'middle',style:halo})}));
-  const poly=S('polygon',{fill:C.ml,'fill-opacity':.16,stroke:C.ml,'stroke-width':2},gPlane);
-  const mesh=[...[4,8,12,16].map(e=>[[e,0],[e,45]]),...[9,18,27,36].map(x=>[[0,x],[20,x]])].map(s=>({s,el:S('line',{stroke:C.ml,'stroke-opacity':.45,'stroke-width':1.2},gPlane)}));
-  const pts=P3.map(d=>({d,y:Math.min(d.ing,5),st:S('line',{stroke:C.bad,'stroke-width':1.8,'stroke-opacity':.8},gStem),el:S('circle',{r:5.5,fill:C.st,stroke:C.w,'stroke-width':1},gPts)}));
-  // flechas sobre el plano: caminar en una sola dirección con la otra X fija
-  const E0=5,X0=8,E1=15,X1b=38;
-  const aE=S('line',{stroke:C.ml,'stroke-width':5,'stroke-linecap':'round'},gArr),aX=S('line',{stroke:C.st,'stroke-width':5,'stroke-linecap':'round'},gArr);
-  const hE=S('circle',{r:8,fill:C.ml},gArr),hX=S('circle',{r:8,fill:C.st},gArr),o0=S('circle',{r:7,fill:C.ink},gArr);
-  const tE=tx(gArr,0,0,'+10 años de educación','sm',{style:halo+`fill:${C.ml};font-weight:600`}),tX=tx(gArr,0,0,'+30 años de experiencia','sm',{style:halo+`fill:${C.st};font-weight:600`});
+  const poly=(el,ps)=>el.setAttribute('points',ps.map(p=>p.join(',')).join(' '));
+  const gBox=G(g),gSh=G(g),gLow=G(g),gPlane=G(g),gStem=G(g),gHigh=G(g),gArr=G(g),gLab=G(g);
+  // caja: piso y dos paredes del fondo, con cuadrícula tenue
+  const piso=S('polygon',{fill:C.soft,stroke:C.frame,'stroke-width':1.5},gBox),parE=S('polygon',{fill:'#fafbfc',stroke:C.frame,'stroke-width':1.5},gBox),parX=S('polygon',{fill:'#fafbfc',stroke:C.frame,'stroke-width':1.5},gBox);
+  const gl=()=>S('line',{stroke:C.line,'stroke-width':1.2},gBox);
+  const gridPiso=[...[5,10,15].map(e=>({e,l:gl()})),...[15,30].map(x=>({x,l:gl()}))],gridAlto=[0,1,2,3,4,5].map(y=>({y,a:gl(),b:gl()}));
+  // ticks y nombres de ejes, por fuera de la caja
+  const tE=[0,5,10,15,20].map(e=>({e,t:tx(gLab,0,0,String(e),'tick',{'text-anchor':'middle',style:halo})})),tX=[15,30,45].map(x=>({x,t:tx(gLab,0,0,String(x),'tick',{'text-anchor':'middle',style:halo})})),
+    tY=[0,1,2,3,4,5].map(y=>({y,t:tx(gLab,0,0,'$'+y+' M','tick',{'text-anchor':'end',style:halo})}));
+  const nE=tx(gLab,0,0,'educación (años)','axl',{'text-anchor':'middle',style:halo}),nX=tx(gLab,0,0,'experiencia (años)','axl',{'text-anchor':'middle',style:halo}),nY=tx(gLab,0,0,'ingreso','axl',{'text-anchor':'end',style:halo});
+  // plano con degradado de altura y malla
+  const gid='pg'+Math.random().toString(36).slice(2,7),grad=S('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse'},S('defs',{},g));
+  S('stop',{offset:0,'stop-color':C.ml,'stop-opacity':.07},grad);S('stop',{offset:1,'stop-color':C.ml,'stop-opacity':.38},grad);
+  const plano=S('polygon',{fill:`url(#${gid})`,stroke:C.ml,'stroke-width':2.5},gPlane);
+  const malla=[...[5,10,15].map(e=>[[e,0],[e,45]]),...[15,30].map(x=>[[0,x],[20,x]])].map(s=>({s,el:S('line',{stroke:C.ml,'stroke-opacity':.5,'stroke-width':1.3},gPlane)}));
+  // personas: sombra en el piso, palito al punto, residuo y punto; las de abajo del plano se ven a través de él
+  const pts=BIG.slice(0,90).map(d=>{const y=Math.min(d.ing,5),alto=y>=pl(d.educ,d.exp),gp=alto?gHigh:gLow;
+    return{d,y,alto,sh:S('ellipse',{rx:4,ry:2,fill:C.muted,'fill-opacity':.5},gSh),pal:S('line',{stroke:C.muted,'stroke-opacity':.3,'stroke-width':1},gSh),
+      st:S('line',{stroke:alto?C.st:C.bad,'stroke-width':2.2,'stroke-opacity':.85},gStem),el:S('circle',{fill:C.st,stroke:C.w,'stroke-width':1.2},gp)};});
+  // flechas: caminar sobre el plano en una sola dirección, con la otra X quieta
+  const B=[5,8],FE=[15,8],FX=[5,38];
+  const aE=S('line',{stroke:C.ml,'stroke-width':6,'stroke-linecap':'round'},gArr),aX=S('line',{stroke:C.st,'stroke-width':6,'stroke-linecap':'round'},gArr);
+  const hE=arrowHead(gArr,0,0,0,C.ml,1.5),hX=arrowHead(gArr,0,0,0,C.st,1.5),o0=S('circle',{r:8,fill:C.ink,stroke:C.w,'stroke-width':2},gArr);
+  const lE=tx(gArr,0,0,'β₁','mono',{style:halo+`fill:${C.ml};font-size:24px;font-weight:700`}),lX=tx(gArr,0,0,'β₂','mono',{style:halo+`fill:${C.st};font-size:24px;font-weight:700`});
+  const flecha=(ln,hd,lb,p,q)=>{seg(ln,p,q);const ang=Math.atan2(q[1]-p[1],q[0]-p[0])*180/Math.PI;hd.setAttribute('transform',`translate(${q[0]+Math.cos(ang*Math.PI/180)*8},${q[1]+Math.sin(ang*Math.PI/180)*8}) rotate(${ang})`);
+    put(lb,q,Math.cos(ang*Math.PI/180)*26-8,Math.sin(ang*Math.PI/180)*26+8);};
   function draw(){
-    fl.forEach(({s,el})=>seg(el,pr(s[0][0],s[0][1],-.5),pr(s[1][0],s[1][1],-.5)));
-    ax.forEach(({s,el})=>seg(el,pr(...s[0]),pr(...s[1])));axT.forEach(({p,el})=>put(el,pr(...p),0,6));tk.forEach(({p,dx,el})=>put(el,pr(...p),dx,5));
-    poly.setAttribute('points',[[0,0],[20,0],[20,45],[0,45]].map(([e,x])=>pr(e,x,pl(e,x)).join(',')).join(' '));
-    mesh.forEach(({s,el})=>seg(el,pr(s[0][0],s[0][1],pl(...s[0])),pr(s[1][0],s[1][1],pl(...s[1]))));
-    pts.forEach(p=>{const a=pr(p.d.educ,p.d.exp,p.y);p.el.setAttribute('cx',a[0]);p.el.setAttribute('cy',a[1]);seg(p.st,a,pr(p.d.educ,p.d.exp,pl(p.d.educ,p.d.exp)));});
-    const o=pr(E0,X0,pl(E0,X0)),e=pr(E1,X0,pl(E1,X0)),x=pr(E0,X1b,pl(E0,X1b));
-    seg(aE,o,e);seg(aX,o,x);[[hE,e],[hX,x],[o0,o]].forEach(([el,p])=>{el.setAttribute('cx',p[0]);el.setAttribute('cy',p[1]);});
-    put(tE,e,14,22);put(tX,x,-10,-16);tX.setAttribute('text-anchor','end');}
+    const su=Math.sin(th)>=0?1:-1,sv=Math.cos(th)>=0?1:-1;            // signo de la pared lejana en cada eje
+    const eF=su>0?20:0,eN=20-eF,xF=sv>0?45:0,xN=45-xF;                    // educación/experiencia lejanas (F) y cercanas (N)
+    poly(piso,[[0,0],[20,0],[20,45],[0,45]].map(([e,x])=>pr(e,x,Y[0])));
+    poly(parE,[[eF,0,Y[0]],[eF,45,Y[0]],[eF,45,Y[1]],[eF,0,Y[1]]].map(p=>pr(...p)));
+    poly(parX,[[0,xF,Y[0]],[20,xF,Y[0]],[20,xF,Y[1]],[0,xF,Y[1]]].map(p=>pr(...p)));
+    gridPiso.forEach(o=>seg(o.l,...(o.e!==undefined?[pr(o.e,0,Y[0]),pr(o.e,45,Y[0])]:[pr(0,o.x,Y[0]),pr(20,o.x,Y[0])])));
+    gridAlto.forEach(o=>{seg(o.a,pr(eF,0,o.y),pr(eF,45,o.y));seg(o.b,pr(0,xF,o.y),pr(20,xF,o.y));});
+    // ticks sobre las aristas cercanas del piso; el ingreso, en la arista vertical del costado
+    const out=(p,q,k)=>[p[0]+(p[0]-q[0])*k,p[1]+(p[1]-q[1])*k];
+    tE.forEach(o=>{const a=pr(o.e,xN,Y[0]),b=pr(o.e,xF,Y[0]);put(o.t,out(a,b,.09),0,10);});
+    tX.forEach(o=>{const a=pr(eN,o.x,Y[0]),b=pr(eF,o.x,Y[0]);put(o.t,out(a,b,.12),0,10);});
+    const vc=[[0,0],[20,0],[20,45],[0,45]].reduce((m,p)=>pr(p[0],p[1],0)[0]<pr(m[0],m[1],0)[0]?p:m);   // esquina más a la izquierda
+    tY.forEach(o=>put(o.t,pr(vc[0],vc[1],o.y),-12,5));
+    put(nE,out(pr(10,xN,Y[0]),pr(10,xF,Y[0]),.2),0,16);put(nX,out(pr(eN,22.5,Y[0]),pr(eF,22.5,Y[0]),.25),0,16);put(nY,pr(vc[0],vc[1],5.6),-12,0);
+    // plano
+    const p00=pr(0,0,pl(0,0)),p11=pr(20,45,pl(20,45));grad.setAttribute('x1',p00[0]);grad.setAttribute('y1',p00[1]);grad.setAttribute('x2',p11[0]);grad.setAttribute('y2',p11[1]);
+    poly(plano,[[0,0],[20,0],[20,45],[0,45]].map(([e,x])=>pr(e,x,pl(e,x))));
+    malla.forEach(({s,el})=>seg(el,pr(s[0][0],s[0][1],pl(...s[0])),pr(s[1][0],s[1][1],pl(...s[1]))));
+    // personas, de atrás hacia adelante
+    pts.forEach(p=>{p.z=prof(p.d.educ,p.d.exp);const a=pr(p.d.educ,p.d.exp,p.y),f=pr(p.d.educ,p.d.exp,Y[0]);
+      p.el.setAttribute('cx',a[0]);p.el.setAttribute('cy',a[1]);p.el.setAttribute('r',6.5-1.6*(p.z+1.4)/2.8);p.el.setAttribute('fill-opacity',p.alto?.95-.3*(p.z+1.4)/2.8:.55);
+      p.sh.setAttribute('cx',f[0]);p.sh.setAttribute('cy',f[1]);seg(p.pal,a,f);seg(p.st,a,pr(p.d.educ,p.d.exp,pl(p.d.educ,p.d.exp)));});
+    pts.slice().sort((a,b)=>b.z-a.z).forEach(p=>p.el.parentNode.appendChild(p.el));
+    flecha(aE,hE,lE,pr(...B,pl(...B)),pr(...FE,pl(...FE)));flecha(aX,hX,lX,pr(...B,pl(...B)),pr(...FX,pl(...FX)));
+    const o=pr(...B,pl(...B));o0.setAttribute('cx',o[0]);o0.setAttribute('cy',o[1]);}
   // giro: solo, de un lado a otro; con el puntero se arrastra (el clic aquí no cambia de lámina)
-  const zona=S('rect',{x:200,y:250,width:740,height:640,fill:'transparent',style:'cursor:grab'},g);
+  const zona=S('rect',{x:96,y:250,width:914,height:610,fill:'transparent',style:'cursor:grab'},g);
   let dir=1,pausa=0,t0=performance.now(),arr=null;
   zona.addEventListener('click',e=>e.stopPropagation());
   zona.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();arr={x:svgPt(c.svg,e).x,th};zona.setPointerCapture(e.pointerId);});
-  zona.addEventListener('pointermove',e=>{if(!arr)return;th=clamp(arr.th+(svgPt(c.svg,e).x-arr.x)*.006,-.2,1.4);pausa=performance.now()+2500;draw();});
+  zona.addEventListener('pointermove',e=>{if(!arr)return;th=clamp(arr.th+(svgPt(c.svg,e).x-arr.x)*.006,.15,1.3);pausa=performance.now()+2500;draw();});
   zona.addEventListener('pointerup',()=>{arr=null;});
   (function loop(t){if(!c.root.isConnected)return;const dt=Math.min(t-t0,50);t0=t;
-    if(!reduce&&!arr&&t>pausa){th+=dir*.00018*dt;if(th>.95)dir=-1;if(th<.3)dir=1;draw();}requestAnimationFrame(loop);})(t0);
-  const X=1000,paso=txl(g,X,320,['',''],'h3',32),expl=txl(g,X,398,['','','',''],'txt',28);
-  const ley=tx(g,X,846,'Arrastre el gráfico para girarlo.','sm');
-  const coef=[tx(g,X,560,`β₁ = ${pesos(b1)} por año de educación`,'mono',{style:`fill:${C.ml};font-size:20px`}),
-    tx(g,X,594,'   con la experiencia fija','sm'),
-    tx(g,X,640,`β₂ = ${pesos(b2)} por año de experiencia`,'mono',{style:`fill:${C.st};font-size:20px`}),
-    tx(g,X,674,'   con la educación fija','sm')];
+    if(!reduce&&!arr&&t>pausa){th+=dir*.00016*dt;if(th>1)dir=-1;if(th<.25)dir=1;draw();}requestAnimationFrame(loop);})(t0);
+  const ayuda=tx(g,553,884,'↔  Arrastre el gráfico para girarlo','sm',{'text-anchor':'middle'});
+  const X=1060,paso=txl(g,X,300,['',''],'h3',32),expl=txl(g,X,378,['','','',''],'txt',28);
+  const ley=G(g);[[C.st,'arriba del plano: gana más de lo predicho'],[C.bad,'debajo del plano: gana menos']].forEach(([col,t],i)=>{S('line',{x1:X,x2:X+26,y1:520+i*34,y2:520+i*34,stroke:col,'stroke-width':4},ley);tx(ley,X+38,526+i*34,t,'sm');});
+  const coef=G(g);
+  [[C.ml,'β₁',`${pesos(b1)} por año de educación`,'con la experiencia fija'],[C.st,'β₂',`${pesos(b2)} por año de experiencia`,'con la educación fija']].forEach(([col,b,t,s],i)=>{const y=530+i*96;
+    S('rect',{x:X,y:y-34,width:440,height:82,rx:16,fill:col===C.ml?C.mlT:C.stT},coef);tx(coef,X+20,y+4,b,'mono',{style:`fill:${col};font-size:24px;font-weight:700`});
+    tx(coef,X+70,y+2,t,'lab',{style:`fill:${C.ink};font-size:19px`});tx(coef,X+70,y+30,s,'sm');});
   const pon=(T,a,b,at)=>{T.call(()=>{paso[0].textContent=a[0];paso[1].textContent=a[1]||'';b.forEach((l,j)=>expl[j].textContent=l);for(let j=b.length;j<4;j++)expl[j].textContent='';},null,at);
     T.fromTo([...paso,...expl],{opacity:0,y:8},{opacity:1,y:0,duration:.45,stagger:.05},at);};
-  hide(gPlane,gStem,gArr,coef);draw();
+  hide(gPlane,gStem,gArr,ley,coef);draw();
   return[
-    T=>{fadeIn(T,eqT,.1);T.from([gFloor,gAx],{opacity:0,duration:.6},.2);popIn(T,pts.map(p=>p.el),.5,{st:{amount:.8,from:'random'},d:.3});fadeIn(T,ley,1.2);
-      pon(T,['Ahora cada persona','tiene tres números'],['educación, experiencia e ingreso.','Ya no cabe en un plano de dos ejes:','es una nube en tres dimensiones.'],.6);},
-    T=>{T.to(gPlane,{opacity:1,duration:.8},.2);pon(T,['El modelo ya no es','una recta: es un plano'],['Con una X, una recta; con dos X,','un plano inclinado que pasa','por el medio de la nube.'],.1);},
-    T=>{T.to(gStem,{opacity:1,duration:.6},.2);pon(T,['Los residuos','siguen siendo verticales'],['Cada línea roja: la distancia de una','persona al plano. Mínimos cuadrados','elige el plano con la menor suma','de esas distancias al cuadrado.'],.1);},
-    T=>{T.to(gStem,{opacity:.15,duration:.4},0);T.to(gArr,{opacity:1,duration:.5},.2);fadeIn(T,coef,.6,{st:.12});
+    T=>{fadeIn(T,eqT,.1);T.from([gBox,gLab],{opacity:0,duration:.6},.2);T.from(gSh,{opacity:0,duration:.6},1);popIn(T,pts.map(p=>p.el),.5,{st:{amount:.8,from:'random'},d:.3});fadeIn(T,ayuda,1.2);
+      pon(T,['Ahora cada persona','tiene tres números'],['educación, experiencia e ingreso:','un punto en tres dimensiones.','La sombra gris en el piso marca','su educación y su experiencia.'],.6);},
+    T=>{T.to(gPlane,{opacity:1,duration:.8},.2);pon(T,['El modelo ya no es','una recta: es un plano'],['Con una X, una recta; con dos X,','un plano inclinado que pasa','por el medio de la nube.','Más alto donde hay más estudio.'],.1);},
+    T=>{T.to(gStem,{opacity:1,duration:.6},.2);pts.forEach(p=>{if(!p.alto)T.to(p.el,{attr:{fill:C.bad},duration:.4},.2);});fadeIn(T,ley,.6,{dy:6});
+      pon(T,['Los residuos','siguen siendo verticales'],['Mínimos cuadrados elige el plano','con la menor suma de esas','distancias al cuadrado.'],.1);},
+    T=>{T.to([gStem,ley],{opacity:0,duration:.4},0);pts.forEach(p=>{if(!p.alto)T.to(p.el,{attr:{fill:C.st},duration:.4},0);});T.to(gArr,{opacity:1,duration:.5},.2);fadeIn(T,coef,.6,{dy:10});
       pon(T,['Cómo se lee cada β'],['Caminar sobre el plano en una sola','dirección, con la otra X quieta:'],.1);}];
 }});
 
-/* ---------- 11 · ¿Qué tan bien predice? ---------- */
-slide({kicker:KE,title:'¿Qué tan bien predice?',build(c){
-  const g=G(c.svg),yb=BIG.map(d=>d.ing),my=mean(yb),FB=ols(BIG.map(d=>d.educ),yb),M=olsM(BIG.map(d=>[d.educ,d.exp]),yb);
-  const P=PRUEBA,pm=mean(P.map(d=>d.ing)),sst=P.reduce((s,d)=>s+(d.ing-pm)**2,0);
-  const mae=f=>mean(P.map(d=>Math.abs(d.ing-f(d)))),r2=f=>Math.max(0,1-P.reduce((s,d)=>s+(d.ing-f(d))**2,0)/sst);
-  const Mo=[['Siempre el promedio',()=>my,C.dot],['Recta: educación',d=>FB.f(d.educ),C.st],['Plano: educación + experiencia',d=>M.pred([d.educ,d.exp]),C.ml]];
-  const V=Mo.map(([n,f,col])=>({n,col,mae:mae(f),r2:r2(f)}));
-  const bloque=(x0,k,q,sub,val,max,fmtV,mejor)=>{const gg=G(g),sx=lin(0,max,x0,x0+520);
-    tx(gg,x0,250,k,'kick',{style:`font-size:14px;fill:${C.ink}`});tx(gg,x0,292,q,'h2');tx(gg,x0,326,sub,'sm');
-    const bars=V.map((v,i)=>{const y=380+i*120,b=G(gg);tx(b,x0,y,v.n,'lab',{style:'font-size:19px'});
-      const r=S('rect',{x:x0,y:y+14,width:Math.max(4,sx(val(v))-x0),height:56,rx:10,fill:v.col},b);
-      const t=tx(b,Math.max(x0+4,sx(val(v)))+14,y+52,'','mono',{style:`font-size:22px;fill:${v.col}`});return{b,r,t,v:val(v)};});
-    const m=tx(gg,x0,760,mejor,'sm',{style:`fill:${C.ink};font-weight:600`});return{gg,bars,m,fmtV};};
-  const B1=bloque(96,'MAE · ERROR ABSOLUTO MEDIO','¿En cuánto se equivoca?','En promedio, cuánto se aleja la predicción del ingreso real.',v=>v.mae,Math.max(...V.map(v=>v.mae))*1.05,v=>pesos(v),'Menos es mejor.');
-  const B2=bloque(860,'R² · COEFICIENTE DE DETERMINACIÓN','¿Cuánto explica?','Qué parte de las diferencias de ingreso logra explicar.',v=>v.r2,.7,v=>fmtP(v),'Más es mejor: 0 % es lo mismo que el promedio.');
-  const msg=tx(g,800,846,`Medido en ${P.length} personas que el modelo nunca vio: el plano se equivoca ${fmtP(1-V[2].mae/V[0].mae)} menos que adivinar con el promedio.`,'lab',{'text-anchor':'middle',style:`fill:${C.ml}`});
-  const anim=(T,B,at)=>{T.to(B.gg,{opacity:1,duration:.3},at);B.bars.forEach((b,i)=>{const t=at+.3+i*.5;T.from(b.r,{attr:{width:0},duration:.7,ease:'power2.out'},t);countTo(T,b.t,0,b.v,t,.7,B.fmtV);});
-    T.from(B.m,{opacity:0,duration:.4},at+1.9);};
-  hide(B1.gg,B2.gg,msg);
-  return[T=>anim(T,B1,.2),T=>anim(T,B2,0),T=>{fadeIn(T,msg,0);}];
+/* ---------- 16 · Separador 5 ---------- */
+slide({kicker:K5,title:'Entrenar, validar y medir el desempeño',build(c){
+  return seccion(c,{n:5,titulo:['Entrenar, validar', 'y medir el desempeño'],pregunta:'¿El modelo funciona con datos que nunca vio?',temas:['Entrenamiento y validación', 'MAE y RMSE: el error en pesos', 'R² y R² ajustado: cuánto explica', 'Las cuatro métricas, juntas']});
 }});
 
-/* ---------- 12 · Reto: leer un coeficiente ---------- */
+/* ---------- 17 · Entrenamiento y validación ---------- */
+slide({kicker:K5,title:'Entrenar con unos datos, medir con otros',build(c){
+  const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',','),yb=BIG.map(d=>d.ing),FB=ols(BIG.map(d=>d.educ),yb);
+  // 100 puntos = 800 personas: 75 de entrenamiento (BIG, 600) y 25 de prueba (PRUEBA, 200), barajados con semilla fija
+  const r=rng(12),orden=Array.from({length:100},(_,i)=>i);for(let i=99;i>0;i--){const j=Math.floor(r()*(i+1));[orden[i],orden[j]]=[orden[j],orden[i]];}
+  const esPrueba=i=>orden.indexOf(i)<25,S0=44,gx=i=>130+(i%10)*S0,gy=i=>290+Math.floor(i/10)*S0;
+  let nt=0,np=0;const pos=Array.from({length:100},(_,i)=>esPrueba(i)?{x:130+(np%10)*S0,y:720+Math.floor(np++/10)*S0}:{x:130+(nt%10)*S0,y:290+Math.floor(nt++/10)*S0});
+  const dots=Array.from({length:100},(_,i)=>S('circle',{cx:gx(i),cy:gy(i),r:15,fill:C.dot},g));
+  const lab0=tx(g,108,262,'800 personas · cada punto = 8','lab');
+  const labT=tx(g,108,262,'Entrenamiento · 75 % (600 personas)','lab',{style:`fill:${C.st};font-weight:600`}),labP=tx(g,108,692,'Prueba o validación · 25 % (200 personas)','lab',{style:`fill:${C.ml};font-weight:600`});
+  const llave=tx(g,108,862,'Se guarda aparte: el modelo no la ve mientras aprende.','sm',{style:`fill:${C.ml}`});
+  const A=axes(g,{x:780,y:280,w:720,h:420,xd:[0,20],yd:[0,5],xt:[0,4,8,12,16,20],yt:[0,1,2,3,4,5],fy:v=>'$'+v+' M',xl:'Años de educación',yl:'Ingreso (millones)'});
+  const tr=BIG.slice(0,150).map(d=>S('circle',{cx:A.sx(d.educ),cy:A.sy(Math.min(d.ing,5)),r:4.5,fill:C.st,'fill-opacity':.55},g));
+  const line=S('line',{x1:A.sx(0),y1:A.sy(FB.f(0)),x2:A.sx(20),y2:A.sy(FB.f(20)),stroke:C.ink,'stroke-width':4.5,'stroke-linecap':'round'},g);prepDraw(line);
+  const eqL=tx(g,800,312,`aprendió: ŷ = ${fc(FB.a,2)} + ${fc(FB.b,3)} · x`,'mono',{style:`font-size:19px;paint-order:stroke;stroke:#fff;stroke-width:6px`});
+  const te=PRUEBA.slice(0,50).map(d=>{const gg=G(g),x=A.sx(d.educ),y=A.sy(Math.min(d.ing,5));S('line',{x1:x,x2:x,y1:y,y2:A.sy(FB.f(d.educ)),stroke:C.ml,'stroke-width':2},gg);
+    S('circle',{cx:x,cy:y,r:6,fill:C.ml,stroke:C.w,'stroke-width':1.5},gg);return gg;});
+  const msg=txl(g,780,780,['',''],'txt',32,{style:`fill:${C.ink};font-size:22px`});
+  const decir=(T,a,at)=>{T.call(()=>a.forEach((l,j)=>msg[j].textContent=l),null,at);T.fromTo(msg,{opacity:0,y:8},{opacity:1,y:0,duration:.45,stagger:.06},at);};
+  hide(labT,labP,llave,A.g,tr,eqL,te);
+  return[
+    T=>{fadeIn(T,lab0,.1);popIn(T,dots,.2,{st:{amount:.8,from:'random'},d:.3});
+      decir(T,['En machine learning, el modelo no se evalúa','con los mismos datos con los que aprendió.'],.8);},
+    T=>{T.to(lab0,{opacity:0,duration:.3},0);dots.forEach((d,i)=>T.to(d,{attr:{cx:pos[i].x,cy:pos[i].y},fill:esPrueba(i)?C.ml:C.st,duration:1.1,ease:'power2.inOut'},.2+(i%10)*.02));
+      fadeIn(T,[labT,labP],1.2,{st:.15});fadeIn(T,llave,1.6);
+      decir(T,['Se barajan y se separan en dos grupos:','uno para aprender y otro para el examen.'],.3);},
+    T=>{T.to(A.g,{opacity:1,duration:.4},0);T.to(tr,{opacity:1,duration:.5,stagger:{amount:.6}},.2);drawIn(T,line,1,1);fadeIn(T,eqL,1.8);
+      decir(T,['Entrenamiento: la recta aprende β₀ y β₁','solo con los puntos azules.'],.1);},
+    T=>{T.to(tr,{opacity:.15,duration:.4},0);T.to(te,{opacity:1,duration:.4,stagger:{amount:.6}},.2);
+      decir(T,['Validación: es el examen, con personas que no vio.','Ahí, con sus residuos, se miden las métricas.'],.1);},
+    T=>{decir(T,['Si en prueba se equivoca mucho más que en entrenamiento:','sobreajuste (memorizó). Con pocos datos: validación cruzada.'],0);}];
+}});
+
+/* ---------- 18 · MAE y RMSE ---------- */
+slide({kicker:K5,title:'MAE y RMSE: del error de cada persona a una cifra',build(c){
+  const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',','),FB=ols(BIG.map(d=>d.educ),BIG.map(d=>d.ing));
+  const D=PRUEBA.slice(0,10),e=D.map(d=>d.ing-FB.f(d.educ)),ab=e.map(Math.abs),e2=e.map(v=>v*v);
+  const mae=mean(ab),mse=mean(e2),rmse=Math.sqrt(mse),mx=ab.indexOf(Math.max(...ab));
+  const top=Math.max(...e2,...ab)*1.1,bot=-Math.max(...ab)*1.15,sy=lin(bot,top,770,300),x0=150,bw=46,gap=16,bx=i=>x0+i*(bw+gap),xe=bx(10);
+  S('line',{x1:x0-20,x2:x0-20,y1:290,y2:780,stroke:C.frame,'stroke-width':1.5},g);S('line',{x1:x0-20,x2:xe,y1:sy(0),y2:sy(0),stroke:C.sub,'stroke-width':1.5},g);
+  tx(g,x0-28,sy(0)+5,'0','tick',{'text-anchor':'end'});
+  const paso=tx(g,x0-20,236,'','h3',{style:'font-size:21px'}),unidad=tx(g,x0-20,264,'','sm');
+  const bars=e.map((v,i)=>S('rect',{x:bx(i),y:v>=0?sy(v):sy(0),width:bw,height:Math.abs(sy(v)-sy(0)),rx:5,fill:v>=0?C.st:C.bad},g));
+  const vals=e.map((v,i)=>tx(g,bx(i)+bw/2,v>=0?sy(v)-10:sy(v)+22,(v>=0?'+':'−')+fc(Math.abs(v),2),'tick',{'text-anchor':'middle',style:`font-size:14px;fill:${C.ink}`}));
+  const mL=S('line',{x1:x0-20,x2:xe,y1:sy(mean(e)),y2:sy(mean(e)),stroke:C.ink,'stroke-width':2.5,'stroke-dasharray':'8 6'},g);
+  const mT=tx(g,xe+10,sy(mean(e))+5,'','mono',{style:`font-size:17px;fill:${C.ink}`});
+  // tarjetas de nombre: cada letra se enciende con su paso del cálculo
+  const X=1000,letras=(y,ls)=>{const t=tx(g,X,y,'','monoL',{style:'font-size:44px;letter-spacing:.12em'});return ls.map(l=>{const s=S('tspan',{},t);s.textContent=l;s.style.fill=C.frame;return s;});};
+  const card=(y,ls,en,es,orden)=>{const b=G(g);S('rect',{x:X-24,y:y-56,width:528,height:204,rx:20,fill:C.soft},b);const L=letras(y,ls);b.appendChild(L[0].parentNode);
+    tx(b,X,y+34,en,'lab',{style:`fill:${C.ink};font-style:italic`});tx(b,X,y+62,es,'sm');tx(b,X,y+90,orden,'sm',{style:`fill:${C.ink}`});
+    const v=tx(b,X,y+132,'','mono',{style:'font-size:24px;font-weight:600'});return{b,L,v};};
+  const cM=card(280,['M','A','E'],'Mean Absolute Error','error absoluto medio','Se calcula de atrás hacia adelante: E → A → M');
+  const cR=card(520,['R','M','S','E'],'Root Mean Squared Error','raíz del error cuadrático medio','E → S (al cuadrado) → M (promedio) → R (raíz)');
+  const on=(T,L,i,col,at)=>T.call(()=>{L[i].style.fill=col;},null,at);
+  const use=G(g);S('rect',{x:96,y:806,width:1408,height:76,rx:18,fill:C.mlT},use);
+  tx(use,120,838,'MAE · úselo para contar el error en pesos, o si hay atípicos que no deben dominar.','sm',{style:`fill:${C.ink}`});
+  tx(use,120,864,'RMSE · úselo cuando un error grande es mucho más grave que varios pequeños (p. ej., subestimar a un hogar pobre).','sm',{style:`fill:${C.ink}`});
+  const ponM=(T,v,t,at)=>{T.to(mL,{attr:{y1:sy(v),y2:sy(v)},duration:.6},at);T.to(mT,{attr:{y:sy(v)+5},duration:.6},at);T.call(()=>mT.textContent=t,null,at);};
+  const rot=(T,a,b,at)=>{T.call(()=>{paso.textContent=a;unidad.textContent=b;},null,at);T.fromTo([paso,unidad],{opacity:0},{opacity:1,duration:.4},at);};
+  hide(cR.b,use);
+  return[
+    T=>{rot(T,'E · Error: el residuo y − ŷ de 10 personas de prueba','en millones; arriba se quedó corto, abajo se pasó',.1);T.from(bars,{attr:{height:0,y:sy(0)},duration:.5,stagger:.05},.2);
+      T.from(vals,{opacity:0,duration:.3,stagger:.05},.5);T.from(cM.b,{opacity:0,duration:.5},.4);on(T,cM.L,2,C.bad,.6);
+      T.from([mL,mT],{opacity:0,duration:.4},1.3);T.call(()=>mT.textContent=`promedio = ${fc(mean(e),2)}: se cancelan`,null,0);},
+    T=>{rot(T,'A · Absoluto, luego M · Medio','se quita el signo y se promedia',0);on(T,cM.L,1,C.st,.1);
+      bars.forEach((b,i)=>T.to(b,{attr:{y:sy(ab[i]),height:sy(0)-sy(ab[i])},fill:C.ink,duration:.6},i*.04));
+      vals.forEach((t,i)=>{T.to(t,{attr:{y:sy(ab[i])-10},duration:.6},i*.04);T.call(()=>t.textContent=fc(ab[i],2),null,.3);});
+      ponM(T,mae,`promedio = ${fc(mae,2)}`,.8);on(T,cM.L,0,C.ink,.9);T.call(()=>cM.L.forEach(s=>s.style.fill=C.ink),null,1);
+      countTo(T,cM.v,0,mae,1,.8,v=>'MAE = '+pesos(v));},
+    T=>{rot(T,'S · Squared (al cuadrado), luego M · Mean (promedio)','en millones²: el promedio se llama MSE, error cuadrático medio',0);
+      T.to(cR.b,{opacity:1,duration:.4},0);on(T,cR.L,3,C.bad,.1);on(T,cR.L,2,C.ml,.3);
+      bars.forEach((b,i)=>T.to(b,{attr:{y:sy(e2[i]),height:sy(0)-sy(e2[i])},fill:i===mx?C.bad:C.ml,duration:.7},i*.04));
+      vals.forEach((t,i)=>{T.to(t,{attr:{y:sy(e2[i])-10},duration:.7},i*.04);T.call(()=>t.textContent=fc(e2[i],2),null,.35);});
+      ponM(T,mse,`MSE = ${fc(mse,2)} M²`,.9);on(T,cR.L,1,C.ml,1);},
+    T=>{rot(T,'R · Root (raíz): de pesos² de vuelta a pesos',`√ ${fc(mse,2)} = ${fc(rmse,2)} millones. El error grande (persona ${mx+1}) pesa más.`,0);on(T,cR.L,0,C.ml,.1);
+      T.call(()=>cR.L.forEach(s=>s.style.fill=C.ml),null,.4);countTo(T,cR.v,0,rmse,.3,.8,v=>'RMSE = '+pesos(v));fadeIn(T,use,1);}];
+}});
+
+/* ---------- 19 · R² ---------- */
+slide({kicker:K5,title:'R²: ¿cuánto mejor que predecir el promedio?',build(c){
+  const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',','),FB=ols(BIG.map(d=>d.educ),BIG.map(d=>d.ing)),D=PRUEBA.slice(0,60),Y=D.map(d=>d.ing),my=mean(Y);
+  const SST=Y.reduce((s,v)=>s+(v-my)**2,0),SSE=D.reduce((s,d)=>s+(d.ing-FB.f(d.educ))**2,0),R2=1-SSE/SST;
+  const nm=tx(g,96,214,'R² = coeficiente de determinación: qué parte de la variación de Y explica el modelo. Se arma con dos sumas de cuadrados, en 60 personas de prueba:','sm',{style:`fill:${C.ink}`});
+  const panel=(x0,f,col,t1,t2)=>{const pg=G(g),A=axes(pg,{x:x0,y:300,w:620,h:330,xd:[0,20],yd:[0,4.5],xt:[0,5,10,15,20],yt:[0,1,2,3,4],fy:v=>'$'+v+' M',xl:'Años de educación'});
+    tx(pg,x0,256,t1,'h3',{style:'font-size:20px'});tx(pg,x0,280,t2,'sm');
+    const id='r2'+x0+Math.random().toString(36).slice(2,6),cp=S('clipPath',{id},S('defs',{},pg));S('rect',{x:x0,y:300,width:620,height:330},cp);
+    const gc=G(pg,{'clip-path':`url(#${id})`}),gs=G(gc);
+    D.forEach(d=>{const px=A.sx(d.educ),py=A.sy(d.ing),pl=A.sy(f(d.educ)),h=Math.abs(py-pl);
+      S('rect',{x:d.educ>12?px-h:px,y:Math.min(py,pl),width:h,height:h,fill:col,'fill-opacity':.1,stroke:col,'stroke-opacity':.45,'stroke-width':1},gs);});
+    S('line',{x1:A.sx(0),x2:A.sx(20),y1:A.sy(f(0)),y2:A.sy(f(20)),stroke:col===C.bad?C.ml:C.sub,'stroke-width':4,'stroke-dasharray':col===C.bad?'':'9 7'},gc);
+    D.forEach(d=>S('circle',{cx:A.sx(d.educ),cy:A.sy(d.ing),r:5,fill:C.ml},pg));return{A,gs,pg};};
+  const L=panel(130,()=>my,C.sub,'SST · suma total de cuadrados (Total Sum of Squares)','cuadrados de la distancia de cada persona al promedio');
+  const R=panel(880,FB.f,C.bad,'SSE · suma de cuadrados del error (Sum of Squared Errors)','cuadrados de los residuos: lo que la recta no explica');
+  const W=1370,sx=v=>v/SST*W;
+  const b1=G(g);S('rect',{x:130,y:690,width:W,height:40,rx:8,fill:C.dot},b1);tx(b1,144,717,`SST · suma total de cuadrados = ${fc(SST,1)}`,'lab',{style:`fill:${C.w};font-size:17px`});
+  const b2=G(g);S('rect',{x:130,y:740,width:sx(SSE),height:40,rx:8,fill:C.bad},b2);tx(b2,144,767,`SSE · suma de cuadrados del error = ${fc(SSE,1)}`,'lab',{style:`fill:${C.w};font-size:17px`});
+  const ex=G(g);S('rect',{x:130+sx(SSE),y:690,width:W-sx(SSE),height:40,rx:8,fill:C.st},ex);tx(ex,130+sx(SSE)+14,717,`explicado por la recta = ${fmtP(R2)}`,'lab',{style:`fill:${C.w};font-size:17px`});
+  const f=tx(g,130,826,`R² = 1 − SSE / SST = 1 − ${fc(SSE,1)} / ${fc(SST,1)} = ${fc(R2,2)}  →  la recta explica el ${fmtP(R2)} de las diferencias de ingreso.`,'mono',{style:'font-size:19px'});
+  const use=tx(g,130,866,'Úselo para saber cuánto mejora el modelo frente al promedio: 0 % = igual que el promedio; 100 % = perfecto. No dice el error en pesos.','sm',{style:`fill:${C.ink}`});
+  hide(R.pg,b2,ex,f,use);
+  return[T=>{fadeIn(T,nm,.1);T.from(L.A.g,{opacity:0,duration:.4},.2);T.from(L.gs,{opacity:0,duration:.8},.4);fadeIn(T,b1,.9);T.from(b1.firstChild,{attr:{width:0},duration:.8},.9);},
+    T=>{T.to(R.pg,{opacity:1,duration:.4},0);T.from(R.gs,{opacity:0,duration:.8},.3);T.to(b2,{opacity:1,duration:.2},.9);T.from(b2.firstChild,{attr:{width:0},duration:.8},.9);},
+    T=>{T.to(ex,{opacity:1,duration:.5},0);fadeIn(T,f,.4);fadeIn(T,use,.9);}];
+}});
+
+/* ---------- 20 · R² ajustado ---------- */
+slide({kicker:K5,title:'R² ajustado: el R² con castigo por cada variable',build(c){
+  const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',','),n=TRAB.length;
+  const r=rng(9),noise=TRAB.map(()=>Array.from({length:10},()=>randn(r))),K=[...Array(11).keys()];
+  const cur=K.map(k=>olsM(TRAB.map((d,i)=>[d.educ,...noise[i].slice(0,k)]),Y1).r2);
+  const lo=Math.floor((Math.min(...cur)-.01)*100)/100,hi=Math.ceil((Math.max(...cur)+.01)*100)/100;
+  const A=axes(g,{x:150,y:270,w:520,h:250,xd:[0,10],yd:[lo,hi],xt:[0,2,4,6,8,10],yt:[lo,hi],fy:v=>fmt(v,2).replace('.',','),xl:'X de puro ruido agregadas',yl:'R² en entrenamiento'});
+  const pR=S('path',{d:pathD(K.map(k=>[A.sx(k),A.sy(cur[k])])),fill:'none',stroke:C.st,'stroke-width':4},g);prepDraw(pR);
+  const t0=txl(g,780,290,['El problema: el R² (coeficiente de determinación) nunca baja','al agregar X, aunque sean números al azar.'],'txt',28,{style:`fill:${C.ink}`});
+  // la fórmula por piezas
+  const X=780,fo=tx(g,X,392,'','mono',{style:'font-size:26px'});
+  [['R²aj = 1 − ',C.ink],['(1 − R²)',C.bad],[' × ',C.ink],['(n − 1)/(n − k − 1)',C.ml]].forEach(([t,col])=>{const s=S('tspan',{style:`fill:${col}`},fo);s.textContent=t;});
+  const pz=[[C.bad,'(1 − R²)','lo que el modelo NO explica'],[C.ml,'(n − 1)/(n − k − 1)','el castigo: n = personas, k = número de X'],[C.ink,'1 − …','lo que queda es el R² ya castigado']]
+    .map(([col,a,b],i)=>{const gg=G(g),y=438+i*38;tx(gg,X,y,a,'mono',{style:`fill:${col};font-size:19px`});tx(gg,X+250,y,b,'sm',{style:`fill:${C.ink}`});return gg;});
+  const pz2=tx(g,X,560,'Cada X de más achica el denominador (n − k − 1): el castigo crece y el ajustado baja si la X no aporta.','sm');
+  // el cálculo con números de entrenamiento (n = 60)
+  const Mo=[['Recta: educación',TRAB.map(d=>[d.educ])],['Plano: educación + experiencia',TRAB.map(d=>[d.educ,d.exp])],['Plano + 10 X de ruido',TRAB.map((d,i)=>[d.educ,d.exp,...noise[i]])]]
+    .map(([nm,Xs])=>{const M=olsM(Xs,Y1),k=Xs[0].length,cas=(n-1)/(n-k-1);return{nm,k,r2:M.r2,no:1-M.r2,cas,pr:(1-M.r2)*cas,r2a:1-(1-M.r2)*cas};});
+  const CX=[96,560,690,850,1030,1220,1500],HD=[['modelo',''],['k',''],['R²',''],['1 − R²','no explicado'],['castigo','(n−1)/(n−k−1)'],['(1 − R²) × castigo',''],['R² ajustado','= 1 − lo anterior']];
+  const hd=HD.map(([a,b],j)=>{const gg=G(g),an=j?'end':'start';tx(gg,CX[j],636,a,'hdr',{'text-anchor':an,style:`font-size:16px;fill:${[C.sub,C.sub,C.st,C.bad,C.ml,C.sub,C.ok][j]}`});if(b)tx(gg,CX[j],656,b,'tick',{'text-anchor':an});return gg;});
+  const ln=S('line',{x1:96,x2:1504,y1:668,y2:668,stroke:C.frame},g);
+  const best=Mo.reduce((b,m,i)=>m.r2a>Mo[b].r2a?i:b,0);
+  const filas=Mo.map((m,i)=>{const y=708+i*44,gg=G(g);if(i===best)S('rect',{x:84,y:y-30,width:1432,height:42,rx:10,fill:C.okT},gg);
+    tx(gg,CX[0],y,m.nm,'lab',{style:'font-size:18px'});tx(gg,CX[1],y,String(m.k),'cell',{'text-anchor':'end'});
+    const cs=[m.r2,m.no,m.cas,m.pr,m.r2a].map((v,j)=>tx(gg,CX[j+2],y,'','cell',{'text-anchor':'end',style:j===4?`fill:${C.ok};font-weight:700`:''}));return{gg,cs,m};});
+  const use=tx(g,96,872,`Úselo para comparar modelos con distinto número de X (en entrenamiento): el de ruido tiene el R² más alto, pero el ajustado elige el plano.`,'sm',{style:`fill:${C.ink}`});
+  hide(fo,pz,pz2,hd,ln,filas.map(f=>f.gg),use);
+  return[T=>{T.from(A.g,{opacity:0,duration:.4},.1);drawIn(T,pR,.3,1.6);fadeIn(T,t0,.6,{st:.1});},
+    T=>{fadeIn(T,fo,0);fadeIn(T,pz,.4,{st:.25,dx:-12,dy:0});fadeIn(T,pz2,1.3);},
+    T=>{fadeIn(T,[...hd,ln],0,{st:.05,dy:0});T.to(filas.map(f=>f.gg),{opacity:1,duration:.3,stagger:.1},.3);
+      [0,1,2,3,4].forEach(j=>filas.forEach(f=>{const v=[f.m.r2,f.m.no,f.m.cas,f.m.pr,f.m.r2a][j];countTo(T,f.cs[j],0,v,.6+j*.55,.5,x=>fc(x,j===2?3:3));}));},
+    T=>{fadeIn(T,use,0);}];
+}});
+
+/* ---------- 21 · Las cuatro métricas: entrenamiento frente a prueba ---------- */
+slide({kicker:K5,title:'Las cuatro métricas: entrenamiento frente a prueba',build(c){
+  const g=G(c.svg),yb=BIG.map(d=>d.ing),my=mean(yb),FB=ols(BIG.map(d=>d.educ),yb),M=olsM(BIG.map(d=>[d.educ,d.exp]),yb);
+  const met=(D,f,k)=>{const n=D.length,m=mean(D.map(d=>d.ing)),e=D.map(d=>d.ing-f(d)),sst=D.reduce((s,d)=>s+(d.ing-m)**2,0),r2=Math.max(0,1-e.reduce((s,v)=>s+v*v,0)/sst);
+    return{mae:mean(e.map(Math.abs)),rmse:Math.sqrt(mean(e.map(v=>v*v))),r2,r2a:Math.max(0,1-(1-r2)*(n-1)/(n-k-1))};};
+  const Mo=[['Siempre el promedio',()=>my,0,C.dot],['Recta: educación',d=>FB.f(d.educ),1,C.st],['Plano: educación + experiencia',d=>M.pred([d.educ,d.exp]),2,C.ml]]
+    .map(([nm,f,k,col])=>({nm,col,te:met(PRUEBA,f,k),tr:met(BIG,f,k)}));
+  const cols=[['MAE','mae',v=>pesos(v),-1],['RMSE','rmse',v=>pesos(v),-1],['R²','r2',fmtP,1],['R² ajustado','r2a',fmtP,1]],CX=[640,870,1100,1330];
+  tx(g,96,232,`En gris, el valor en entrenamiento (${BIG.length} personas); en negro, en prueba (${PRUEBA.length} personas que el modelo no vio).`,'sm');
+  const hd=cols.map(([t],j)=>tx(g,CX[j]+150,286,t,'hdr',{'text-anchor':'end',style:'font-size:17px'}));
+  const ln=S('line',{x1:96,x2:1504,y1:302,y2:302,stroke:C.frame},g);
+  const best=cols.map(([,k,,s])=>Mo.reduce((b,v,i)=>s*(v.te[k]-Mo[b].te[k])>0?i:b,0));
+  const filas=Mo.map((v,i)=>{const gg=G(g),y=352+i*76;S('circle',{cx:108,cy:y-7,r:8,fill:v.col},gg);tx(gg,128,y,v.nm,'lab');
+    cols.forEach(([,k,f],j)=>{const b=best[j]===i;if(b)S('rect',{x:CX[j]+10,y:y-30,width:150,height:62,rx:10,fill:C.okT},gg);
+      tx(gg,CX[j]+150,y,f(v.te[k]),'mono',{'text-anchor':'end',style:`font-size:20px;fill:${b?C.ok:C.ink};font-weight:${b?700:500}`});
+      tx(gg,CX[j]+150,y+22,'entr. '+f(v.tr[k]),'tick',{'text-anchor':'end'});});return gg;});
+  const P=Mo[2],gap=P.te.mae/P.tr.mae-1;
+  const veredicto=tx(g,96,598,gap<.15?`Plano: el MAE en prueba es solo ${fmtP(gap)} mayor que en entrenamiento → generaliza, no hay sobreajuste.`:`Plano: el MAE en prueba es ${fmtP(gap)} mayor que en entrenamiento → posible sobreajuste.`,'lab',{style:`fill:${C.ok}`});
+  const Q=[['¿En cuánto me equivoco, en pesos?','MAE',C.ink],['¿Me preocupan los errores grandes?','RMSE',C.ml],['¿Cuánto mejora frente al promedio?','R²',C.st],['¿Valió la pena agregar variables?','R² ajustado',C.ok]];
+  const guia=Q.map(([q,m,col],i)=>{const gg=G(g),x=96+(i%2)*712,y=640+Math.floor(i/2)*80;S('rect',{x,y,width:692,height:66,rx:16,fill:C.soft},gg);
+    tx(gg,x+24,y+41,q,'lab');tx(gg,x+668,y+41,'→ '+m,'mono',{'text-anchor':'end',style:`fill:${col};font-size:20px;font-weight:600`});return gg;});
+  const msg=tx(g,800,872,'Reporte las métricas de prueba, al lado de la línea base (el promedio).','lab',{'text-anchor':'middle',style:`fill:${C.ml}`});
+  hide(filas,veredicto,guia,msg);
+  return[T=>{fadeIn(T,[...hd,ln],.1,{st:.05,dy:0});fadeIn(T,filas,.4,{st:.25,dx:-14,dy:0});},
+    T=>{fadeIn(T,veredicto,0);},
+    T=>{fadeIn(T,guia,0,{st:.15,dy:10});fadeIn(T,msg,.8);}];
+}});
+
+/* ---------- 22 · Reto: leer un coeficiente ---------- */
 slide({kicker:KC,title:'Reto: lea el coeficiente',build(c){
   const g=G(c.svg),M=olsM(BIG.map(d=>[d.educ,d.exp]),BIG.map(d=>d.ing)),b=pesos(M.beta[1]);
   c.root.addEventListener('click',e=>e.stopPropagation());
@@ -594,13 +862,13 @@ slide({kicker:KC,title:'Reto: lea el coeficiente',build(c){
     T=>{T.call(()=>{ops[1].r.setAttribute('stroke',C.ok);ops[1].r.setAttribute('fill',C.okT);fb[0].textContent='Respuesta: B';fb[0].style.fill=C.ok;fb[1].textContent=O[1][2];},null,0);fadeIn(T,fb,.1,{st:.1});}];
 }});
 
-/* ---------- 13 · Síntesis ---------- */
+/* ---------- 23 · Síntesis ---------- */
 slide({kicker:KC,title:'En resumen',build(c){
   const g=G(c.svg);
   const R=[['El modelo','una X: recta  ŷ = β₀ + β₁x  ·  dos X: plano  ŷ = β₀ + β₁x₁ + β₂x₂',C.st],['Se estima','mínimos cuadrados: la menor suma de residuos al cuadrado',C.st],
-    ['Se lee','β = cuánto cambia ŷ cuando x sube 1, con las demás X fijas',C.ml],['Se revisa','que los residuos no muestren ningún patrón',C.ml],
-    ['Se evalúa','MAE (en pesos) y R² (en %), en datos nuevos y contra el promedio',C.ok],['Hiperparámetros','ninguno',C.ok]];
-  const filas=R.map(([a,b,col],i)=>{const gg=G(g),y=270+i*86;S('circle',{cx:112,cy:y-8,r:9,fill:col},gg);tx(gg,140,y,a,'h3');tx(gg,420,y,b,'txt',{style:`fill:${C.ink}`});return gg;});
+    ['Se lee','β = cuánto cambia ŷ cuando x sube 1, con las demás X fijas',C.ml],['Se revisa','residuos contra ŷ: sin patrón; si hay curva, olas, cola o embudo, decidir',C.ml],
+    ['Se valida','entrenar con unos datos y medir en otros que el modelo no vio',C.ok],['Se evalúa','MAE, RMSE, R² y R² ajustado, en prueba y contra el promedio',C.ok],['Hiperparámetros','ninguno',C.ok]];
+  const filas=R.map(([a,b,col],i)=>{const gg=G(g),y=262+i*76;S('circle',{cx:112,cy:y-8,r:9,fill:col},gg);tx(gg,140,y,a,'h3');tx(gg,420,y,b,'txt',{style:`fill:${C.ink}`});return gg;});
   const a=document.createElement('a');a.href='https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-2-regresion-lineal.ipynb';
   a.target='_blank';a.rel='noopener';a.textContent='Práctica: notebook 2-2 con 800 trabajadores →';
   a.style.cssText='position:absolute;left:96px;top:800px;padding:14px 26px;border-radius:99px;background:#15181f;color:#fff;font:600 17px "Schibsted Grotesk",sans-serif;text-decoration:none;opacity:0';
@@ -609,7 +877,7 @@ slide({kicker:KC,title:'En resumen',build(c){
   return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});T.to(a,{opacity:1,duration:.5},1.1);}];
 }});
 
-/* ---------- 14 · Prompt ajustable para pedirle el modelo a una IA ---------- */
+/* ---------- 24 · Prompt ajustable para pedirle el modelo a una IA ---------- */
 slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
   const g=G(c.svg);
   const intro=tx(g,96,212,'Llene los campos con sus datos: el prompt se arma solo. Cópielo en ChatGPT, Gemini o Claude y revise lo que le devuelva.','txt');
@@ -639,7 +907,7 @@ slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
     <label>Tipo de modelo<select name="tipo"><option value="simple">Simple (una X)</option><option value="multiple" selected>Múltiple (varias X)</option></select></label>
     <label>Para qué<select name="prop"><option value="ambos">Explicar y predecir</option><option value="explicar">Explicar (leer los β)</option><option value="predecir">Predecir (bajar el error)</option></select></label>
     <label>Datos de prueba<select name="test"><option>20</option><option>25</option><option>30</option></select></label>
-    <label>Métricas<span class="mets"><label><input type="checkbox" name="met" value="mae" checked>MAE</label><label><input type="checkbox" name="met" value="r2" checked>R²</label></span></label>
+    <label class="w">Métricas<span class="mets"><label><input type="checkbox" name="met" value="mae" checked>MAE</label><label><input type="checkbox" name="met" value="rmse">RMSE</label><label><input type="checkbox" name="met" value="r2" checked>R²</label><label><input type="checkbox" name="met" value="r2a">R² ajustado</label></span></label>
     <div class="nota">La IA puede equivocarse: ejecute el código paso a paso, compare las cifras con lo visto en clase y pregúntele lo que no entienda.</div>
   </div>
   <div class="out"><textarea readonly></textarea><div class="bar"><button type="button">Copiar el prompt</button><span class="ok"></span></div></div>`;
@@ -649,18 +917,19 @@ slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
   const lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a[a.length-1],q=s=>`«${s}»`;
   function armar(){
     const xs=$('x').value.split(',').map(s=>s.trim()).filter(Boolean),Y=$('y').value.trim()||'Y',p=+$('test').value,simple=$('tipo').value==='simple',prop=$('prop').value;
-    const ms=[...box.querySelectorAll('[name=met]:checked')].map(i=>({mae:'el MAE (error absoluto medio, en las unidades de Y)',r2:'el R² (qué porcentaje de la variación explica)'}[i.value]));
+    const ms=[...box.querySelectorAll('[name=met]:checked')].map(i=>({mae:'el MAE (error absoluto medio, en las unidades de Y)',rmse:'el RMSE (que castiga más los errores grandes)',r2:'el R² (qué porcentaje de la variación explica)',r2a:'el R² ajustado (para comparar modelos con distinto número de X)'}[i.value]));
     const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo regresión lineal por primera vez: explique cada paso con lenguaje sencillo.`,'',
       `Tengo el archivo ${q($('arch').value.trim()||'datos.xlsx')} (${$('hoja').value.trim()||'sin hoja'}). Quiero una regresión lineal ${simple?'simple':'múltiple'} en Python para ${{ambos:'explicar y predecir',explicar:'explicar',predecir:'predecir'}[prop]} la variable ${q(Y)} a partir de ${xs.length?lista(xs.map(q)):'las variables X'}.`,'',
       `Escriba código para ${$('herr').value}, en celdas cortas y con un comentario en español en cada línea, que:`,
       `1. Cargue los datos con pandas y muestre las primeras filas, el número de filas y columnas y los datos faltantes.`,
       `2. Grafique ${q(Y)} frente a ${xs.length>1?'cada variable X':q(xs[0]||'X')} en un diagrama de dispersión.`,
       `3. Si alguna X es texto (categórica), conviértala en columnas de 0 y 1 y diga cuál es la categoría de referencia.`,
-      `4. Separe los datos: ${100-p} % para entrenar y ${p} % para probar, con random_state=42.`,
+      `4. Separe los datos en entrenamiento (${100-p} %) y validación o prueba (${p} %), con random_state=42; entrene solo con el primero y mida con el segundo.`,
       `5. Ajuste la regresión lineal con scikit-learn${prop!=='predecir'?' y también con statsmodels, para ver cada coeficiente con su intervalo de confianza':''}.`,
       `6. Escriba la ecuación con los coeficientes estimados e interprete cada uno: «si X sube en 1, ${Y} cambia en promedio tanto${simple?'':', con las demás X fijas'}».`,
       `7. Calcule en los datos de prueba ${ms.length?lista(ms):'el MAE y el R²'}, y compárelos con un modelo que siempre predice el promedio.`,
-      `8. Grafique ${simple?'la recta sobre los puntos':'los valores reales frente a los predichos'} y los residuos, y diga si se ve algún patrón.`,'',
+      `8. Grafique ${simple?'la recta sobre los puntos':'los valores reales frente a los predichos'} y los residuos.`,
+      `9. Revise los supuestos con el gráfico de residuos contra los valores predichos: si ve una curva, olas, una cola larga o un embudo, dígame qué significa y qué decisión tomar.`,'',
       `Al final, resuma los resultados en un párrafo para un informe de investigación y aclare sus limitaciones (por ejemplo, que una asociación no prueba causalidad).`];
     ta.value=L.join('\n');ok.textContent='';}
   $('x').addEventListener('input',()=>{const n=$('x').value.split(',').filter(s=>s.trim()).length;if(n>1)$('tipo').value='multiple';else if(n===1)$('tipo').value='simple';});
