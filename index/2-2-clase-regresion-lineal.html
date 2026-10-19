@@ -877,6 +877,19 @@ slide({kicker:KC,title:'En resumen',build(c){
   return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});T.to(a,{opacity:1,duration:.5},1.1);}];
 }});
 
+/* encabezado y cierre comunes de los prompts: un proyecto local que se ejecuta desde la línea de comandos */
+function cabeceraProy(script,arch,libs,base){const s=script||'modelo.py';return[
+  `Escriba un script de Python llamado «${s}» que ejecutaré desde la línea de comandos (python ${s}) dentro de la carpeta del proyecto, que tiene esta estructura:`,'',
+  '    proyecto/',`    ├── ${s}`,`    ├── datos/${arch}        (datos de entrada)`,'    ├── resultados/          (tablas en Excel)','    └── visualizaciones/     (figuras .png)','',
+  'Requisitos del script:',
+  `a. Al inicio, antes de cualquier otro import, compruebe con importlib.util.find_spec si están instaladas las librerías que necesita (${libs}); instale con «sys.executable -m pip install» solo las que falten y después impórtelas. Tenga en cuenta que scikit-learn se importa como sklearn.`,
+  'b. Use rutas relativas a la carpeta del script (Path(__file__).resolve().parent) y cree resultados/ y visualizaciones/ si no existen.',
+  'c. Guarde cada figura como PNG numerado en visualizaciones/ (01_….png, 02_….png, con dpi=150) y ciérrela con plt.close(); no use plt.show().',
+  `d. Guarde todas las tablas en un solo Excel, resultados/${base}_resultados.xlsx, con una hoja por tabla (con openpyxl).`,
+  'e. Use random_state=42, comente cada bloque en español e imprima en la consola un resumen de cada paso.','',
+  'Pasos del análisis:'];}
+const CIERRE_PROY=['','Al final, agregue al Excel una hoja «resumen» con las cifras clave, explíqueme qué contiene cada archivo generado (cada hoja y cada figura) y cómo leerlo, y redacte un párrafo para un informe de investigación con sus limitaciones (por ejemplo, que una asociación no prueba causalidad).'];
+
 /* ---------- 24 · Prompt ajustable para pedirle el modelo a una IA ---------- */
 slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
   const g=G(c.svg);
@@ -901,7 +914,7 @@ slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
   <div class="f">
     <label class="w">Archivo de datos<input type="text" name="arch" value="2-2-regresion-lineal.xlsx"></label>
     <label>Hoja o formato<input type="text" name="hoja" value="hoja «trabajadores»"></label>
-    <label>Dónde lo va a correr<select name="herr"><option>Google Colab</option><option>Jupyter Notebook</option><option>VS Code</option></select></label>
+    <label>Nombre del script<input type="text" name="script" value="modelo_regresion_lineal.py"></label>
     <label class="w">Variable Y · lo que quiere predecir<input type="text" name="y" value="ingreso_mensual"></label>
     <label class="w">Variables X · separadas por comas<input type="text" name="x" value="anos_educacion, experiencia"></label>
     <label>Tipo de modelo<select name="tipo"><option value="simple">Simple (una X)</option><option value="multiple" selected>Múltiple (varias X)</option></select></label>
@@ -918,19 +931,20 @@ slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
   function armar(){
     const xs=$('x').value.split(',').map(s=>s.trim()).filter(Boolean),Y=$('y').value.trim()||'Y',p=+$('test').value,simple=$('tipo').value==='simple',prop=$('prop').value;
     const ms=[...box.querySelectorAll('[name=met]:checked')].map(i=>({mae:'el MAE (error absoluto medio, en las unidades de Y)',rmse:'el RMSE (que castiga más los errores grandes)',r2:'el R² (qué porcentaje de la variación explica)',r2a:'el R² ajustado (para comparar modelos con distinto número de X)'}[i.value]));
+    const script=$('script').value.trim()||'modelo_regresion_lineal.py',arch=$('arch').value.trim()||'datos.xlsx',hoja=$('hoja').value.trim()||'sin hoja',ex=prop!=='predecir';
     const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo regresión lineal por primera vez: explique cada paso con lenguaje sencillo.`,'',
-      `Tengo el archivo ${q($('arch').value.trim()||'datos.xlsx')} (${$('hoja').value.trim()||'sin hoja'}). Quiero una regresión lineal ${simple?'simple':'múltiple'} en Python para ${{ambos:'explicar y predecir',explicar:'explicar',predecir:'predecir'}[prop]} la variable ${q(Y)} a partir de ${xs.length?lista(xs.map(q)):'las variables X'}.`,'',
-      `Escriba código para ${$('herr').value}, en celdas cortas y con un comentario en español en cada línea, que:`,
-      `1. Cargue los datos con pandas y muestre las primeras filas, el número de filas y columnas y los datos faltantes.`,
-      `2. Grafique ${q(Y)} frente a ${xs.length>1?'cada variable X':q(xs[0]||'X')} en un diagrama de dispersión.`,
+      `Quiero una regresión lineal ${simple?'simple':'múltiple'} en Python para ${{ambos:'explicar y predecir',explicar:'explicar',predecir:'predecir'}[prop]} la variable ${q(Y)} a partir de ${xs.length?lista(xs.map(q)):'las variables X'}. Los datos están en ${q(arch)} (${hoja}).`,'',
+      ...cabeceraProy(script,arch,'pandas, numpy, scikit-learn, statsmodels, matplotlib y openpyxl','regresion_lineal'),
+      `1. Cargue los datos con pandas, revise filas, columnas, tipos y datos faltantes, y guarde la descripción en la hoja «descripcion».`,
+      `2. Grafique ${q(Y)} frente a ${xs.length>1?'cada variable X':q(xs[0]||'X')} en un diagrama de dispersión → visualizaciones/01_dispersion.png.`,
       `3. Si alguna X es texto (categórica), conviértala en columnas de 0 y 1 y diga cuál es la categoría de referencia.`,
-      `4. Separe los datos en entrenamiento (${100-p} %) y validación o prueba (${p} %), con random_state=42; entrene solo con el primero y mida con el segundo.`,
-      `5. Ajuste la regresión lineal con scikit-learn${prop!=='predecir'?' y también con statsmodels, para ver cada coeficiente con su intervalo de confianza':''}.`,
-      `6. Escriba la ecuación con los coeficientes estimados e interprete cada uno: «si X sube en 1, ${Y} cambia en promedio tanto${simple?'':', con las demás X fijas'}».`,
-      `7. Calcule en los datos de prueba ${ms.length?lista(ms):'el MAE y el R²'}, y compárelos con un modelo que siempre predice el promedio.`,
-      `8. Grafique ${simple?'la recta sobre los puntos':'los valores reales frente a los predichos'} y los residuos.`,
-      `9. Revise los supuestos con el gráfico de residuos contra los valores predichos: si ve una curva, olas, una cola larga o un embudo, dígame qué significa y qué decisión tomar.`,'',
-      `Al final, resuma los resultados en un párrafo para un informe de investigación y aclare sus limitaciones (por ejemplo, que una asociación no prueba causalidad).`];
+      `4. Separe los datos en entrenamiento (${100-p} %) y prueba (${p} %); entrene solo con el primero y mida con el segundo.`,
+      `5. Ajuste la regresión lineal con scikit-learn${ex?' y también con statsmodels':''}. Guarde en la hoja «coeficientes» cada β${ex?' con su intervalo de confianza y su valor p':''}, escriba la ecuación estimada e interprete cada coeficiente: «si X sube en 1, ${Y} cambia en promedio tanto${simple?'':', con las demás X fijas'}».`,
+      `6. ${simple?'Grafique la recta de mínimos cuadrados sobre los puntos':'Grafique los valores reales frente a los predichos, con la línea de 45°'} → visualizaciones/02_ajuste.png.${xs.length===2?' Si las dos X son numéricas, dibuje también el plano de la regresión en 3D con los puntos → visualizaciones/03_plano_3d.png.':''}`,
+      `7. Grafique los residuos contra los valores predichos, junto con su histograma → visualizaciones/04_residuos.png. Dígame si ve una curva, olas, una cola larga o un embudo, qué supuesto se incumple y qué decisión tomar.`,
+      `8. Calcule ${ms.length?lista(ms):'el MAE y el R²'} en entrenamiento y en prueba, compárelos con una línea base que siempre predice el promedio, guárdelos en la hoja «metricas» y grafíquelos en barras → visualizaciones/05_metricas.png. Dígame si hay sobreajuste.`,
+      `9. Guarde las predicciones de prueba (valor real, predicho y residuo) en la hoja «predicciones».`,
+      ...CIERRE_PROY];
     ta.value=L.join('\n');ok.textContent='';}
   $('x').addEventListener('input',()=>{const n=$('x').value.split(',').filter(s=>s.trim()).length;if(n>1)$('tipo').value='multiple';else if(n===1)$('tipo').value='simple';});
   box.addEventListener('input',armar);box.addEventListener('change',armar);armar();

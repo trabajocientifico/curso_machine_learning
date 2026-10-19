@@ -237,7 +237,8 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
 .mod-card.lab:hover{ border-color:rgba(234,115,23,.4); }
 .mod-card.lab .mod-tema i{ color:var(--ml); }
 .mod-card.lab a.mod-tema:hover{ border-color:var(--ml); background:var(--ml-soft); }
-.mod-card.lab .mod-temas{ display:grid; grid-template-columns:1fr 1fr; }   /* cuatro ejercicios en 2 × 2: la lámina cabe en pantallas bajas */
+.mod-card.lab .mod-temas{ display:grid; grid-template-columns:1fr 1fr; }
+.mod-card.dos .mod-temas{ display:grid; grid-template-columns:1fr 1fr; }   /* tema 2.2: seis clases en dos columnas; cada práctica se abre desde su clase */   /* tema 2.2: clase y práctica de cada técnica, lado a lado */   /* cuatro ejercicios en 2 × 2: la lámina cabe en pantallas bajas */
 /* herramientas de trabajo: franja de ancho completo bajo la rejilla, para no dejar una tarjeta suelta */
 .mod-tools{ flex-direction:row; align-items:center; gap:24px; margin-top:12px; padding:9px 14px 9px 24px; }
 .mod-tools::before{ background:var(--ink); }
@@ -511,18 +512,19 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
           <a class="mod-tema" href="index/2-1-clase-fundamentos.html"><b>CLASE</b><span>Fundamentos de ML para investigación</span><i>&rarr;</i></a>
           <a class="mod-tema" href="index/2-1-clase-mapa-tecnicas.html"><b>CLASE</b><span>Mapa de técnicas</span><i>&rarr;</i></a>
           <a class="mod-tema" href="index/2-1-clase-ingenieria-caracteristicas.html"><b>CLASE</b><span>Ingeniería de características</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-1-ingenieria-caracteristicas.ipynb" target="_blank" rel="noopener"><b>PRÁCTICA</b><span>Ingeniería de características · hogares</span><i>&rarr;</i></a>
         </div>
       </div>
-      <div class="mod-card">
+      <div class="mod-card dos">
         <div class="mod-n">Tema 2.2</div>
         <h3>Aprendizaje supervisado</h3>
         <p>Regresión lineal y logística, árboles y Random Forest, Gradient Boosting, métricas de evaluación e interpretabilidad con SHAP.</p>
         <div class="mod-temas">
-          <a class="mod-tema" href="index/2-2-clase-regresion-lineal.html"><b>CLASE</b><span>Regresión lineal simple y múltiple</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-2-regresion-lineal.ipynb" target="_blank" rel="noopener"><b>PRÁCTICA</b><span>Regresión lineal · ingresos</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="index/2-2-demo-arbol-decision.html"><b>DEMO</b><span>Árbol de decisión</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="index/2-2-demo-random-forest.html"><b>DEMO</b><span>Random Forest</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-clase-regresion-lineal.html"><b>CLASE</b><span>Regresión lineal</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-clase-regresion-logistica.html"><b>CLASE</b><span>Regresión logística</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-clase-arbol-decision.html"><b>CLASE</b><span>Árbol de decisión</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-clase-random-forest.html"><b>CLASE</b><span>Random forest</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-clase-k-vecinos.html"><b>CLASE</b><span>k vecinos (kNN)</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-2-clase-svm.html"><b>CLASE</b><span>Soporte vectorial (SVM)</span><i>&rarr;</i></a>
         </div>
       </div>
       <div class="mod-card soon">

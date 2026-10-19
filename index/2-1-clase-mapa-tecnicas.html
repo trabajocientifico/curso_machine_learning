@@ -139,6 +139,46 @@ svg text{font-family:var(--display);fill:var(--ink)}
   .slide{transition:opacity .3s ease;transform:none!important;filter:none!important}
   *{animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
+/* ---------- esquema de apertura: raíz → 3 familias → 7 tipos de pregunta → 11 técnicas (pasos 0 intro · 1 familias · 2–8 columnas · 9 vista completa) ---------- */
+.mp{--ez:cubic-bezier(.2,.8,.2,1)}
+.mp svg.m-ln{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.mp .m-p{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 1;stroke-dashoffset:1;transition:stroke-dashoffset .7s var(--ez) var(--d,0s)}
+.mp .m-p.on{stroke-dashoffset:0}
+.mp .m-kick,.mp .m-by{position:absolute;left:0;right:0;text-align:center;transition:opacity .6s,transform .9s var(--ez)}
+.mp .m-kick{top:236px;font:500 13px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--soft)}
+.mp .m-by{top:452px;font:500 13px var(--mono);color:var(--mute);letter-spacing:.06em}
+.mp .m-rainbow{position:absolute;left:50%;top:420px;width:300px;height:5px;margin-left:-150px;border-radius:9px;
+  background:linear-gradient(90deg,#2A4DD6,#0E8FA8,#13916A,#E39A10,#C9367A,#D8432C,#7B3FD1);transition:opacity .6s,transform .9s var(--ez)}
+.mp:not(.intro) .m-kick,.mp:not(.intro) .m-by{opacity:0;transform:translateY(-14px)}
+.mp:not(.intro) .m-rainbow{opacity:0;transform:scaleX(.2)}
+.mp .m-root{position:absolute;left:50%;top:28px;padding:13px 32px;border-radius:16px;background:var(--ink);color:#fff;font-size:24px;font-weight:720;letter-spacing:-.02em;white-space:nowrap;
+  transform:translate(-50%,0);transition:transform 1.1s var(--ez);box-shadow:0 18px 40px -26px rgba(18,26,44,.7)}
+.mp.intro .m-root{transform:translate(-50%,262px) scale(1.6)}
+.mp .m-fam{position:absolute;top:118px;height:44px;box-sizing:border-box;border:1.5px solid var(--ink);border-radius:22px;background:#fff;display:flex;align-items:center;justify-content:center;gap:10px;
+  font-size:17px;font-weight:650;opacity:0;transform:translateY(-10px);transition:opacity .5s ease .45s,transform .7s var(--ez) .45s}
+.mp .m-fam span{font:500 12px var(--mono);color:var(--soft)}
+.mp.fam .m-fam{opacity:1;transform:none}
+.mp .m-col{position:absolute;top:210px;transition:opacity .5s}
+.mp.focus .m-col:not(.act){opacity:.32}
+.mp .m-hd{height:114px;box-sizing:border-box;border:1.5px solid var(--c);border-radius:14px;background:var(--ct);padding:10px 11px;display:flex;flex-direction:column;gap:4px;
+  opacity:0;transform:translateY(-12px) scale(.95);transition:opacity .5s ease .3s,transform .7s var(--ez) .3s,box-shadow .5s}
+.mp .m-hd .n{font:600 12px var(--mono);letter-spacing:.12em;color:var(--c)}
+.mp .m-hd .t{font-size:17px;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.mp .m-hd .q{font-size:13px;line-height:1.2;color:var(--soft)}
+.mp .m-col.on .m-hd{opacity:1;transform:none}
+.mp .m-col.act .m-hd{box-shadow:0 18px 34px -20px var(--c)}
+.mp .m-ch{margin-top:8px;min-height:60px;box-sizing:border-box;border:1.5px solid var(--line);border-left:4px solid var(--c);border-radius:11px;background:#fff;padding:7px 9px;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:center;gap:2px;opacity:0;transform:translateX(-10px);transition:opacity .45s ease var(--d),transform .6s var(--ez) var(--d),border-color .2s,box-shadow .2s}
+.mp .m-ch b{font-size:14.5px;line-height:1.1;font-weight:650}
+.mp .m-ch i{font:400 11px/1.25 var(--mono);font-style:normal;color:var(--soft)}
+.mp .m-col.on .m-ch{opacity:1;transform:none}
+.mp .m-ch .tg{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.mp .m-ch em{font:600 9.5px var(--mono);font-style:normal;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:99px}
+.mp .m-ch em.r{background:#E6ECFC;color:#2A4DD6}
+.mp .m-ch em.c{background:#FCEBD9;color:#B8650C}
+.mp .m-nota{margin-top:8px;font:400 11px/1.3 var(--mono);color:var(--soft);opacity:0;transition:opacity .45s ease var(--d)}
+.mp .m-col.on .m-nota{opacity:1}
+.mp .m-ch:hover{border-color:var(--c);border-left-color:var(--c);box-shadow:0 10px 22px -14px var(--c)}
 </style>
 
 <!-- regreso a «La ruta» del módulo; fuera del escenario y sin propagar el clic, para no avanzar la lámina -->
@@ -189,6 +229,42 @@ function clipLine(px,py,dx,dy,L,R,Tp,B){let t0=-1e9,t1=1e9;
 
 let cur=0,step=0;
 const D=[];
+
+/* ───────── 0 · Esquema de apertura: todas las técnicas (tipo de aprendizaje → familia de modelo o tarea → técnica) ───────── */
+D.push((()=>{let el,paths=[];
+const COLS=[
+  {c:'#2A4DD6',f:0,t:'Modelos lineales',q:'una ecuación con pesos',k:[['Regresión lineal','valor de una hectárea rural','R'],['Regresión logística','riesgo de deserción escolar','C']]},
+  {c:'#13916A',f:0,t:'Árboles y ensambles',q:'preguntas de sí o no',k:[['Árbol de decisión','hogares para un subsidio','RC'],['Bosque aleatorio','riesgo de deforestación','RC'],['Gradient boosting','recaudo predial municipal','RC']]},
+  {c:'#0E8FA8',f:0,t:'Distancia y márgenes',q:'casos parecidos',k:[['k vecinos más cercanos','vocación de una vereda','RC'],['Máquinas de soporte vectorial','urbano o rural, por satélite','RC']]},
+  {c:'#7B3FD1',f:0,t:'Redes neuronales',q:'capas de neuronas',k:[['Redes neuronales','pobreza vista desde el espacio','RC'],['Deep learning','redes con muchas capas: imágenes y texto','RC','Redes neuronales']]},
+  {c:'#E39A10',f:1,t:'Agrupamiento',q:'¿Qué grupos? · segmentación',k:[['K-means','tipologías de municipios']]},
+  {c:'#C9367A',f:1,t:'Reducción de dimensión',q:'¿Qué lo resume?',k:[['Componentes principales','índice de vulnerabilidad']]},
+  {c:'#D8432C',f:1,t:'Anomalías',q:'¿Qué es raro?',k:[['Detección de anomalías','contratos públicos atípicos']]}];
+const FAM=[['Supervisado','con Y: un número → regresión · una categoría → clasificación'],['No supervisado','sin Y: grupos, resúmenes, casos raros']];
+const TAG={R:'<em class="r">regresión</em>',C:'<em class="c">clasificación</em>'};
+const ML=40,GAP=12,CW=(1280-2*ML-GAP*6)/7,cx=i=>ML+i*(CW+GAP)+CW/2;
+const famX=f=>{const cs=COLS.map((c,i)=>i).filter(i=>COLS[i].f===f);return[ML+cs[0]*(CW+GAP),ML+cs[cs.length-1]*(CW+GAP)+CW];};
+return{custom:true,steps:10,
+build(e){el=e;el.classList.add('mp','intro');
+  el.insertAdjacentHTML('beforeend','<div class="m-kick">Fundamentos de Machine Learning · Mapa de técnicas</div><div class="m-root">Técnicas de Machine Learning</div><div class="m-rainbow"></div><div class="m-by">Oscar Iván Vargas Pineda · Trabajo Científico</div>');
+  const svg=S('svg',{class:'m-ln',width:1280,height:720});el.appendChild(svg);
+  const P=(d,st,dl)=>{const p=S('path',{d,class:'m-p',pathLength:1},svg);p.style.setProperty('--d',dl+'s');paths.push({p,st});return p;};
+  FAM.forEach(([n,sub],f)=>{const [a,b]=famX(f),w=Math.max(b-a-30,190),x=(a+b)/2-w/2,mid=(a+b)/2;
+    el.insertAdjacentHTML('beforeend',`<div class="m-fam" style="left:${x}px;width:${w}px">${n}${sub?`<span>${sub}</span>`:''}</div>`);
+    P(`M640 81 V100 H${mid} V118`,1,.15);});
+  COLS.forEach((c,i)=>{const [a,b]=famX(c.f),mid=(a+b)/2;P(`M${mid} 162 V186 H${cx(i)} V210`,2+i,0);
+    const col=document.createElement('div');col.className='m-col';col.style.cssText=`left:${ML+i*(CW+GAP)}px;width:${CW}px;--c:${c.c};--ct:${c.c}14`;
+    col.innerHTML=`<div class="m-hd"><span class="n">${String(i+1).padStart(2,'0')}</span><span class="t">${c.t}</span><span class="q">${c.q}</span></div>`+
+      c.k.map(([n,ex,tg,dest],j)=>`<div class="m-ch interactive" data-t="${dest||n}" style="--d:${.6+j*.14}s"><b>${n}</b><i>${ex}</i>${tg?`<span class="tg">${[...tg].map(x=>TAG[x]).join('')}</span>`:''}</div>`).join('')+
+      (c.nota?`<div class="m-nota" style="--d:${.6+c.k.length*.14}s">${c.nota}</div>`:'');
+    el.appendChild(col);});
+  // cada técnica lleva a su lámina (se busca por título, no por posición)
+  el.querySelectorAll('.m-ch').forEach(ch=>ch.addEventListener('click',ev=>{ev.stopPropagation();const n=D.findIndex(d=>d.title===ch.dataset.t);if(n>=0)show(n,0,1);}));
+},
+fx(st){if(!el)return;el.classList.toggle('intro',st<=0);el.classList.toggle('fam',st>=1);el.classList.toggle('focus',st>=2&&st<=8);el.classList.toggle('all',st>=9);
+  el.querySelectorAll('.m-col').forEach((c,i)=>{c.classList.toggle('on',st>=2+i);c.classList.toggle('act',st===2+i);});
+  paths.forEach(o=>o.p.classList.toggle('on',st>=o.st));}
+}})());
 
 /* ───────── 1 · Portada ───────── */
 D.push((()=>{let ctx,dots=[],t0=0;return{custom:true,steps:1,
@@ -249,6 +325,8 @@ build(g){
     T(gr,496,y-22,q,'eq');T(gr,496,y+7,name,'bigs');T(gr,496,y+32,ex,'tag')};
   leaf(133,62,'¿Cuánto?','Regresión','valor de una hectárea rural',1,.5);
   leaf(133,204,'¿Cuál?','Clasificación','estudiante en riesgo de desertar',1,.75);
+  {const n=T(g,496,262,'Árboles, ensambles, k vecinos y redes','tag fade');n.dataset.in=1;n.style.setProperty('--d','1.3s');
+   const m=T(g,496,280,'sirven para las dos tareas.','tag fade');m.dataset.in=1;m.style.setProperty('--d','1.3s');}
   leaf(407,336,'¿Qué grupos?','Agrupamiento','tipologías de municipios',2,.5);
   leaf(407,478,'¿Qué resume?','Reducción de dimensión','índice de vulnerabilidad',2,.75);
 }}})());
@@ -323,7 +401,7 @@ async function run(route,leaf,anim){clear();const pts=[];route.forEach(ei=>{cons
   place(pts[0]);if(!await wait(700))return;
   const ok=await tween(1000*route.length,e=>{const k=Math.min(pts.length-1,Math.round(e*(pts.length-1)));place(pts[k]);edges[pts[k][2]].classList.add('hl')});
   if(ok)nodes[leaf].classList.add('hit')}
-return{eyebrow:'Supervisado · Clasificación',title:'Árbol de decisión',q:'¿Qué hogares prioriza un programa de subsidio?',sim:1,steps:5,
+return{eyebrow:'Supervisado · Clasificación y regresión',title:'Árbol de decisión',q:'¿Qué hogares prioriza un programa de subsidio?',sim:1,steps:5,
 caps:['Una pregunta a la vez, como un formulario','Cada respuesta abre una rama','Las hojas son decisiones; el árbol aprende las preguntas de casos anteriores','Hogar A recorre el árbol: prioridad alta','Hogar B toma otro camino, y se puede explicar por qué'],
 build(g){
   E.forEach(([p,c,l,din],i)=>{const A=N[p],B=N[c];const y1=A.y+A.h/2,y2=B.y-B.h/2,ym=(y1+y2)/2;
@@ -346,7 +424,7 @@ const RS=()=>[C.faint,'#F6DDA8',C.amber,C.red];
 function setCells(on,anim){const s=cells[sel];cells.forEach(c=>{c.el.style.transitionDelay=on&&anim?(Math.hypot(c.cx-s.cx,c.cy-s.cy)*.004).toFixed(3)+'s':'0s';c.el.style.fill=on?ramp(c.risk,RS()):C.faint})}
 function resetVotes(){trees.forEach(t=>{t.ls.forEach(l=>l.classList.remove('hl'));t.lv.forEach(l=>l.style.fill='')});sq.forEach(s=>s.el.style.opacity=0)}
 function vote(i){const t=trees[i];t.path.forEach(k=>t.ls[k].classList.add('hl'));t.lv[t.leaf].style.fill=V[i]?C.red:C.green}
-return{eyebrow:'Ensambles · Bosque aleatorio',title:'Bosque aleatorio',q:'¿Dónde es más probable que se deforeste en el próximo año?',sim:1,steps:4,
+return{eyebrow:'Supervisado · Ensamble (clasificación y regresión)',title:'Bosque aleatorio',q:'¿Dónde es más probable que se deforeste en el próximo año?',sim:1,steps:4,
 caps:['Una celda de bosque en Guaviare y lo que sabemos de ella','Muchos árboles, cada uno entrenado con datos y variables al azar','Cada árbol vota; gana la mayoría','Repetido en cada celda: un mapa para priorizar el control'],
 build(g){
   const road=S('path',{d:'M10 268 C 120 244, 200 186, 348 112',fill:'none',stroke:'var(--ink)','stroke-width':2.5,'stroke-dasharray':'2 6','stroke-linecap':'round'},g);
@@ -389,7 +467,7 @@ async fx(st,anim){
 D.push((()=>{let X,Y,bars=[],R=[],errT;const TG=[4.3,1.2,2.7,.8,3.5,1.9,.9,2.3];
 const err=p=>Math.round(p.reduce((s,v,j)=>s+Math.abs(v-TG[j])/TG[j],0)/p.length*100);
 function setB(p){bars.forEach((b,j)=>{const y=Y(p[j]);at(b.f,{y,height:Math.max(0,460-y)});const y1=Math.min(y,Y(TG[j])),y2=Math.max(y,Y(TG[j]));at(b.r,{y:y1,height:y2-y1})});errT.textContent=err(p)+' %'}
-return{eyebrow:'Ensambles · Boosting',title:'Gradient boosting',q:'¿Cuánto podría recaudar cada municipio por impuesto predial?',sim:1,steps:4,
+return{eyebrow:'Supervisado · Ensamble (regresión y clasificación)',title:'Gradient boosting',q:'¿Cuánto podría recaudar cada municipio por impuesto predial?',sim:1,steps:4,
 caps:['El árbol 1 predice lo mismo para todos: el promedio','El árbol 2 aprende solo de los errores del árbol 1','El árbol 3 corrige lo que quedó','Con 20 árboles en cadena, el error casi desaparece'],
 build(g){
   const r=rng(88);const m=TG.reduce((a,b)=>a+b)/TG.length;const f=[1,.48,.2,.035];
@@ -423,7 +501,7 @@ async function compute(kk,anim,show){const ns=nb().slice(0,kk);const cnt=[0,0,0]
   const draw=e=>{lines.forEach((l,j)=>{if(j<kk)at(l,{x1:sx,y1:sy,x2:lerp(sx,l._t[0],e),y2:lerp(sy,l._t[1],e)})});at(ell,{cx:sx,cy:sy,rx:dmax*660*e+0.01,ry:dmax*420*e+0.01});vb.forEach((b,c)=>{b.setAttribute('width',cnt[c]*12*e);vt[c].setAttribute('x',600+cnt[c]*12*e+8);vt[c].textContent=cnt[c]})};
   if(anim)await tween(700,draw,eout);else draw(1)}
 function moveStar(){star.setAttribute('points',starPts(X(sp[0]),Y(sp[1]),14,6))}
-return{eyebrow:'Supervisado · Clasificación',title:'k vecinos más cercanos',q:'¿A qué vocación productiva se parece esta vereda?',sim:1,steps:4,
+return{eyebrow:'Supervisado · Clasificación y regresión',title:'k vecinos más cercanos',q:'¿A qué vocación productiva se parece esta vereda?',sim:1,steps:4,
 caps:['Veredas con vocación conocida según altitud y pendiente','Una vereda nueva, sin clasificar','Se compara con sus 5 vecinas más parecidas y vota la mayoría','Con 11 vecinas: decisión más estable, menos detalle local'],
 build(g,el,svg){svgEl=svg;
   const r=rng(9);P=[];
@@ -451,7 +529,7 @@ D.push((()=>{let X,Y,best,band,ml=[],sline,L=70,R=730,Tp=40,B=460;
 function lineEl(el,w,c){const b=[w[0]*c,w[1]*c];const s=clipLine(b[0],b[1],-w[1],w[0],L,R,Tp,B);if(s)at(el,{x1:s[0],y1:s[1],x2:s[2],y2:s[3]})}
 function setM(m){const w=best.w,c=best.c,dir=[-w[1],w[0]];const p=(o,s)=>[(w[0]*(c+o)+dir[0]*s).toFixed(1),(w[1]*(c+o)+dir[1]*s).toFixed(1)].join(',');
   band.setAttribute('points',[p(-m,-2000),p(-m,2000),p(m,2000),p(m,-2000)].join(' '));lineEl(ml[0],w,c-m);lineEl(ml[1],w,c+m)}
-return{eyebrow:'Supervisado · Clasificación',title:'Máquinas de soporte vectorial',q:'¿Esta zona es urbana o rural según imágenes satelitales?',sim:1,steps:4,
+return{eyebrow:'Supervisado · Clasificación (y regresión: SVR)',title:'Máquinas de soporte vectorial',q:'¿Esta zona es urbana o rural según imágenes satelitales?',sim:1,steps:4,
 caps:['Zonas vistas desde satélite: urbanas y rurales','Muchas fronteras separan los grupos; ¿cuál es la mejor?','La de mayor margen; la sostienen los puntos del borde','Una zona nueva se clasifica según su lado de la frontera'],
 build(g){
   const r=rng(13);const U=[],Ru=[];for(let i=0;i<22;i++)U.push([clamp(.25+gauss(r)*.07,.05,.41),clamp(38+gauss(r)*8,23,58)]);for(let i=0;i<26;i++)Ru.push([clamp(.68+gauss(r)*.09,.51,.95),clamp(9+gauss(r)*5,1,19)]);
@@ -551,7 +629,7 @@ async fx(st,anim){
 /* ───────── 13 · Redes neuronales ───────── */
 D.push((()=>{let nodes=[],pulses=[],num,barF;const LX=[262,392,522,642],LN=[6,7,7,1];
 const ny=(l,k)=>270+(k-(LN[l]-1)/2)*56;
-return{eyebrow:'Aprendizaje profundo',title:'Redes neuronales',q:'¿Se puede estimar la pobreza de una vereda desde el espacio?',sim:1,steps:3,
+return{eyebrow:'Supervisado · Aprendizaje profundo',title:'Redes neuronales',q:'¿Se puede estimar la pobreza de una vereda desde el espacio?',sim:1,steps:3,
 caps:['Entrada: una imagen satelital de una vereda','Capas de neuronas: de patrones simples a patrones complejos','Salida: una estimación de pobreza donde no llega la encuesta'],
 build(g){
   const r=rng(31);const tg=S('g',{},g);
