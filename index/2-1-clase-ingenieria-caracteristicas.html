@@ -45,6 +45,8 @@ body{font-family:var(--display);-webkit-font-smoothing:antialiased;user-select:n
 .slide.active .cv-kick,.slide.active .cv h1,.slide.active .cv-sub{animation:rise .8s cubic-bezier(.2,.8,.2,1) both}
 .slide.active .cv h1{animation-delay:.1s}.slide.active .cv-sub{animation-delay:.22s}
 .cv-by{position:absolute;left:64px;bottom:24px;font:500 12px var(--mono);color:var(--mute);letter-spacing:.06em}
+.cv .descarga{position:absolute;left:760px;top:228px;margin:0}
+.slide.active .cv .descarga{animation:rise .8s .3s cubic-bezier(.2,.8,.2,1) both}
 
 /* ---------- situación ---------- */
 .sit .left{position:absolute;left:64px;top:56px;width:496px;bottom:60px;display:flex;flex-direction:column}
@@ -675,7 +677,7 @@ function cardHTML(s,k,full){return`<div class="n">${pad(k+1)}</div><h3>${s.title
 
 /* portada */
 (function(){const el=H('section','slide cv',null,stage);
-  el.innerHTML='<div class="cv-kick">Machine Learning · Preparación de datos</div><h1>Ingeniería de<br><em>características</em></h1><p class="cv-sub">Ocho situaciones frecuentes en una tabla de datos y las técnicas para resolverlas antes de entrenar un modelo.</p><div class="cv-grid"></div><div class="cv-by">Oscar Iván Vargas Pineda · Trabajo Científico</div>';
+  el.innerHTML='<div class="cv-kick">Machine Learning · Preparación de datos</div><h1>Ingeniería de<br><em>características</em></h1><p class="cv-sub">Ocho situaciones frecuentes en una tabla de datos y las técnicas para resolverlas antes de entrenar un modelo.</p><a class="practica descarga" href="https://drive.google.com/uc?export=download&id=1sLas7TJBDR9Y03KPFqz7vrTsPw6vetYU" target="_blank" rel="noopener" onclick="event.stopPropagation()">↓ Descargar la base de datos (Excel)</a><div class="cv-grid"></div><div class="cv-by">Oscar Iván Vargas Pineda · Trabajo Científico</div>';
   const g=el.querySelector('.cv-grid');
   SIT.forEach((s,k)=>{const c=H('div','card',cardHTML(s,k,false),g);setColor(c,s.c);c.style.setProperty('--i',k);c.addEventListener('click',()=>go(sitSL(k),0));});
   SL.push({el,steps:1,render(){}});})();
