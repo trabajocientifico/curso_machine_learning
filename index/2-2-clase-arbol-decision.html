@@ -350,7 +350,7 @@ slide({build(c){
 /* ---------- 2 · Ruta ---------- */
 slide({kicker:KA,title:'Lo que vamos a construir',build(c){
   return entrada(c,{gancho:'¿Qué hogares deberían recibir primero un subsidio?',
-    sub:'Cinco preguntas para entender el árbol de decisión:',meta:'Al final, una herramienta',reto:'un prompt para pedirle el modelo a una IA',
+    sub:'Cinco preguntas para entender el árbol de decisión:',meta:'Al final, una herramienta',reto:'un notebook de práctica y un prompt para una IA',
     paradas:[{q:['¿Qué es','el modelo?'],d:'preguntas en cadena'},{q:['¿Cómo se','construye?'],d:'impureza de Gini'},
       {q:['¿Cómo se lee','y se decide?'],d:'reglas y umbral'},{q:['¿Cuánto debe','crecer?'],d:'profundidad y sobreajuste'},
       {q:['¿Funciona con','datos nuevos?'],d:'entrenar, validar y medir'}]});
@@ -678,6 +678,10 @@ slide({kicker:KC,title:'Reto: lea la regla',build(c){
     T=>{T.call(()=>{ops[1].r.setAttribute('stroke',C.ok);ops[1].r.setAttribute('fill',C.okT);fb[0].textContent='Respuesta: B';fb[0].style.fill=C.ok;fb[1].textContent=O[1][2];},null,0);fadeIn(T,fb,.1,{st:.1});}];
 }});
 
+/* botón al prompt de esta técnica (página 2-2-prompts-ia.html), a la derecha del botón del notebook */
+function boton_prompt(c,id,junto){const b=document.createElement('a');b.href='2-2-prompts-ia.html#'+id;b.target='_blank';b.rel='noopener';b.textContent='Prompt para pedirle el modelo a una IA →';
+  b.style.cssText=`position:absolute;left:${96+junto.offsetWidth+16}px;top:800px;padding:14px 26px;border-radius:99px;background:#ea7317;color:#fff;font:600 17px "Schibsted Grotesk",sans-serif;text-decoration:none;opacity:0`;
+  b.addEventListener('click',e=>e.stopPropagation());c.root.appendChild(b);return b;}
 /* ---------- 24 · Síntesis ---------- */
 slide({kicker:KC,title:'En resumen',build(c){
   const g=G(c.svg);
@@ -686,97 +690,9 @@ slide({kicker:KC,title:'En resumen',build(c){
     ['Se controla','profundidad, hojas mínimas y poda, elegidas con validación cruzada',C.ok],['Se evalúa','en prueba: exactitud, precisión, sensibilidad, F1 y AUC, contra la línea base',C.ok],
     ['Su límite','es inestable: pequeños cambios en los datos cambian el árbol',C.bad]];
   const filas=R.map(([a,b,col],i)=>{const gg=G(g),y=262+i*74;S('circle',{cx:112,cy:y-8,r:9,fill:col},gg);tx(gg,140,y,a,'h3');tx(gg,400,y,b,'txt',{style:`fill:${C.ink}`});return gg;});
-  const a=boton_nb(c);hide(filas);
-  return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});T.to(a,{opacity:1,duration:.5},1.1);}];
+  const a=boton_nb(c),b=boton_prompt(c,'arbol',a);hide(filas);
+  return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});T.to([a,b],{opacity:1,duration:.5,stagger:.15},1.1);}];
 }});
-
-/* encabezado y cierre comunes de los prompts: un proyecto local que se ejecuta desde la línea de comandos */
-function cabeceraProy(script,arch,libs,base){const s=script||'modelo.py';return[
-  `Escriba un script de Python llamado «${s}» que ejecutaré desde la línea de comandos (python ${s}) dentro de la carpeta del proyecto, que tiene esta estructura:`,'',
-  '    proyecto/',`    ├── ${s}`,`    ├── datos/${arch}        (datos de entrada)`,'    ├── resultados/          (tablas en Excel)','    └── visualizaciones/     (figuras .png)','',
-  'Requisitos del script:',
-  `a. Al inicio, antes de cualquier otro import, compruebe con importlib.util.find_spec si están instaladas las librerías que necesita (${libs}); instale con «sys.executable -m pip install» solo las que falten y después impórtelas. Tenga en cuenta que scikit-learn se importa como sklearn.`,
-  'b. Use rutas relativas a la carpeta del script (Path(__file__).resolve().parent) y cree resultados/ y visualizaciones/ si no existen.',
-  'c. Guarde cada figura como PNG numerado en visualizaciones/ (01_….png, 02_….png, con dpi=150) y ciérrela con plt.close(); no use plt.show().',
-  `d. Guarde todas las tablas en un solo Excel, resultados/${base}_resultados.xlsx, con una hoja por tabla (con openpyxl).`,
-  'e. Use random_state=42, comente cada bloque en español e imprima en la consola un resumen de cada paso.','',
-  'Pasos del análisis:'];}
-const CIERRE_PROY=['','Al final, agregue al Excel una hoja «resumen» con las cifras clave, explíqueme qué contiene cada archivo generado (cada hoja y cada figura) y cómo leerlo, y redacte un párrafo para un informe de investigación con sus limitaciones (por ejemplo, que una asociación no prueba causalidad).'];
-
-/* lámina final: un prompt que se arma con campos; o.extra = campos propios de la técnica, o.lineas(v) = los pasos */
-function laminaPrompt(o){slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
-  const g=G(c.svg);
-  const intro=tx(g,96,212,'Llene los campos con sus datos: el prompt se arma solo. Cópielo en ChatGPT, Gemini o Claude y revise lo que le devuelva.','txt');
-  const box=document.createElement('div');box.className='pr interactive';
-  box.innerHTML=`<style>
-    .pr{position:absolute;left:96px;top:240px;width:1408px;height:620px;display:grid;grid-template-columns:540px 1fr;gap:36px;font-family:'Schibsted Grotesk',sans-serif;color:#15181f}
-    .pr .f{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;align-content:start}
-    .pr label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:#565c6b}
-    .pr label.w{grid-column:1/-1}
-    .pr input[type=text],.pr select{font:500 17px 'Schibsted Grotesk',sans-serif;color:#15181f;padding:8px 12px;border:1.5px solid #d2d6de;border-radius:10px;background:#fff}
-    .pr input[type=text]:focus,.pr select:focus{outline:none;border-color:#2f5bea}
-    .pr .mets{display:flex;flex-wrap:wrap;gap:6px 18px;padding-top:4px}
-    .pr .mets label{flex-direction:row;align-items:center;gap:7px;font-size:16px;color:#15181f;font-weight:500}
-    .pr .nota{grid-column:1/-1;font-size:14px;color:#9aa0ad;line-height:1.4}
-    .pr .out{display:flex;flex-direction:column;gap:12px}
-    .pr textarea{flex:1;resize:none;border:0;border-radius:16px;background:#f5f6f8;padding:20px 22px;font:400 14px/1.55 'JetBrains Mono',monospace;color:#15181f}
-    .pr .bar{display:flex;align-items:center;gap:16px}
-    .pr button{border:0;border-radius:99px;padding:12px 26px;background:#ea7317;color:#fff;font:600 17px 'Schibsted Grotesk',sans-serif;cursor:pointer}
-    .pr .ok{font-size:15px;color:#1b9a68;font-weight:600}
-  </style>
-  <div class="f">
-    <label class="w">Archivo de datos<input type="text" name="arch" value="${o.archivo}"></label>
-    <label>Hoja o formato<input type="text" name="hoja" value="${o.hoja}"></label>
-    <label>Nombre del script<input type="text" name="script" value="${o.script}"></label>
-    <label>Variable Y · lo que quiere predecir<input type="text" name="y" value="${o.y}"></label>
-    <label>Clase positiva · la que quiere encontrar<input type="text" name="pos" value="${o.pos}"></label>
-    <label class="w">Variables X · separadas por comas<input type="text" name="x" value="${o.x}"></label>
-    ${o.extra}
-    <label>Datos de prueba (%)<select name="test"><option>20</option><option selected>25</option><option>30</option></select></label>
-    <label>Error más grave<select name="costo"><option value="fn">Que se escape un positivo</option><option value="fp">Una falsa alarma</option><option value="igual">Los dos pesan igual</option></select></label>
-    <label class="w">Métricas<span class="mets"><label><input type="checkbox" name="met" value="exac" checked>Exactitud</label><label><input type="checkbox" name="met" value="prec" checked>Precisión</label><label><input type="checkbox" name="met" value="sens" checked>Sensibilidad</label><label><input type="checkbox" name="met" value="f1">F1</label><label><input type="checkbox" name="met" value="auc" checked>AUC</label></span></label>
-    <div class="nota">La IA puede equivocarse: ejecute el código paso a paso, compare las cifras con lo visto en clase y pregúntele lo que no entienda.</div>
-  </div>
-  <div class="out"><textarea readonly></textarea><div class="bar"><button type="button">Copiar el prompt</button><span class="ok"></span></div></div>`;
-  c.root.appendChild(box);
-  ['click','pointerdown','mousedown','keydown'].forEach(ev=>box.addEventListener(ev,e=>e.stopPropagation()));
-  const $=n=>box.querySelector(`[name=${n}]`),ta=box.querySelector('textarea'),ok=box.querySelector('.ok');
-  const lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a[a.length-1],q=s=>`«${s}»`;
-  const MET={exac:'la exactitud (accuracy)',prec:'la precisión (precision)',sens:'la sensibilidad (recall)',f1:'el F1',auc:'el AUC de la curva ROC'};
-  const COSTO={fn:'Para mí es más grave que se escape un caso positivo: recomiende un umbral que priorice la sensibilidad.',fp:'Para mí es más grave una falsa alarma: recomiende un umbral que priorice la precisión.',igual:'Los dos errores pesan igual: recomiende el umbral con el mejor F1.'};
-  function armar(){
-    const v={xs:$('x').value.split(',').map(s=>s.trim()).filter(Boolean),Y:$('y').value.trim()||'Y',pos:$('pos').value.trim()||'1',p:+$('test').value,
-      ms:[...box.querySelectorAll('[name=met]:checked')].map(i=>MET[i.value]),costo:COSTO[$('costo').value],script:$('script').value.trim()||o.script,q,lista,$,
-      arch:$('arch').value.trim()||'datos.xlsx',hoja:$('hoja').value.trim()||'sin hoja'};
-    ta.value=o.lineas(v).join('\n');ok.textContent='';}
-  box.addEventListener('input',armar);box.addEventListener('change',armar);armar();
-  box.querySelector('button').addEventListener('click',()=>{const listo=()=>{ok.textContent='✓ Copiado: péguelo en la IA';};
-    const viejo=()=>{ta.select();try{document.execCommand('copy');listo();}catch(e){ok.textContent='Seleccione el texto y cópielo con Ctrl+C';}};
-    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(ta.value).then(listo,viejo);else viejo();});
-  hide(box);
-  return[T=>{fadeIn(T,intro,.2);fadeIn(T,box,.5,{dy:16});}];
-}});}
-
-/* ---------- 25 · Prompt ajustable para pedirle el modelo a una IA ---------- */
-laminaPrompt({archivo:'2-2-hogares-subsidio.xlsx',hoja:'hoja «hogares»',y:'pobre',pos:'Sí',script:'modelo_arbol_decision.py',x:'ingreso_pc, educacion_jefe, hacinamiento, acueducto, piso_tierra, internet, zona',
-  extra:`<label>Para qué<select name="prop"><option value="ambos">Explicar y predecir</option><option value="explicar">Explicar (leer las reglas)</option><option value="predecir">Predecir (clasificar)</option></select></label>
-    <label>Profundidad del árbol<select name="prof"><option value="cv">Elegir con validación cruzada</option><option value="3">3 niveles (para leerlo)</option><option value="libre">Sin límite (para ver el sobreajuste)</option></select></label>`,
-  lineas:v=>{const prop=v.$('prop').value,prof=v.$('prof').value;return[
-    `Actúe como un profesor de análisis de datos. Estoy aprendiendo árboles de decisión por primera vez: explique cada paso con lenguaje sencillo.`,'',
-    `Quiero un árbol de decisión de clasificación en Python para ${{ambos:'explicar y predecir',explicar:'explicar',predecir:'predecir'}[prop]} la variable ${v.q(v.Y)} (la clase positiva es ${v.q(v.pos)}) a partir de ${v.xs.length?v.lista(v.xs.map(v.q)):'las variables X'}. Los datos están en ${v.q(v.arch)} (${v.hoja}).`,'',
-    ...cabeceraProy(v.script,v.arch,'pandas, numpy, scikit-learn, matplotlib y openpyxl','arbol_decision'),
-    `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes, calcule qué porcentaje de casos es ${v.q(v.pos)} y guárdelo en la hoja «descripcion».`,
-    `2. Convierta ${v.q(v.Y)} en 0 y 1, y las X de texto en columnas de 0 y 1.`,
-    `3. Separe los datos en entrenamiento (${100-v.p} %) y prueba (${v.p} %), de forma estratificada; entrene solo con el primero y mida con el segundo.`,
-    `4. Ajuste un DecisionTreeClassifier ${{cv:'eligiendo max_depth, min_samples_leaf y ccp_alpha con validación cruzada (GridSearchCV, 5 pliegues, AUC) y guarde la búsqueda en la hoja «busqueda»',3:'con max_depth=3, para que se pueda leer',libre:'sin límite de profundidad y, para comparar, otro con max_depth=3'}[prof]}. Dibuje el árbol con plot_tree → visualizaciones/01_arbol.png.`,
-    `5. Guarde las reglas (export_text) en la hoja «reglas» y explique en palabras sencillas las tres reglas que concentran más casos ${v.q(v.pos)}, incluyendo el porcentaje de positivos de cada hoja.`,
-    `6. Grafique la exactitud en entrenamiento y en prueba según la profundidad máxima (1 a 15) → visualizaciones/02_profundidad.png; guarde la tabla en la hoja «profundidad» y explique el sobreajuste.`,
-    `7. Con el umbral 0,5, dibuje la matriz de confusión con las celdas rotuladas VP, FN, FP y VN → visualizaciones/03_matriz_confusion.png y explique cada celda.`,
-    `8. Calcule ${v.ms.length?v.lista(v.ms):'la exactitud, la precisión, la sensibilidad y el AUC'} en entrenamiento y en prueba, y compárelas con una línea base (la clase más común) y con una regresión logística; guárdelas en la hoja «metricas».`,
-    `9. Grafique las curvas ROC del árbol y de la logística con su AUC → visualizaciones/04_curva_roc.png y guarde en la hoja «umbrales» las métricas para umbrales de 0,1 a 0,9. ${v.costo}`,
-    `10. Grafique la importancia de las variables → visualizaciones/05_importancia.png, guárdela en la hoja «importancia» y aclare que dice cuánto se usó cada variable, no si es una causa.`,
-    `11. Guarde las predicciones de prueba (real, probabilidad y clase predicha) en la hoja «predicciones».`,
-    ...CIERRE_PROY];}});
 
 /* =====================================================================
    Motor de presentación

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Regresión lineal simple y múltiple</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
 <style>
 /* Escenario fijo 1600×900 escalado a la ventana; todo el contenido vive en SVG */
 :root{
@@ -199,6 +199,49 @@ function seccion(c,o){
     fadeIn(T,kk,1);fadeIn(T,items,1.1,{st:.12,dx:-12,dy:0});
     seg.forEach((s,i)=>T.from(s.r,{attr:{width:0},duration:.4,ease:'power2.out'},.4+i*.12));}];
 }
+/* fórmula con aspecto de artículo: \frac{a}{b}, ^{…}, _{…} (juntos se apilan), \sum_{…}^{…}, \sqrt{…} y \c{color}{…};
+   las letras sueltas (y, n, k, R) van en cursiva y las palabras y los números en redonda */
+const MATHF="'STIX Two Text','Cambria Math','Times New Roman',serif";
+function formula(p,x,y,tex,o={}){const size=o.size||30,g=G(p),tmp=G(g);
+  function parse(s){const out=[];let i=0,buf='';const flush=()=>{if(buf){out.push({t:'txt',s:buf});buf='';}};
+    const grupo=()=>{if(s[i]==='{'){let d=1,j=i+1;while(j<s.length&&d){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}const r=s.slice(i+1,j-1);i=j;return r;}return s[i++];};
+    while(i<s.length){if(s.startsWith('\\frac',i)){flush();i+=5;const a=grupo(),b=grupo();out.push({t:'frac',a:parse(a),b:parse(b)});}
+      else if(s.startsWith('\\sum',i)){flush();i+=4;let lo=[],hi=[];while(s[i]==='_'||s[i]==='^'){const k=s[i++],v=parse(grupo());if(k==='_')lo=v;else hi=v;}out.push({t:'sum',lo,hi});}
+      else if(s.startsWith('\\sqrt',i)){flush();i+=5;out.push({t:'sqrt',a:parse(grupo())});}
+      else if(s.startsWith('\\c{',i)){flush();i+=2;const c=grupo(),a=grupo();out.push({t:'col',c,a:parse(a)});}
+      else if(s[i]==='^'||s[i]==='_'){flush();const k=s[i++];out.push({t:k==='^'?'sup':'sub',a:parse(grupo())});}
+      else buf+=s[i++];}
+    flush();return out;}
+  const runs=s=>(s.match(/\p{L}+|[^\p{L}]+/gu)||[]).map(w=>({s:w.replace(/ /g,' '),it:/^\p{L}$/u.test(w)}));
+  const escribir=(gg,rs,sz,x0,y0,col)=>{const t=S('text',{x:x0,y:y0,'font-size':sz,style:`font-family:${MATHF};fill:${col}`},gg);
+    rs.forEach(r=>{const s2=S('tspan',{'font-style':r.it?'italic':'normal'},t);s2.textContent=r.s;});return t;};
+  function txt(s,sz,col){const rs=runs(s),el=escribir(tmp,rs,sz,0,0,col),w=el.getComputedTextLength();el.remove();
+    return{w,asc:sz*.72,desc:sz*.22,draw:(gg,x0,y0)=>escribir(gg,rs,sz,x0,y0,col)};}
+  function fila(items,sz,col){const parts=[];let w=0,asc=sz*.72,desc=sz*.22;
+    for(let n=0;n<items.length;n++){const it=items[n];let b;
+      if(it.t==='txt')b=txt(it.s,sz,col);
+      else if(it.t==='col')b=fila(it.a,sz,C[it.c]||it.c);
+      else if(it.t==='frac'){const A=fila(it.a,sz*.84,col),B=fila(it.b,sz*.84,col),ww=Math.max(A.w,B.w)+sz*.32,ax=sz*.3,gap=sz*.16;
+        b={w:ww,asc:ax+gap+A.desc+A.asc,desc:Math.max(0,-ax+gap+B.asc+B.desc),draw:(gg,x0,y0)=>{
+          S('line',{x1:x0+sz*.06,x2:x0+ww-sz*.06,y1:y0-ax,y2:y0-ax,stroke:col,'stroke-width':Math.max(1.3,sz*.05)},gg);
+          A.draw(gg,x0+(ww-A.w)/2,y0-ax-gap-A.desc);B.draw(gg,x0+(ww-B.w)/2,y0-ax+gap+B.asc);}};}
+      else if(it.t==='sum'){const Z=sz*1.45,E=txt('∑',Z,col),lo=fila(it.lo,sz*.6,col),hi=fila(it.hi,sz*.6,col),gap=sz*.1,ww=Math.max(E.w,lo.w,hi.w)+sz*.12;
+        const top=Z*.66,bot=Z*.27;   // el ∑ se baja un poco para quedar centrado en el eje de la fórmula
+        b={w:ww,asc:top+gap+(it.hi.length?hi.asc+hi.desc:0),desc:bot+gap+(it.lo.length?lo.asc+lo.desc:0),draw:(gg,x0,y0)=>{
+          E.draw(gg,x0+(ww-E.w)/2,y0+Z*.08);if(it.hi.length)hi.draw(gg,x0+(ww-hi.w)/2,y0-top-gap-hi.desc);
+          if(it.lo.length)lo.draw(gg,x0+(ww-lo.w)/2,y0+bot+gap+lo.asc);}};}
+      else if(it.t==='sqrt'){const A=fila(it.a,sz,col),pad=sz*.12,rw=sz*.6,top=A.asc+pad,sw=Math.max(1.3,sz*.05);
+        b={w:rw+A.w+pad*2,asc:top+sw,desc:A.desc+sw,draw:(gg,x0,y0)=>{
+          S('path',{d:`M${x0+sz*.04},${y0-A.asc*.42} L${x0+rw*.28},${y0-A.asc*.52} L${x0+rw*.58},${y0+A.desc} L${x0+rw},${y0-top} L${x0+rw+A.w+pad*1.6},${y0-top}`,
+            fill:'none',stroke:col,'stroke-width':sw,'stroke-linejoin':'round','stroke-linecap':'round'},gg);A.draw(gg,x0+rw+pad*.8,y0);}};}
+      else{const nx=items[n+1],par=nx&&(nx.t==='sup'||nx.t==='sub')&&nx.t!==it.t;   // x^{2}_{aj}: índice y exponente apilados
+        const up=it.t==='sup'?it:par?nx:null,dn=it.t==='sub'?it:par?nx:null;if(par)n++;
+        const U=up&&fila(up.a,sz*.66,col),D=dn&&fila(dn.a,sz*.66,col),hu=sz*.42,hd=sz*.2;
+        b={w:Math.max(U?U.w:0,D?D.w:0)+sz*.05,asc:U?hu+U.asc:0,desc:D?hd+D.desc:0,draw:(gg,x0,y0)=>{if(U)U.draw(gg,x0+sz*.03,y0-hu);if(D)D.draw(gg,x0+sz*.03,y0+hd);}};}
+      parts.push({b,x:w});w+=b.w;asc=Math.max(asc,b.asc);desc=Math.max(desc,b.desc);}
+    return{w,asc,desc,draw:(gg,x0,y0)=>parts.forEach(q=>q.b.draw(gg,x0+q.x,y0))};}
+  const R=fila(parse(tex),size,o.color||C.ink);tmp.remove();
+  R.draw(g,o.anchor==='middle'?x-R.w/2:o.anchor==='end'?x-R.w:x,y);g.ancho=R.w;g.alto=[R.asc,R.desc];return g;}
 /* punto del puntero en coordenadas del SVG (el escenario está escalado) */
 function svgPt(svg,e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
 /* arrastre con el puntero: on(dx,dy) mientras se mueve; fin(dx,dy) al soltar */
@@ -266,7 +309,7 @@ slide({build(c){
 /* ---------- 2 · Ruta ---------- */
 slide({kicker:KA,title:'Lo que vamos a construir',build(c){
   return entrada(c,{gancho:'¿Cuánto más gana una persona por cada año de estudio?',
-    sub:'Cinco preguntas para entender la regresión lineal:',meta:'Al final, una herramienta',reto:'un prompt para pedirle el modelo a una IA',
+    sub:'Cinco preguntas para entender la regresión lineal:',meta:'Al final, una herramienta',reto:'un notebook de práctica y un prompt para una IA',
     paradas:[{q:['¿Qué es','el modelo?'],d:'la recta y su ecuación'},{q:['¿Cómo se','encuentra?'],d:'mínimos cuadrados'},
       {q:['¿Cómo se lee','y se revisa?'],d:'β y supuestos'},{q:['¿Y con dos','variables?'],d:'un plano en 3D'},
       {q:['¿Funciona con','datos nuevos?'],d:'entrenar, validar y medir'}]});
@@ -672,7 +715,7 @@ slide({kicker:K4,title:'Dos X numéricas: el modelo es un plano',build(c){
 
 /* ---------- 16 · Separador 5 ---------- */
 slide({kicker:K5,title:'Entrenar, validar y medir el desempeño',build(c){
-  return seccion(c,{n:5,titulo:['Entrenar, validar', 'y medir el desempeño'],pregunta:'¿El modelo funciona con datos que nunca vio?',temas:['Entrenamiento y validación', 'MAE y RMSE: el error en pesos', 'R² y R² ajustado: cuánto explica', 'Las cuatro métricas, juntas']});
+  return seccion(c,{n:5,titulo:['Entrenar, validar', 'y medir el desempeño'],pregunta:'¿El modelo funciona con datos que nunca vio?',temas:['Entrenamiento y validación', 'MAE y RMSE: el error en pesos', 'MAE o RMSE: cuándo usar cada una', 'R² y R² ajustado: cuánto explica', 'Las cuatro métricas, juntas']});
 }});
 
 /* ---------- 17 · Entrenamiento y validación ---------- */
@@ -708,7 +751,31 @@ slide({kicker:K5,title:'Entrenar con unos datos, medir con otros',build(c){
     T=>{decir(T,['Si en prueba se equivoca mucho más que en entrenamiento:','sobreajuste (memorizó). Con pocos datos: validación cruzada.'],0);}];
 }});
 
-/* ---------- 18 · MAE y RMSE ---------- */
+/* ---------- 18 · Las ecuaciones de MAE y RMSE ---------- */
+slide({kicker:K5,title:'MAE y RMSE: las ecuaciones',build(c){
+  const g=G(c.svg);
+  const t0=tx(g,96,226,'Las dos resumen en una sola cifra los errores de las n personas de prueba. Todo parte del residuo de cada persona:','txt',{style:`fill:${C.ink}`});
+  const e0=G(g);formula(e0,96,292,'e_{i} = y_{i} − ŷ_{i}',{size:36});
+  txl(e0,400,276,['yᵢ = ingreso observado de la persona i   ·   ŷᵢ = ingreso que predice la recta','i = 1, 2, …, n   ·   n = número de personas de prueba'],'sm',24);
+  const card=(x,col,nombre,en,es,tex,ley)=>{const b=G(g);S('rect',{x,y:336,width:688,height:440,rx:22,fill:C.soft},b);S('rect',{x,y:336,width:8,height:440,rx:4,fill:col},b);
+    tx(b,x+40,394,nombre,'monoL',{style:`fill:${col}`});tx(b,x+40,426,en,'lab',{style:`fill:${C.ink};font-style:italic`});tx(b,x+40,452,es,'sm');
+    formula(b,x+40,548,tex,{size:40});
+    const L=ley.map(([f,t],i)=>{const gg=G(g),y=630+i*46;formula(gg,x+40,y,f,{size:24,color:col});tx(gg,x+250,y,t,'sm',{style:`fill:${C.ink}`});return gg;});return{b,L};};
+  const M=card(96,C.ink,'MAE','Mean Absolute Error','error absoluto medio','MAE = \\frac{1}{n} \\sum_{i=1}^{n} |y_{i} − ŷ_{i}|',
+    [['|y_{i} − ŷ_{i}|','valor absoluto: quita el signo, ningún error se cancela'],['\\frac{1}{n} \\sum','promedio: suma los n errores y divide por n'],['unidades','las mismas de Y: pesos']]);
+  const R=card(816,C.ml,'RMSE','Root Mean Squared Error','raíz del error cuadrático medio','RMSE = \\sqrt{\\frac{1}{n} \\sum_{i=1}^{n} (y_{i} − ŷ_{i})^{2}}',
+    [['(y_{i} − ŷ_{i})^{2}','al cuadrado: un error del doble pesa cuatro veces'],['MSE','lo de adentro de la raíz, en pesos²'],['\\sqrt{MSE}','la raíz devuelve la cifra a pesos']]);
+  const nota=G(g);S('rect',{x:96,y:800,width:1408,height:76,rx:18,fill:C.mlT},nota);
+  tx(nota,120,832,'Las dos están en pesos y entre más pequeñas, mejor. Siempre RMSE ≥ MAE: son iguales solo si todos los errores miden lo mismo.','sm',{style:`fill:${C.ink}`});
+  tx(nota,120,858,'En la lámina siguiente se calculan, letra por letra, con 10 personas de prueba.','sm');
+  hide(e0,M.b,M.L,R.b,R.L,nota);
+  return[T=>{fadeIn(T,t0,.1);fadeIn(T,e0,.5);},
+    T=>{fadeIn(T,M.b,0);fadeIn(T,M.L,.6,{st:.25,dx:-12,dy:0});},
+    T=>{fadeIn(T,R.b,0);fadeIn(T,R.L,.6,{st:.25,dx:-12,dy:0});},
+    T=>{fadeIn(T,nota,0);}];
+}});
+
+/* ---------- 19 · MAE y RMSE ---------- */
 slide({kicker:K5,title:'MAE y RMSE: del error de cada persona a una cifra',build(c){
   const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',','),FB=ols(BIG.map(d=>d.educ),BIG.map(d=>d.ing));
   const D=PRUEBA.slice(0,10),e=D.map(d=>d.ing-FB.f(d.educ)),ab=e.map(Math.abs),e2=e.map(v=>v*v);
@@ -753,7 +820,58 @@ slide({kicker:K5,title:'MAE y RMSE: del error de cada persona a una cifra',build
       T.call(()=>cR.L.forEach(s=>s.style.fill=C.ml),null,.4);countTo(T,cR.v,0,rmse,.3,.8,v=>'RMSE = '+pesos(v));fadeIn(T,use,1);}];
 }});
 
-/* ---------- 19 · R² ---------- */
+/* ---------- 20 · MAE o RMSE: cuándo usar cada una ---------- */
+slide({kicker:K5,title:'MAE o RMSE: ¿cuál usar y cuándo?',build(c){
+  const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',',');
+  const met=e=>({mae:mean(e),rmse:Math.sqrt(mean(e.map(v=>v*v)))});
+  const t0=tx(g,96,226,'Dos modelos, 10 personas de prueba. Cada barra es el tamaño del error |yᵢ − ŷᵢ| de una persona, en millones:','txt',{style:`fill:${C.ink}`});
+  const sy=lin(0,2.5,470,296),bw=40,gp=18;
+  const panel=(x0,e,col,nom,lee)=>{const pg=G(g),m=met(e);tx(pg,x0,272,nom,'h3',{style:'font-size:21px'});
+    S('line',{x1:x0-10,x2:x0+10*(bw+gp),y1:sy(0),y2:sy(0),stroke:C.sub,'stroke-width':1.5},pg);
+    e.forEach((v,i)=>{S('rect',{x:x0+i*(bw+gp),y:sy(v),width:bw,height:sy(0)-sy(v),rx:5,fill:col},pg);tx(pg,x0+i*(bw+gp)+bw/2,sy(v)-8,fc(v,1),'tick',{'text-anchor':'middle'});});
+    tx(pg,x0,508,`MAE = ${fc(m.mae,2)}  ·  RMSE = ${fc(m.rmse,2)}`,'mono',{style:'font-size:21px;font-weight:600'});
+    tx(pg,x0,536,lee(m),'sm',{style:`fill:${C.ink}`});return pg;};
+  const A=panel(130,Array(10).fill(.5),C.st,'Modelo A · errores parejos',m=>'RMSE = MAE: todos los errores miden lo mismo.');
+  const B=panel(880,[.3,.3,.3,.3,.3,.3,.3,.3,.3,2.3],C.ml,'Modelo B · nueve aciertos y un error grande',m=>`Mismo MAE, pero el RMSE es ${fc(m.rmse/m.mae,2)} veces el MAE: delata el error de 2,3 millones.`);
+  const regla=tx(g,800,584,'Regla práctica: reporte las dos. Si el RMSE se aleja mucho del MAE, hay unos pocos errores grandes que conviene revisar.','lab',{'text-anchor':'middle',style:`fill:${C.ml};font-size:19px`});
+  const CX=[96,400,960],hd=G(g);[['',C.sub],['MAE',C.ink],['RMSE',C.ml]].forEach(([t,col],j)=>tx(hd,CX[j],628,t,'hdr',{style:`font-size:17px;fill:${col}`}));
+  S('line',{x1:96,x2:1504,y1:642,y2:642,stroke:C.frame},hd);
+  const F=[['Cómo pesa cada error',['Todos igual: un error de 2 millones','cuenta el doble que uno de 1.'],['Al cuadrado: un error de 2 millones','cuenta cuatro veces más que uno de 1.']],
+    ['Frente a atípicos',['Robusta: unos pocos casos extremos','la mueven poco.'],['Sensible: un solo atípico','puede dispararla.']],
+    ['Úsela cuando',['el costo de equivocarse crece en proporción al error,','hay atípicos o la cifra va para público no técnico.'],['un error grande es mucho más grave que varios pequeños;','es la misma pérdida que minimizan los mínimos cuadrados.']],
+    ['Ejemplos',['presupuesto de un programa (cada peso de error cuesta igual);','ingresos con unos pocos valores muy altos.'],['focalizar un subsidio: subestimar a un hogar pobre lo deja','por fuera; pronosticar la demanda de energía en un pico.']]];
+  const filas=F.map(([a,m,r],i)=>{const gg=G(g),y=672+i*58;tx(gg,CX[0],y,a,'lab',{style:'font-size:18px'});
+    txl(gg,CX[1],y,m,'sm',22,{style:`fill:${C.ink}`});txl(gg,CX[2],y,r,'sm',22,{style:`fill:${C.ink}`});return gg;});
+  hide(A,B,regla,hd,filas);
+  return[T=>{fadeIn(T,t0,.1);fadeIn(T,A,.4);},
+    T=>{fadeIn(T,B,0);},
+    T=>{fadeIn(T,regla,0);},
+    T=>{fadeIn(T,hd,0,{dy:0});fadeIn(T,filas.slice(0,2),.2,{st:.2,dx:-12,dy:0});},
+    T=>{fadeIn(T,filas.slice(2),0,{st:.25,dx:-12,dy:0});}];
+}});
+
+/* ---------- 21 · Las ecuaciones de R² y R² ajustado ---------- */
+slide({kicker:K5,title:'R² y R² ajustado: las ecuaciones',build(c){
+  const g=G(c.svg);
+  const t0=tx(g,96,226,'Ya no miden el error en pesos: miden qué parte de la variación de Y explica el modelo, frente a predecir siempre el promedio ȳ.','txt',{style:`fill:${C.ink}`});
+  const ancho=(p,tex)=>{const f=formula(p,0,0,tex,{size:38}),w=f.ancho;f.remove();return w;};
+  const card=(x,col,nombre,sub,l1,pre,l2,ley)=>{const b=G(g);S('rect',{x,y:262,width:688,height:520,rx:22,fill:C.soft},b);S('rect',{x,y:262,width:8,height:520,rx:4,fill:col},b);
+    tx(b,x+40,318,nombre,'monoL',{style:`fill:${col}`});tx(b,x+40,348,sub,'sm');
+    formula(b,x+40,414,l1,{size:38});formula(b,x+40+ancho(b,pre),566,l2,{size:38});
+    const L=ley.map((t,i)=>tx(g,x+40,680+i*30,t,'sm',{style:`fill:${C.ink}`}));return{b,L};};
+  const R2=card(96,C.st,'R²','coeficiente de determinación','R^{2} = 1 − \\frac{SSE}{SST}','R^{2} ','= 1 − \\frac{\\sum_{i=1}^{n} (y_{i} − ŷ_{i})^{2}}{\\sum_{i=1}^{n} (y_{i} − ȳ)^{2}}',
+    ['SSE = suma de cuadrados del error: lo que el modelo no explica.','SST = suma total de cuadrados: cuánto varía Y alrededor de ȳ.','Va de 0 a 1: 0 = igual que el promedio; 1 = predicción perfecta.','En prueba puede ser negativo: el modelo es peor que el promedio.']);
+  const RA=card(816,C.ok,'R² ajustado','castiga cada variable X que se agrega','R^{2}_{aj} = 1 − (1 − R^{2}) \\frac{n − 1}{n − k − 1}','R^{2}_{aj} ','= 1 − \\frac{SSE / (n − k − 1)}{SST / (n − 1)}',
+    ['n = número de observaciones; k = número de X (sin el intercepto).','n − k − 1 y n − 1 son grados de libertad: corrigen SSE y SST.','Siempre es menor o igual que R², y baja si la nueva X no aporta.','Sirve para comparar modelos con distinto número de X.']);
+  const nota=G(g);S('rect',{x:96,y:806,width:1408,height:64,rx:18,fill:C.stT},nota);
+  tx(nota,120,845,'Las dos son proporciones sin unidades: complementan al MAE y al RMSE, que dicen el tamaño del error en pesos.','sm',{style:`fill:${C.ink}`});
+  hide(R2.b,R2.L,RA.b,RA.L,nota);
+  return[T=>{fadeIn(T,t0,.1);fadeIn(T,R2.b,.4);fadeIn(T,R2.L,1,{st:.2,dx:-12,dy:0});},
+    T=>{fadeIn(T,RA.b,0);fadeIn(T,RA.L,.6,{st:.2,dx:-12,dy:0});},
+    T=>{fadeIn(T,nota,0);}];
+}});
+
+/* ---------- 22 · R² ---------- */
 slide({kicker:K5,title:'R²: ¿cuánto mejor que predecir el promedio?',build(c){
   const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',','),FB=ols(BIG.map(d=>d.educ),BIG.map(d=>d.ing)),D=PRUEBA.slice(0,60),Y=D.map(d=>d.ing),my=mean(Y);
   const SST=Y.reduce((s,v)=>s+(v-my)**2,0),SSE=D.reduce((s,d)=>s+(d.ing-FB.f(d.educ))**2,0),R2=1-SSE/SST;
@@ -772,7 +890,8 @@ slide({kicker:K5,title:'R²: ¿cuánto mejor que predecir el promedio?',build(c)
   const b1=G(g);S('rect',{x:130,y:690,width:W,height:40,rx:8,fill:C.dot},b1);tx(b1,144,717,`SST · suma total de cuadrados = ${fc(SST,1)}`,'lab',{style:`fill:${C.w};font-size:17px`});
   const b2=G(g);S('rect',{x:130,y:740,width:sx(SSE),height:40,rx:8,fill:C.bad},b2);tx(b2,144,767,`SSE · suma de cuadrados del error = ${fc(SSE,1)}`,'lab',{style:`fill:${C.w};font-size:17px`});
   const ex=G(g);S('rect',{x:130+sx(SSE),y:690,width:W-sx(SSE),height:40,rx:8,fill:C.st},ex);tx(ex,130+sx(SSE)+14,717,`explicado por la recta = ${fmtP(R2)}`,'lab',{style:`fill:${C.w};font-size:17px`});
-  const f=tx(g,130,826,`R² = 1 − SSE / SST = 1 − ${fc(SSE,1)} / ${fc(SST,1)} = ${fc(R2,2)}  →  la recta explica el ${fmtP(R2)} de las diferencias de ingreso.`,'mono',{style:'font-size:19px'});
+  const f=G(g),fq=formula(f,130,824,`R^{2} = 1 − \\frac{SSE}{SST} = 1 − \\frac{${fc(SSE,1)}}{${fc(SST,1)}} = ${fc(R2,2)}`,{size:26});
+  tx(f,130+fq.ancho+24,824,`→  la recta explica el ${fmtP(R2)} de las diferencias de ingreso.`,'lab',{style:`fill:${C.ink};font-size:19px`});
   const use=tx(g,130,866,'Úselo para saber cuánto mejora el modelo frente al promedio: 0 % = igual que el promedio; 100 % = perfecto. No dice el error en pesos.','sm',{style:`fill:${C.ink}`});
   hide(R.pg,b2,ex,f,use);
   return[T=>{fadeIn(T,nm,.1);T.from(L.A.g,{opacity:0,duration:.4},.2);T.from(L.gs,{opacity:0,duration:.8},.4);fadeIn(T,b1,.9);T.from(b1.firstChild,{attr:{width:0},duration:.8},.9);},
@@ -780,7 +899,7 @@ slide({kicker:K5,title:'R²: ¿cuánto mejor que predecir el promedio?',build(c)
     T=>{T.to(ex,{opacity:1,duration:.5},0);fadeIn(T,f,.4);fadeIn(T,use,.9);}];
 }});
 
-/* ---------- 20 · R² ajustado ---------- */
+/* ---------- 23 · R² ajustado ---------- */
 slide({kicker:K5,title:'R² ajustado: el R² con castigo por cada variable',build(c){
   const g=G(c.svg),fc=(v,d)=>fmt(v,d).replace('.',','),n=TRAB.length;
   const r=rng(9),noise=TRAB.map(()=>Array.from({length:10},()=>randn(r))),K=[...Array(11).keys()];
@@ -790,8 +909,7 @@ slide({kicker:K5,title:'R² ajustado: el R² con castigo por cada variable',buil
   const pR=S('path',{d:pathD(K.map(k=>[A.sx(k),A.sy(cur[k])])),fill:'none',stroke:C.st,'stroke-width':4},g);prepDraw(pR);
   const t0=txl(g,780,290,['El problema: el R² (coeficiente de determinación) nunca baja','al agregar X, aunque sean números al azar.'],'txt',28,{style:`fill:${C.ink}`});
   // la fórmula por piezas
-  const X=780,fo=tx(g,X,392,'','mono',{style:'font-size:26px'});
-  [['R²aj = 1 − ',C.ink],['(1 − R²)',C.bad],[' × ',C.ink],['(n − 1)/(n − k − 1)',C.ml]].forEach(([t,col])=>{const s=S('tspan',{style:`fill:${col}`},fo);s.textContent=t;});
+  const X=780,fo=formula(g,X,394,'R^{2}_{aj} = 1 − \\c{bad}{(1 − R^{2})} \\c{ml}{\\frac{n − 1}{n − k − 1}}',{size:30});
   const pz=[[C.bad,'(1 − R²)','lo que el modelo NO explica'],[C.ml,'(n − 1)/(n − k − 1)','el castigo: n = personas, k = número de X'],[C.ink,'1 − …','lo que queda es el R² ya castigado']]
     .map(([col,a,b],i)=>{const gg=G(g),y=438+i*38;tx(gg,X,y,a,'mono',{style:`fill:${col};font-size:19px`});tx(gg,X+250,y,b,'sm',{style:`fill:${C.ink}`});return gg;});
   const pz2=tx(g,X,560,'Cada X de más achica el denominador (n − k − 1): el castigo crece y el ajustado baja si la X no aporta.','sm');
@@ -814,7 +932,7 @@ slide({kicker:K5,title:'R² ajustado: el R² con castigo por cada variable',buil
     T=>{fadeIn(T,use,0);}];
 }});
 
-/* ---------- 21 · Las cuatro métricas: entrenamiento frente a prueba ---------- */
+/* ---------- 24 · Las cuatro métricas: entrenamiento frente a prueba ---------- */
 slide({kicker:K5,title:'Las cuatro métricas: entrenamiento frente a prueba',build(c){
   const g=G(c.svg),yb=BIG.map(d=>d.ing),my=mean(yb),FB=ols(BIG.map(d=>d.educ),yb),M=olsM(BIG.map(d=>[d.educ,d.exp]),yb);
   const met=(D,f,k)=>{const n=D.length,m=mean(D.map(d=>d.ing)),e=D.map(d=>d.ing-f(d)),sst=D.reduce((s,d)=>s+(d.ing-m)**2,0),r2=Math.max(0,1-e.reduce((s,v)=>s+v*v,0)/sst);
@@ -842,7 +960,7 @@ slide({kicker:K5,title:'Las cuatro métricas: entrenamiento frente a prueba',bui
     T=>{fadeIn(T,guia,0,{st:.15,dy:10});fadeIn(T,msg,.8);}];
 }});
 
-/* ---------- 22 · Reto: leer un coeficiente ---------- */
+/* ---------- 25 · Reto: leer un coeficiente ---------- */
 slide({kicker:KC,title:'Reto: lea el coeficiente',build(c){
   const g=G(c.svg),M=olsM(BIG.map(d=>[d.educ,d.exp]),BIG.map(d=>d.ing)),b=pesos(M.beta[1]);
   c.root.addEventListener('click',e=>e.stopPropagation());
@@ -862,7 +980,11 @@ slide({kicker:KC,title:'Reto: lea el coeficiente',build(c){
     T=>{T.call(()=>{ops[1].r.setAttribute('stroke',C.ok);ops[1].r.setAttribute('fill',C.okT);fb[0].textContent='Respuesta: B';fb[0].style.fill=C.ok;fb[1].textContent=O[1][2];},null,0);fadeIn(T,fb,.1,{st:.1});}];
 }});
 
-/* ---------- 23 · Síntesis ---------- */
+/* botón al prompt de esta técnica (página 2-2-prompts-ia.html), a la derecha del botón del notebook */
+function boton_prompt(c,id,junto){const b=document.createElement('a');b.href='2-2-prompts-ia.html#'+id;b.target='_blank';b.rel='noopener';b.textContent='Prompt para pedirle el modelo a una IA →';
+  b.style.cssText=`position:absolute;left:${96+junto.offsetWidth+16}px;top:800px;padding:14px 26px;border-radius:99px;background:#ea7317;color:#fff;font:600 17px "Schibsted Grotesk",sans-serif;text-decoration:none;opacity:0`;
+  b.addEventListener('click',e=>e.stopPropagation());c.root.appendChild(b);return b;}
+/* ---------- 26 · Síntesis ---------- */
 slide({kicker:KC,title:'En resumen',build(c){
   const g=G(c.svg);
   const R=[['El modelo','una X: recta  ŷ = β₀ + β₁x  ·  dos X: plano  ŷ = β₀ + β₁x₁ + β₂x₂',C.st],['Se estima','mínimos cuadrados: la menor suma de residuos al cuadrado',C.st],
@@ -872,87 +994,9 @@ slide({kicker:KC,title:'En resumen',build(c){
   const a=document.createElement('a');a.href='https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-2-regresion-lineal.ipynb';
   a.target='_blank';a.rel='noopener';a.textContent='Práctica: notebook 2-2 con 800 trabajadores →';
   a.style.cssText='position:absolute;left:96px;top:800px;padding:14px 26px;border-radius:99px;background:#15181f;color:#fff;font:600 17px "Schibsted Grotesk",sans-serif;text-decoration:none;opacity:0';
-  a.addEventListener('click',e=>e.stopPropagation());c.root.appendChild(a);
+  a.addEventListener('click',e=>e.stopPropagation());c.root.appendChild(a);const b=boton_prompt(c,'lineal',a);
   hide(filas);
-  return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});T.to(a,{opacity:1,duration:.5},1.1);}];
-}});
-
-/* encabezado y cierre comunes de los prompts: un proyecto local que se ejecuta desde la línea de comandos */
-function cabeceraProy(script,arch,libs,base){const s=script||'modelo.py';return[
-  `Escriba un script de Python llamado «${s}» que ejecutaré desde la línea de comandos (python ${s}) dentro de la carpeta del proyecto, que tiene esta estructura:`,'',
-  '    proyecto/',`    ├── ${s}`,`    ├── datos/${arch}        (datos de entrada)`,'    ├── resultados/          (tablas en Excel)','    └── visualizaciones/     (figuras .png)','',
-  'Requisitos del script:',
-  `a. Al inicio, antes de cualquier otro import, compruebe con importlib.util.find_spec si están instaladas las librerías que necesita (${libs}); instale con «sys.executable -m pip install» solo las que falten y después impórtelas. Tenga en cuenta que scikit-learn se importa como sklearn.`,
-  'b. Use rutas relativas a la carpeta del script (Path(__file__).resolve().parent) y cree resultados/ y visualizaciones/ si no existen.',
-  'c. Guarde cada figura como PNG numerado en visualizaciones/ (01_….png, 02_….png, con dpi=150) y ciérrela con plt.close(); no use plt.show().',
-  `d. Guarde todas las tablas en un solo Excel, resultados/${base}_resultados.xlsx, con una hoja por tabla (con openpyxl).`,
-  'e. Use random_state=42, comente cada bloque en español e imprima en la consola un resumen de cada paso.','',
-  'Pasos del análisis:'];}
-const CIERRE_PROY=['','Al final, agregue al Excel una hoja «resumen» con las cifras clave, explíqueme qué contiene cada archivo generado (cada hoja y cada figura) y cómo leerlo, y redacte un párrafo para un informe de investigación con sus limitaciones (por ejemplo, que una asociación no prueba causalidad).'];
-
-/* ---------- 24 · Prompt ajustable para pedirle el modelo a una IA ---------- */
-slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
-  const g=G(c.svg);
-  const intro=tx(g,96,212,'Llene los campos con sus datos: el prompt se arma solo. Cópielo en ChatGPT, Gemini o Claude y revise lo que le devuelva.','txt');
-  const box=document.createElement('div');box.className='pr interactive';
-  box.innerHTML=`<style>
-    .pr{position:absolute;left:96px;top:240px;width:1408px;height:620px;display:grid;grid-template-columns:540px 1fr;gap:36px;font-family:'Schibsted Grotesk',sans-serif;color:#15181f}
-    .pr .f{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;align-content:start}
-    .pr label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:#565c6b}
-    .pr label.w{grid-column:1/-1}
-    .pr input[type=text],.pr select{font:500 17px 'Schibsted Grotesk',sans-serif;color:#15181f;padding:9px 12px;border:1.5px solid #d2d6de;border-radius:10px;background:#fff}
-    .pr input[type=text]:focus,.pr select:focus{outline:none;border-color:#2f5bea}
-    .pr .mets{display:flex;gap:22px;font:500 17px 'Schibsted Grotesk',sans-serif;color:#15181f;padding-top:4px}
-    .pr .mets label{flex-direction:row;align-items:center;gap:8px;font-size:17px;color:#15181f}
-    .pr .nota{grid-column:1/-1;font-size:14px;color:#9aa0ad;line-height:1.4;margin-top:4px}
-    .pr .out{display:flex;flex-direction:column;gap:12px}
-    .pr textarea{flex:1;resize:none;border:0;border-radius:16px;background:#f5f6f8;padding:20px 22px;font:400 14.5px/1.55 'JetBrains Mono',monospace;color:#15181f}
-    .pr .bar{display:flex;align-items:center;gap:16px}
-    .pr button{border:0;border-radius:99px;padding:12px 26px;background:#ea7317;color:#fff;font:600 17px 'Schibsted Grotesk',sans-serif;cursor:pointer}
-    .pr .ok{font-size:15px;color:#1b9a68;font-weight:600}
-  </style>
-  <div class="f">
-    <label class="w">Archivo de datos<input type="text" name="arch" value="2-2-regresion-lineal.xlsx"></label>
-    <label>Hoja o formato<input type="text" name="hoja" value="hoja «trabajadores»"></label>
-    <label>Nombre del script<input type="text" name="script" value="modelo_regresion_lineal.py"></label>
-    <label class="w">Variable Y · lo que quiere predecir<input type="text" name="y" value="ingreso_mensual"></label>
-    <label class="w">Variables X · separadas por comas<input type="text" name="x" value="anos_educacion, experiencia"></label>
-    <label>Tipo de modelo<select name="tipo"><option value="simple">Simple (una X)</option><option value="multiple" selected>Múltiple (varias X)</option></select></label>
-    <label>Para qué<select name="prop"><option value="ambos">Explicar y predecir</option><option value="explicar">Explicar (leer los β)</option><option value="predecir">Predecir (bajar el error)</option></select></label>
-    <label>Datos de prueba<select name="test"><option>20</option><option>25</option><option>30</option></select></label>
-    <label class="w">Métricas<span class="mets"><label><input type="checkbox" name="met" value="mae" checked>MAE</label><label><input type="checkbox" name="met" value="rmse">RMSE</label><label><input type="checkbox" name="met" value="r2" checked>R²</label><label><input type="checkbox" name="met" value="r2a">R² ajustado</label></span></label>
-    <div class="nota">La IA puede equivocarse: ejecute el código paso a paso, compare las cifras con lo visto en clase y pregúntele lo que no entienda.</div>
-  </div>
-  <div class="out"><textarea readonly></textarea><div class="bar"><button type="button">Copiar el prompt</button><span class="ok"></span></div></div>`;
-  c.root.appendChild(box);
-  ['click','pointerdown','mousedown','keydown'].forEach(ev=>box.addEventListener(ev,e=>e.stopPropagation()));
-  const $=n=>box.querySelector(`[name=${n}]`),ta=box.querySelector('textarea'),ok=box.querySelector('.ok');
-  const lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a[a.length-1],q=s=>`«${s}»`;
-  function armar(){
-    const xs=$('x').value.split(',').map(s=>s.trim()).filter(Boolean),Y=$('y').value.trim()||'Y',p=+$('test').value,simple=$('tipo').value==='simple',prop=$('prop').value;
-    const ms=[...box.querySelectorAll('[name=met]:checked')].map(i=>({mae:'el MAE (error absoluto medio, en las unidades de Y)',rmse:'el RMSE (que castiga más los errores grandes)',r2:'el R² (qué porcentaje de la variación explica)',r2a:'el R² ajustado (para comparar modelos con distinto número de X)'}[i.value]));
-    const script=$('script').value.trim()||'modelo_regresion_lineal.py',arch=$('arch').value.trim()||'datos.xlsx',hoja=$('hoja').value.trim()||'sin hoja',ex=prop!=='predecir';
-    const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo regresión lineal por primera vez: explique cada paso con lenguaje sencillo.`,'',
-      `Quiero una regresión lineal ${simple?'simple':'múltiple'} en Python para ${{ambos:'explicar y predecir',explicar:'explicar',predecir:'predecir'}[prop]} la variable ${q(Y)} a partir de ${xs.length?lista(xs.map(q)):'las variables X'}. Los datos están en ${q(arch)} (${hoja}).`,'',
-      ...cabeceraProy(script,arch,'pandas, numpy, scikit-learn, statsmodels, matplotlib y openpyxl','regresion_lineal'),
-      `1. Cargue los datos con pandas, revise filas, columnas, tipos y datos faltantes, y guarde la descripción en la hoja «descripcion».`,
-      `2. Grafique ${q(Y)} frente a ${xs.length>1?'cada variable X':q(xs[0]||'X')} en un diagrama de dispersión → visualizaciones/01_dispersion.png.`,
-      `3. Si alguna X es texto (categórica), conviértala en columnas de 0 y 1 y diga cuál es la categoría de referencia.`,
-      `4. Separe los datos en entrenamiento (${100-p} %) y prueba (${p} %); entrene solo con el primero y mida con el segundo.`,
-      `5. Ajuste la regresión lineal con scikit-learn${ex?' y también con statsmodels':''}. Guarde en la hoja «coeficientes» cada β${ex?' con su intervalo de confianza y su valor p':''}, escriba la ecuación estimada e interprete cada coeficiente: «si X sube en 1, ${Y} cambia en promedio tanto${simple?'':', con las demás X fijas'}».`,
-      `6. ${simple?'Grafique la recta de mínimos cuadrados sobre los puntos':'Grafique los valores reales frente a los predichos, con la línea de 45°'} → visualizaciones/02_ajuste.png.${xs.length===2?' Si las dos X son numéricas, dibuje también el plano de la regresión en 3D con los puntos → visualizaciones/03_plano_3d.png.':''}`,
-      `7. Grafique los residuos contra los valores predichos, junto con su histograma → visualizaciones/04_residuos.png. Dígame si ve una curva, olas, una cola larga o un embudo, qué supuesto se incumple y qué decisión tomar.`,
-      `8. Calcule ${ms.length?lista(ms):'el MAE y el R²'} en entrenamiento y en prueba, compárelos con una línea base que siempre predice el promedio, guárdelos en la hoja «metricas» y grafíquelos en barras → visualizaciones/05_metricas.png. Dígame si hay sobreajuste.`,
-      `9. Guarde las predicciones de prueba (valor real, predicho y residuo) en la hoja «predicciones».`,
-      ...CIERRE_PROY];
-    ta.value=L.join('\n');ok.textContent='';}
-  $('x').addEventListener('input',()=>{const n=$('x').value.split(',').filter(s=>s.trim()).length;if(n>1)$('tipo').value='multiple';else if(n===1)$('tipo').value='simple';});
-  box.addEventListener('input',armar);box.addEventListener('change',armar);armar();
-  box.querySelector('button').addEventListener('click',()=>{const listo=()=>{ok.textContent='✓ Copiado: péguelo en la IA';};
-    const viejo=()=>{ta.select();try{document.execCommand('copy');listo();}catch(e){ok.textContent='Seleccione el texto y cópielo con Ctrl+C';}};
-    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(ta.value).then(listo,viejo);else viejo();});
-  hide(box);
-  return[T=>{fadeIn(T,intro,.2);fadeIn(T,box,.5,{dy:16});}];
+  return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});T.to([a,b],{opacity:1,duration:.5,stagger:.15},1.1);}];
 }});
 
 /* =====================================================================
@@ -1016,7 +1060,7 @@ addEventListener('keydown',e=>{
     else if(on){if(e.key==='Escape')open(false);e.stopImmediatePropagation();}},true);
 })();
 const start=()=>render(0,0,'anim',0);
-if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(start);else start();
+if(document.fonts&&document.fonts.ready)Promise.race([Promise.all([document.fonts.ready,document.fonts.load("30px 'STIX Two Text'"),document.fonts.load("italic 30px 'STIX Two Text'")]),new Promise(r=>setTimeout(r,2500))]).then(start);else start();
 </script>
 
 </body>

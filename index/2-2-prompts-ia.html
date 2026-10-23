@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prompts para una IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--ink:#15181f;--sub:#565c6b;--muted:#9aa0ad;--line:#e8eaef;--frame:#d2d6de;--soft:#f5f6f8;
+  --st:#2f5bea;--stT:#e8eefd;--ml:#ea7317;--mlT:#fdefe2;--ok:#1b9a68;--w:#ffffff;
+  --disp:'Schibsted Grotesk',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--w);color:var(--ink);font:400 17px/1.5 var(--disp)}
+a{color:inherit}
+.wrap{display:grid;grid-template-columns:300px minmax(0,1fr);gap:56px;max-width:1560px;margin:0 auto;padding:0 40px}
+
+/* tabla de contenido */
+aside{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:40px 0 32px;display:flex;flex-direction:column;gap:26px}
+.volver{font:600 14px var(--mono);color:var(--sub);text-decoration:none}
+.volver:hover{color:var(--st)}
+.kick{font:500 13px var(--mono);letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+aside h1{font:700 30px/1.12 var(--disp);letter-spacing:-.01em;margin-top:8px}
+.toc{list-style:none;padding:0;display:flex;flex-direction:column;gap:4px;counter-reset:t}
+.toc a{display:grid;grid-template-columns:34px 1fr;align-items:baseline;padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--sub);transition:background .2s,color .2s}
+.toc a:hover{background:var(--soft);color:var(--ink)}
+.toc .n{font:600 14px var(--mono);color:var(--muted)}
+.toc .t{font:600 17px var(--disp)}
+.toc .s{grid-column:2;font-size:13px;color:var(--muted)}
+.toc a.on{background:var(--mlT);color:var(--ink)}
+.toc a.on .n{color:var(--ml)}
+.grupo{font:600 12px var(--mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase;padding:14px 12px 4px}
+
+/* contenido */
+main{padding:48px 0 120px;min-width:0}
+.intro{max-width:880px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+.intro h2{font:700 40px/1.1 var(--disp);letter-spacing:-.015em;margin:10px 0 14px}
+.intro p{color:var(--sub);font-size:18px}
+.pasos{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+.pasos li{background:var(--soft);border-radius:16px;padding:16px 18px;font-size:15px;color:var(--sub)}
+.pasos b{display:block;font:600 16px var(--disp);color:var(--ink);margin-bottom:4px}
+.pasos span{font:600 13px var(--mono);color:var(--ml)}
+.tec{padding:56px 0 8px;scroll-margin-top:8px}
+.tec header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 32px;margin-bottom:22px}
+.tec h2{font:700 34px/1.15 var(--disp);letter-spacing:-.01em;margin-top:6px}
+.tec .datos{color:var(--sub);font-size:16px;margin-top:4px}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.links a{padding:9px 18px;border-radius:99px;border:1.5px solid var(--frame);font:600 15px var(--disp);text-decoration:none;white-space:nowrap}
+.links a:hover{border-color:var(--st);color:var(--st)}
+
+/* el formulario y el prompt (de la lámina final de las clases) */
+.pr{display:grid;grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:32px;padding:28px;border:1px solid var(--line);border-radius:22px}
+.pr .f{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;align-content:start}
+.pr label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--sub);min-width:0}
+.pr label.w{grid-column:1/-1}
+.pr input[type=text],.pr select{font:500 16px var(--disp);color:var(--ink);padding:8px 12px;border:1.5px solid var(--frame);border-radius:10px;background:var(--w);width:100%;min-width:0}
+.pr input[type=text]:focus,.pr select:focus{outline:none;border-color:var(--st)}
+.pr .mets{display:flex;flex-wrap:wrap;gap:6px 18px;padding-top:4px}
+.pr .mets label{flex-direction:row;align-items:center;gap:7px;font-size:16px;color:var(--ink);font-weight:500}
+.pr .nota{grid-column:1/-1;font-size:14px;color:var(--muted);line-height:1.4}
+.pr .out{display:flex;flex-direction:column;gap:12px;min-width:0}
+.pr textarea{flex:1;min-height:520px;resize:vertical;border:0;border-radius:16px;background:var(--soft);padding:20px 22px;font:400 13.5px/1.55 var(--mono);color:var(--ink);width:100%}
+.pr .bar{display:flex;align-items:center;flex-wrap:wrap;gap:16px}
+.pr button{border:0;border-radius:99px;padding:12px 26px;background:var(--ml);color:#fff;font:600 17px var(--disp);cursor:pointer}
+.pr button:hover{filter:brightness(.95)}
+.pr button:focus-visible,.toc a:focus-visible,.links a:focus-visible{outline:3px solid var(--st);outline-offset:2px}
+.pr .ok{font-size:15px;color:var(--ok);font-weight:600}
+
+@media (max-width:1180px){.pr{grid-template-columns:minmax(0,1fr)}.pr textarea{min-height:420px}}
+@media (max-width:860px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:0;padding:0 16px}
+  aside{position:static;height:auto;padding:24px 0 8px;gap:16px}
+  .toc{flex-direction:row;flex-wrap:wrap}.toc a{grid-template-columns:28px auto}.toc .s,.grupo{display:none}
+  main{padding-top:16px}.intro h2{font-size:30px}.pasos{grid-template-columns:1fr}
+  .tec h2{font-size:28px}.pr{padding:16px;gap:20px}.pr .f{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside>
+    <a class="volver" href="../index.html#4">← Volver al módulo</a>
+    <div>
+      <p class="kick">Módulo 2 · Tema 2.2</p>
+      <h1>Prompts para pedirle el modelo a una IA</h1>
+    </div>
+    <nav aria-label="Tabla de contenido"><ol class="toc" id="toc"></ol></nav>
+  </aside>
+  <main id="main">
+    <section class="intro">
+      <p class="kick">Uno por cada técnica</p>
+      <h2>El modelo, en un script de Python</h2>
+      <p>Cada prompt pide un script que se ejecuta desde la línea de comandos en una carpeta de proyecto con <code>datos/</code>, <code>resultados/</code> (un Excel con una hoja por tabla) y <code>visualizaciones/</code> (figuras PNG numeradas), con los mismos pasos, métricas y figuras de la clase.</p>
+      <ol class="pasos">
+        <li><span>1</span><b>Llene los campos</b>con su archivo, su Y y sus X: el prompt se arma solo.</li>
+        <li><span>2</span><b>Cópielo</b>y péguelo en ChatGPT, Gemini o Claude.</li>
+        <li><span>3</span><b>Revise lo que le devuelva</b>ejecútelo paso a paso y compare las cifras con la clase.</li>
+      </ol>
+    </section>
+  </main>
+</div>
+<script>
+/* encabezado y cierre comunes de los prompts: un proyecto local que se ejecuta desde la línea de comandos */
+function cabeceraProy(script,arch,libs,base){const s=script||'modelo.py';return[
+  `Escriba un script de Python llamado «${s}» que ejecutaré desde la línea de comandos (python ${s}) dentro de la carpeta del proyecto, que tiene esta estructura:`,'',
+  '    proyecto/',`    ├── ${s}`,`    ├── datos/${arch}        (datos de entrada)`,'    ├── resultados/          (tablas en Excel)','    └── visualizaciones/     (figuras .png)','',
+  'Requisitos del script:',
+  `a. Al inicio, antes de cualquier otro import, compruebe con importlib.util.find_spec si están instaladas las librerías que necesita (${libs}); instale con «sys.executable -m pip install» solo las que falten y después impórtelas. Tenga en cuenta que scikit-learn se importa como sklearn.`,
+  'b. Use rutas relativas a la carpeta del script (Path(__file__).resolve().parent) y cree resultados/ y visualizaciones/ si no existen.',
+  'c. Guarde cada figura como PNG numerado en visualizaciones/ (01_….png, 02_….png, con dpi=150) y ciérrela con plt.close(); no use plt.show().',
+  `d. Guarde todas las tablas en un solo Excel, resultados/${base}_resultados.xlsx, con una hoja por tabla (con openpyxl).`,
+  'e. Use random_state=42, comente cada bloque en español e imprima en la consola un resumen de cada paso.','',
+  'Pasos del análisis:'];}
+const CIERRE_PROY=['','Al final, agregue al Excel una hoja «resumen» con las cifras clave, explíqueme qué contiene cada archivo generado (cada hoja y cada figura) y cómo leerlo, y redacte un párrafo para un informe de investigación con sus limitaciones (por ejemplo, que una asociación no prueba causalidad).'];
+
+/* clasificación (árbol, random forest, k vecinos, SVM): mismos campos base más o.extra; o.lineas(v) da los pasos */
+const MET={exac:'la exactitud (accuracy)',prec:'la precisión (precision)',sens:'la sensibilidad (recall)',f1:'el F1',auc:'el AUC de la curva ROC'};
+const COSTO={fn:'Para mí es más grave que se escape un caso positivo: recomiende un umbral que priorice la sensibilidad.',fp:'Para mí es más grave una falsa alarma: recomiende un umbral que priorice la precisión.',igual:'Los dos errores pesan igual: recomiende el umbral con el mejor F1.'};
+function promptClasif(o){return{
+  campos:`<label class="w">Archivo de datos<input type="text" name="arch" value="${o.archivo}"></label>
+    <label>Hoja o formato<input type="text" name="hoja" value="${o.hoja}"></label>
+    <label>Nombre del script<input type="text" name="script" value="${o.script}"></label>
+    <label>Variable Y · lo que quiere predecir<input type="text" name="y" value="${o.y}"></label>
+    <label>Clase positiva · la que quiere encontrar<input type="text" name="pos" value="${o.pos}"></label>
+    <label class="w">Variables X · separadas por comas<input type="text" name="x" value="${o.x}"></label>
+    ${o.extra}
+    <label>Datos de prueba (%)<select name="test"><option>20</option><option selected>25</option><option>30</option></select></label>
+    <label>Error más grave<select name="costo"><option value="fn">Que se escape un positivo</option><option value="fp">Una falsa alarma</option><option value="igual">Los dos pesan igual</option></select></label>
+    <label class="w">Métricas<span class="mets"><label><input type="checkbox" name="met" value="exac" checked>Exactitud</label><label><input type="checkbox" name="met" value="prec" checked>Precisión</label><label><input type="checkbox" name="met" value="sens" checked>Sensibilidad</label><label><input type="checkbox" name="met" value="f1">F1</label><label><input type="checkbox" name="met" value="auc" checked>AUC</label></span></label>`,
+  armar:({box,$,q,lista})=>{
+      const v={xs:$('x').value.split(',').map(s=>s.trim()).filter(Boolean),Y:$('y').value.trim()||'Y',pos:$('pos').value.trim()||'1',p:+$('test').value,
+        ms:[...box.querySelectorAll('[name=met]:checked')].map(i=>MET[i.value]),costo:COSTO[$('costo').value],script:$('script').value.trim()||o.script,q,lista,$,
+        arch:$('arch').value.trim()||'datos.xlsx',hoja:$('hoja').value.trim()||'sin hoja'};
+    return o.lineas(v).join('\n');}};}
+
+/* ---------- regresión lineal ---------- */
+const P_LINEAL={
+  campos:`<label class="w">Archivo de datos<input type="text" name="arch" value="2-2-regresion-lineal.xlsx"></label>
+    <label>Hoja o formato<input type="text" name="hoja" value="hoja «trabajadores»"></label>
+    <label>Nombre del script<input type="text" name="script" value="modelo_regresion_lineal.py"></label>
+    <label class="w">Variable Y · lo que quiere predecir<input type="text" name="y" value="ingreso_mensual"></label>
+    <label class="w">Variables X · separadas por comas<input type="text" name="x" value="anos_educacion, experiencia"></label>
+    <label>Tipo de modelo<select name="tipo"><option value="simple">Simple (una X)</option><option value="multiple" selected>Múltiple (varias X)</option></select></label>
+    <label>Para qué<select name="prop"><option value="ambos">Explicar y predecir</option><option value="explicar">Explicar (leer los β)</option><option value="predecir">Predecir (bajar el error)</option></select></label>
+    <label>Datos de prueba<select name="test"><option>20</option><option>25</option><option>30</option></select></label>
+    <label class="w">Métricas<span class="mets"><label><input type="checkbox" name="met" value="mae" checked>MAE</label><label><input type="checkbox" name="met" value="rmse">RMSE</label><label><input type="checkbox" name="met" value="r2" checked>R²</label><label><input type="checkbox" name="met" value="r2a">R² ajustado</label></span></label>`,
+  init:({$})=>{$('x').addEventListener('input',()=>{const n=$('x').value.split(',').filter(s=>s.trim()).length;if(n>1)$('tipo').value='multiple';else if(n===1)$('tipo').value='simple';});},
+  armar:({box,$,q,lista})=>{
+    function armar(){
+      const xs=$('x').value.split(',').map(s=>s.trim()).filter(Boolean),Y=$('y').value.trim()||'Y',p=+$('test').value,simple=$('tipo').value==='simple',prop=$('prop').value;
+      const ms=[...box.querySelectorAll('[name=met]:checked')].map(i=>({mae:'el MAE (error absoluto medio, en las unidades de Y)',rmse:'el RMSE (que castiga más los errores grandes)',r2:'el R² (qué porcentaje de la variación explica)',r2a:'el R² ajustado (para comparar modelos con distinto número de X)'}[i.value]));
+      const script=$('script').value.trim()||'modelo_regresion_lineal.py',arch=$('arch').value.trim()||'datos.xlsx',hoja=$('hoja').value.trim()||'sin hoja',ex=prop!=='predecir';
+      const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo regresión lineal por primera vez: explique cada paso con lenguaje sencillo.`,'',
+        `Quiero una regresión lineal ${simple?'simple':'múltiple'} en Python para ${{ambos:'explicar y predecir',explicar:'explicar',predecir:'predecir'}[prop]} la variable ${q(Y)} a partir de ${xs.length?lista(xs.map(q)):'las variables X'}. Los datos están en ${q(arch)} (${hoja}).`,'',
+        ...cabeceraProy(script,arch,'pandas, numpy, scikit-learn, statsmodels, matplotlib y openpyxl','regresion_lineal'),
+        `1. Cargue los datos con pandas, revise filas, columnas, tipos y datos faltantes, y guarde la descripción en la hoja «descripcion».`,
+        `2. Grafique ${q(Y)} frente a ${xs.length>1?'cada variable X':q(xs[0]||'X')} en un diagrama de dispersión → visualizaciones/01_dispersion.png.`,
+        `3. Si alguna X es texto (categórica), conviértala en columnas de 0 y 1 y diga cuál es la categoría de referencia.`,
+        `4. Separe los datos en entrenamiento (${100-p} %) y prueba (${p} %); entrene solo con el primero y mida con el segundo.`,
+        `5. Ajuste la regresión lineal con scikit-learn${ex?' y también con statsmodels':''}. Guarde en la hoja «coeficientes» cada β${ex?' con su intervalo de confianza y su valor p':''}, escriba la ecuación estimada e interprete cada coeficiente: «si X sube en 1, ${Y} cambia en promedio tanto${simple?'':', con las demás X fijas'}».`,
+        `6. ${simple?'Grafique la recta de mínimos cuadrados sobre los puntos':'Grafique los valores reales frente a los predichos, con la línea de 45°'} → visualizaciones/02_ajuste.png.${xs.length===2?' Si las dos X son numéricas, dibuje también el plano de la regresión en 3D con los puntos → visualizaciones/03_plano_3d.png.':''}`,
+        `7. Grafique los residuos contra los valores predichos, junto con su histograma → visualizaciones/04_residuos.png. Dígame si ve una curva, olas, una cola larga o un embudo, qué supuesto se incumple y qué decisión tomar.`,
+        `8. Calcule ${ms.length?lista(ms):'el MAE y el R²'} en entrenamiento y en prueba, compárelos con una línea base que siempre predice el promedio, guárdelos en la hoja «metricas» y grafíquelos en barras → visualizaciones/05_metricas.png. Dígame si hay sobreajuste.`,
+        `9. Guarde las predicciones de prueba (valor real, predicho y residuo) en la hoja «predicciones».`,
+        ...CIERRE_PROY];
+      return L.join('\n');}
+    return armar();}};
+
+/* ---------- regresión logística ---------- */
+const P_LOGISTICA={
+  campos:`<label class="w">Archivo de datos<input type="text" name="arch" value="2-2-regresion-logistica.xlsx"></label>
+    <label>Hoja o formato<input type="text" name="hoja" value="hoja «estudiantes»"></label>
+    <label>Nombre del script<input type="text" name="script" value="modelo_regresion_logistica.py"></label>
+    <label>Variable Y · lo que quiere predecir<input type="text" name="y" value="desercion"></label>
+    <label>Clase positiva · la que quiere encontrar<input type="text" name="pos" value="Sí"></label>
+    <label class="w">Variables X · separadas por comas<input type="text" name="x" value="promedio_semestre, distancia_km, trabaja, beca"></label>
+    <label>Tipo de modelo<select name="tipo"><option value="simple">Simple (una X)</option><option value="multiple" selected>Múltiple (varias X)</option></select></label>
+    <label>Para qué<select name="prop"><option value="ambos">Explicar y predecir</option><option value="explicar">Explicar (leer odds ratio)</option><option value="predecir">Predecir (clasificar)</option></select></label>
+    <label>Datos de prueba (%)<select name="test"><option>20</option><option selected>25</option><option>30</option></select></label>
+    <label>Error más grave<select name="costo"><option value="fn">Que se escape un positivo</option><option value="fp">Una falsa alarma</option><option value="igual">Los dos pesan igual</option></select></label>
+    <label class="w">Métricas<span class="mets"><label><input type="checkbox" name="met" value="exac" checked>Exactitud</label><label><input type="checkbox" name="met" value="prec" checked>Precisión</label><label><input type="checkbox" name="met" value="sens" checked>Sensibilidad</label><label><input type="checkbox" name="met" value="f1">F1</label><label><input type="checkbox" name="met" value="auc" checked>AUC</label></span></label>`,
+  init:({$})=>{$('x').addEventListener('input',()=>{const n=$('x').value.split(',').filter(s=>s.trim()).length;if(n>1)$('tipo').value='multiple';else if(n===1)$('tipo').value='simple';});},
+  armar:({box,$,q,lista})=>{const MET={exac:'la exactitud (accuracy)',prec:'la precisión (precision)',sens:'la sensibilidad (recall)',f1:'el F1',auc:'el AUC de la curva ROC'};
+    function armar(){
+      const xs=$('x').value.split(',').map(s=>s.trim()).filter(Boolean),Y=$('y').value.trim()||'Y',pos=$('pos').value.trim()||'1',p=+$('test').value,simple=$('tipo').value==='simple',prop=$('prop').value,costo=$('costo').value;
+      const ms=[...box.querySelectorAll('[name=met]:checked')].map(i=>MET[i.value]);
+      const script=$('script').value.trim()||'modelo_regresion_logistica.py',arch=$('arch').value.trim()||'datos.xlsx',hoja=$('hoja').value.trim()||'sin hoja',ex=prop!=='predecir';
+      const COSTO={fn:'Para mí es más grave que se escape un caso positivo: recomiende un umbral que priorice la sensibilidad.',fp:'Para mí es más grave una falsa alarma: recomiende un umbral que priorice la precisión.',igual:'Los dos errores pesan igual: recomiende el umbral con el mejor F1.'};
+      const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo regresión logística por primera vez: explique cada paso con lenguaje sencillo.`,'',
+        `Quiero una regresión logística ${simple?'simple':'múltiple'} en Python para ${{ambos:'explicar y predecir',explicar:'explicar',predecir:'predecir'}[prop]} la variable ${q(Y)} (la clase positiva es ${q(pos)}) a partir de ${xs.length?lista(xs.map(q)):'las variables X'}. Los datos están en ${q(arch)} (${hoja}).`,'',
+        ...cabeceraProy(script,arch,'pandas, numpy, scikit-learn, statsmodels, matplotlib y openpyxl','regresion_logistica'),
+        `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes, calcule qué porcentaje de casos es ${q(pos)} y guárdelo en la hoja «descripcion».`,
+        `2. Convierta ${q(Y)} en 0 y 1, y las X de texto en columnas de 0 y 1 (diga cuál es la categoría de referencia).`,
+        `3. Separe los datos en entrenamiento (${100-p} %) y prueba (${p} %), de forma estratificada; entrene solo con el primero y mida con el segundo.`,
+        `4. Ajuste la regresión logística con scikit-learn${ex?' y también con statsmodels':''}. Guarde en la hoja «coeficientes» cada β${ex?' con su intervalo de confianza, su valor p y su odds ratio (e^β: cuánto se multiplican las chances)':''}, escriba la ecuación p = 1 / (1 + e^−z) con los β estimados y explique el signo de cada uno.`,
+        `5. ${simple?`Grafique los puntos en 0 y 1 frente a ${q(xs[0]||'X')} con la curva S de la probabilidad → visualizaciones/01_curva_s.png.`:'Grafique el histograma de las probabilidades predichas, separado por la clase real → visualizaciones/01_probabilidades.png.'}`,
+        `6. Con el umbral 0,5, dibuje la matriz de confusión con las celdas rotuladas VP, FN, FP y VN y sus conteos → visualizaciones/02_matriz_confusion.png; guárdela en la hoja «matriz_confusion» y explique qué es cada celda.`,
+        `7. Calcule ${ms.length?lista(ms):'la exactitud, la precisión, la sensibilidad, el F1 y el AUC'} en entrenamiento y en prueba, compárelas con una línea base que siempre predice la clase más común y guárdelas en la hoja «metricas». Interprete cada una en palabras («de cada 10…») y dígame si hay sobreajuste.`,
+        `8. Grafique la curva ROC con su AUC, la diagonal del azar y los puntos de los umbrales 0,2, 0,5 y 0,8 → visualizaciones/03_curva_roc.png. Guarde en la hoja «umbrales» la sensibilidad, la precisión y las falsas alarmas para umbrales de 0,1 a 0,9. ${COSTO[costo]}`,
+        `9. Guarde las predicciones de prueba (valor real, probabilidad y clase predicha) en la hoja «predicciones».`,
+        ...CIERRE_PROY];
+      return L.join('\n');}
+    return armar();}};
+
+/* ---------- árbol de decisión ---------- */
+const P_ARBOL=promptClasif({archivo:'2-2-hogares-subsidio.xlsx',hoja:'hoja «hogares»',y:'pobre',pos:'Sí',script:'modelo_arbol_decision.py',x:'ingreso_pc, educacion_jefe, hacinamiento, acueducto, piso_tierra, internet, zona',
+  extra:`<label>Para qué<select name="prop"><option value="ambos">Explicar y predecir</option><option value="explicar">Explicar (leer las reglas)</option><option value="predecir">Predecir (clasificar)</option></select></label>
+    <label>Profundidad del árbol<select name="prof"><option value="cv">Elegir con validación cruzada</option><option value="3">3 niveles (para leerlo)</option><option value="libre">Sin límite (para ver el sobreajuste)</option></select></label>`,
+  lineas:v=>{const prop=v.$('prop').value,prof=v.$('prof').value;return[
+    `Actúe como un profesor de análisis de datos. Estoy aprendiendo árboles de decisión por primera vez: explique cada paso con lenguaje sencillo.`,'',
+    `Quiero un árbol de decisión de clasificación en Python para ${{ambos:'explicar y predecir',explicar:'explicar',predecir:'predecir'}[prop]} la variable ${v.q(v.Y)} (la clase positiva es ${v.q(v.pos)}) a partir de ${v.xs.length?v.lista(v.xs.map(v.q)):'las variables X'}. Los datos están en ${v.q(v.arch)} (${v.hoja}).`,'',
+    ...cabeceraProy(v.script,v.arch,'pandas, numpy, scikit-learn, matplotlib y openpyxl','arbol_decision'),
+    `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes, calcule qué porcentaje de casos es ${v.q(v.pos)} y guárdelo en la hoja «descripcion».`,
+    `2. Convierta ${v.q(v.Y)} en 0 y 1, y las X de texto en columnas de 0 y 1.`,
+    `3. Separe los datos en entrenamiento (${100-v.p} %) y prueba (${v.p} %), de forma estratificada; entrene solo con el primero y mida con el segundo.`,
+    `4. Ajuste un DecisionTreeClassifier ${{cv:'eligiendo max_depth, min_samples_leaf y ccp_alpha con validación cruzada (GridSearchCV, 5 pliegues, AUC) y guarde la búsqueda en la hoja «busqueda»',3:'con max_depth=3, para que se pueda leer',libre:'sin límite de profundidad y, para comparar, otro con max_depth=3'}[prof]}. Dibuje el árbol con plot_tree → visualizaciones/01_arbol.png.`,
+    `5. Guarde las reglas (export_text) en la hoja «reglas» y explique en palabras sencillas las tres reglas que concentran más casos ${v.q(v.pos)}, incluyendo el porcentaje de positivos de cada hoja.`,
+    `6. Grafique la exactitud en entrenamiento y en prueba según la profundidad máxima (1 a 15) → visualizaciones/02_profundidad.png; guarde la tabla en la hoja «profundidad» y explique el sobreajuste.`,
+    `7. Con el umbral 0,5, dibuje la matriz de confusión con las celdas rotuladas VP, FN, FP y VN → visualizaciones/03_matriz_confusion.png y explique cada celda.`,
+    `8. Calcule ${v.ms.length?v.lista(v.ms):'la exactitud, la precisión, la sensibilidad y el AUC'} en entrenamiento y en prueba, y compárelas con una línea base (la clase más común) y con una regresión logística; guárdelas en la hoja «metricas».`,
+    `9. Grafique las curvas ROC del árbol y de la logística con su AUC → visualizaciones/04_curva_roc.png y guarde en la hoja «umbrales» las métricas para umbrales de 0,1 a 0,9. ${v.costo}`,
+    `10. Grafique la importancia de las variables → visualizaciones/05_importancia.png, guárdela en la hoja «importancia» y aclare que dice cuánto se usó cada variable, no si es una causa.`,
+    `11. Guarde las predicciones de prueba (real, probabilidad y clase predicha) en la hoja «predicciones».`,
+    ...CIERRE_PROY];}});
+
+/* ---------- random forest ---------- */
+const P_BOSQUE=promptClasif({archivo:'2-2-hogares-subsidio.xlsx',hoja:'hoja «hogares»',y:'pobre',pos:'Sí',script:'modelo_random_forest.py',x:'ingreso_pc, educacion_jefe, hacinamiento, menores_5, acueducto, piso_tierra, internet, zona, regimen_salud',
+  extra:`<label>Para qué<select name="prop"><option value="ambos">Explicar y predecir</option><option value="predecir">Predecir (clasificar)</option></select></label>
+    <label>Comparar con<select name="comp"><option value="ambos">Un árbol y una logística</option><option value="arbol">Un solo árbol</option><option value="nada">Nada</option></select></label>`,
+  lineas:v=>{const prop=v.$('prop').value,comp=v.$('comp').value,con={ambos:'un árbol de decisión ajustado y una regresión logística',arbol:'un solo árbol de decisión ajustado',nada:''}[comp];return[
+    `Actúe como un profesor de análisis de datos. Estoy aprendiendo random forest por primera vez: explique cada paso con lenguaje sencillo.`,'',
+    `Quiero un random forest de clasificación en Python para ${prop==='ambos'?'explicar y predecir':'predecir'} la variable ${v.q(v.Y)} (la clase positiva es ${v.q(v.pos)}) a partir de ${v.xs.length?v.lista(v.xs.map(v.q)):'las variables X'}. Los datos están en ${v.q(v.arch)} (${v.hoja}).`,'',
+    ...cabeceraProy(v.script,v.arch,'pandas, numpy, scikit-learn, matplotlib y openpyxl','random_forest'),
+    `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes, calcule qué porcentaje de casos es ${v.q(v.pos)} y guárdelo en la hoja «descripcion».`,
+    `2. Convierta ${v.q(v.Y)} en 0 y 1, y las X de texto en columnas de 0 y 1.`,
+    `3. Separe los datos en entrenamiento (${100-v.p} %) y prueba (${v.p} %), de forma estratificada; entrene solo con el primero y mida con el segundo.`,
+    `4. Ajuste un RandomForestClassifier con 300 árboles y oob_score=True, y explique qué son el bootstrap, max_features y la votación.`,
+    `5. Grafique el error OOB según el número de árboles (de 10 a 400) → visualizaciones/01_oob_arboles.png y guarde la tabla en la hoja «oob».`,
+    `6. Elija max_features y min_samples_leaf con validación cruzada (5 pliegues, AUC) y guarde la búsqueda en la hoja «busqueda».`,
+    `7. Con el umbral 0,5, dibuje la matriz de confusión con las celdas rotuladas VP, FN, FP y VN → visualizaciones/02_matriz_confusion.png y explique cada celda.`,
+    `8. Calcule ${v.ms.length?v.lista(v.ms):'la exactitud, la precisión, la sensibilidad y el AUC'} en entrenamiento, en OOB y en prueba, y compárelas con una línea base (la clase más común)${con?' y con '+con:''}; guárdelas en la hoja «metricas» y dígame si hay sobreajuste.`,
+    `9. Grafique las curvas ROC del bosque${con?' y de '+con:''} con su AUC → visualizaciones/03_curva_roc.png y guarde en la hoja «umbrales» las métricas para umbrales de 0,1 a 0,9. ${v.costo}`,
+    `10. Calcule la importancia por impureza y por permutación (en prueba), grafíquelas lado a lado → visualizaciones/04_importancia.png, guárdelas en la hoja «importancia» y explique por qué pueden diferir.`,
+    `11. Dibuje la dependencia parcial de las dos variables más importantes → visualizaciones/05_dependencia_parcial.png y explique en qué dirección actúan.`,
+    `12. Guarde las predicciones de prueba (real, probabilidad y clase predicha) en la hoja «predicciones».`,
+    ...CIERRE_PROY];}});
+
+/* ---------- k vecinos ---------- */
+const P_KNN=promptClasif({archivo:'2-2-hogares-subsidio.xlsx',hoja:'hoja «hogares»',y:'pobre',pos:'Sí',script:'modelo_k_vecinos.py',x:'ingreso_pc, educacion_jefe',
+  extra:`<label>Elegir k<select name="kk"><option value="cv">Con validación cruzada (1 a 101)</option><option value="5">Fijo: k = 5</option><option value="15">Fijo: k = 15</option></select></label>
+    <label>Comparar con<select name="comp"><option value="ambos">Una logística y un árbol</option><option value="log">Una logística</option><option value="nada">Nada</option></select></label>`,
+  lineas:v=>{const kk=v.$('kk').value,comp=v.$('comp').value,con={ambos:'una regresión logística y un árbol de decisión',log:'una regresión logística',nada:''}[comp];return[
+    `Actúe como un profesor de análisis de datos. Estoy aprendiendo k vecinos más cercanos (kNN) por primera vez: explique cada paso con lenguaje sencillo.`,'',
+    `Quiero un modelo de k vecinos más cercanos de clasificación en Python para predecir la variable ${v.q(v.Y)} (la clase positiva es ${v.q(v.pos)}) a partir de ${v.xs.length?v.lista(v.xs.map(v.q)):'las variables X'}. Los datos están en ${v.q(v.arch)} (${v.hoja}).`,'',
+    ...cabeceraProy(v.script,v.arch,'pandas, numpy, scikit-learn, matplotlib y openpyxl','k_vecinos'),
+    `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes, calcule qué porcentaje de casos es ${v.q(v.pos)} y guárdelo en la hoja «descripcion».`,
+    `2. Convierta ${v.q(v.Y)} en 0 y 1, y las X de texto en columnas de 0 y 1.`,
+    `3. Separe los datos en entrenamiento (${100-v.p} %) y prueba (${v.p} %), de forma estratificada; entrene solo con el primero y mida con el segundo.`,
+    `4. Arme un Pipeline con StandardScaler y KNeighborsClassifier, y explique por qué hay que escalar las variables y por qué el escalador se ajusta solo con el entrenamiento. Compare la exactitud en prueba con y sin escalar, y guárdela en la hoja «escalado».`,
+    `5. ${kk==='cv'?'Elija k (los impares de 1 a 101) y el peso de los vecinos (uniform o distance) con validación cruzada (GridSearchCV, 5 pliegues) y guarde la búsqueda en la hoja «busqueda».':`Use k = ${kk}.`} Grafique la exactitud en entrenamiento y en validación según k → visualizaciones/01_exactitud_k.png, y explique por qué k = 1 acierta casi todo en entrenamiento.`,
+    `6. Si hay dos X numéricas, dibuje el mapa de decisión en el plano de esas dos variables con k = 1, con el k elegido y con k = 75, lado a lado → visualizaciones/02_mapas_decision.png.`,
+    `7. Para un hogar de prueba, muestre sus k vecinos (sus valores, si son ${v.q(v.pos)} y su distancia) y cómo sus votos dan la probabilidad; guárdelo en la hoja «vecinos_ejemplo».`,
+    `8. Con el umbral 0,5, dibuje la matriz de confusión con las celdas rotuladas VP, FN, FP y VN → visualizaciones/03_matriz_confusion.png y explique cada celda.`,
+    `9. Calcule ${v.ms.length?v.lista(v.ms):'la exactitud, la precisión, la sensibilidad y el AUC'} en entrenamiento y en prueba, y compárelas con una línea base (la clase más común)${con?' y con '+con:''}; guárdelas en la hoja «metricas» y dígame si hay sobreajuste.`,
+    `10. Grafique las curvas ROC de kNN${con?' y de '+con:''} con su AUC → visualizaciones/04_curva_roc.png y guarde en la hoja «umbrales» las métricas para umbrales de 0,1 a 0,9. ${v.costo}`,
+    `11. Guarde las predicciones de prueba (real, probabilidad y clase predicha) en la hoja «predicciones».`,
+    ...CIERRE_PROY];}});
+
+/* ---------- SVM ---------- */
+const P_SVM=promptClasif({archivo:'2-2-hogares-subsidio.xlsx',hoja:'hoja «hogares»',y:'pobre',pos:'Sí',script:'modelo_svm.py',x:'ingreso_pc, educacion_jefe, hacinamiento, menores_5, acueducto, piso_tierra, internet, zona',
+  extra:`<label>Kernel<select name="ker"><option value="ambos">Lineal y RBF (comparar)</option><option value="rbf">Solo RBF (fronteras curvas)</option><option value="lineal">Solo lineal</option></select></label>
+    <label>Comparar con<select name="comp"><option value="ambos">Una logística y un árbol</option><option value="log">Una logística</option><option value="nada">Nada</option></select></label>`,
+  lineas:v=>{const ker=v.$('ker').value,comp=v.$('comp').value,con={ambos:'una regresión logística y un árbol de decisión',log:'una regresión logística',nada:''}[comp];
+    const rbf=ker!=='lineal',lin=ker!=='rbf';return[
+    `Actúe como un profesor de análisis de datos. Estoy aprendiendo máquinas de soporte vectorial (SVM) por primera vez: explique cada paso con lenguaje sencillo.`,'',
+    `Quiero un SVM de clasificación en Python para predecir la variable ${v.q(v.Y)} (la clase positiva es ${v.q(v.pos)}) a partir de ${v.xs.length?v.lista(v.xs.map(v.q)):'las variables X'}. Los datos están en ${v.q(v.arch)} (${v.hoja}).`,'',
+    ...cabeceraProy(v.script,v.arch,'pandas, numpy, scikit-learn, matplotlib y openpyxl','svm'),
+    `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes, calcule qué porcentaje de casos es ${v.q(v.pos)} y guárdelo en la hoja «descripcion».`,
+    `2. Convierta ${v.q(v.Y)} en 0 y 1, y las X de texto en columnas de 0 y 1.`,
+    `3. Separe los datos en entrenamiento (${100-v.p} %) y prueba (${v.p} %), de forma estratificada; entrene solo con el primero y mida con el segundo.`,
+    `4. Arme un Pipeline con StandardScaler y SVC, y explique por qué hay que escalar. Con solo las dos primeras X numéricas, ajuste un SVC lineal y dibuje la frontera, los bordes de la calle (el margen) y los vectores de soporte resaltados → visualizaciones/01_margen.png; repítalo con C = 0,01, 1 y 100 lado a lado → visualizaciones/02_efecto_C.png, y explique qué hace C.`,
+    rbf?`5. Con esas dos variables, dibuje el mapa de decisión del kernel RBF con gamma = 0,1, 1 y 50 lado a lado → visualizaciones/03_efecto_gamma.png, con la exactitud en entrenamiento y en prueba de cada uno, y explique qué hace gamma.`:`5. Guarde los coeficientes del SVM lineal (con las variables escaladas) en la hoja «coeficientes» y explique qué dice su signo.`,
+    `6. Con todas las X, elija ${rbf&&lin?'el kernel (lineal o RBF), C y gamma':rbf?'C y gamma':'C'} con validación cruzada (GridSearchCV, 5 pliegues, AUC; C entre 0,01 y 100${rbf?' y gamma entre 0,001 y 10':''}) y guarde la búsqueda en la hoja «busqueda».`,
+    `7. Use probability=True para obtener probabilidades y explique la diferencia entre el puntaje (decision_function) y la probabilidad. Grafique la probabilidad frente al puntaje → visualizaciones/04_puntaje_probabilidad.png.`,
+    `8. Con el umbral 0,5, dibuje la matriz de confusión con las celdas rotuladas VP, FN, FP y VN → visualizaciones/05_matriz_confusion.png y explique cada celda.`,
+    `9. Calcule ${v.ms.length?v.lista(v.ms):'la exactitud, la precisión, la sensibilidad y el AUC'} en entrenamiento y en prueba, y compárelas con una línea base (la clase más común)${con?' y con '+con:''}; guárdelas en la hoja «metricas» y dígame si hay sobreajuste.`,
+    `10. Grafique las curvas ROC del SVM${con?' y de '+con:''} con su AUC → visualizaciones/06_curva_roc.png y guarde en la hoja «umbrales» las métricas para umbrales de 0,1 a 0,9. ${v.costo}`,
+    `11. Guarde las predicciones de prueba (real, puntaje, probabilidad y clase predicha) en la hoja «predicciones».`,
+    ...CIERRE_PROY];}});
+
+/* =====================================================================
+   Página: una sección por técnica y la tabla de contenido
+   ===================================================================== */
+const GH='https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/';
+const TEC=[
+  {id:'lineal',n:'Regresión lineal',tipo:'Regresión',datos:'800 trabajadores simulados · Y = ingreso mensual',clase:'2-2-clase-regresion-lineal.html',nb:'2-2-regresion-lineal.ipynb',P:P_LINEAL},
+  {id:'logistica',n:'Regresión logística',tipo:'Clasificación',datos:'1.000 estudiantes simulados · Y = deserción',clase:'2-2-clase-regresion-logistica.html',nb:'2-2-regresion-logistica.ipynb',P:P_LOGISTICA},
+  {id:'arbol',n:'Árbol de decisión',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-arbol-decision.html',nb:'2-2-arbol-decision.ipynb',P:P_ARBOL},
+  {id:'random-forest',n:'Random forest',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-random-forest.html',nb:'2-2-random-forest.ipynb',P:P_BOSQUE},
+  {id:'k-vecinos',n:'k vecinos más cercanos',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-k-vecinos.html',nb:'2-2-k-vecinos.ipynb',P:P_KNN},
+  {id:'svm',n:'Máquinas de soporte vectorial (SVM)',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-svm.html',nb:'2-2-svm.ipynb',P:P_SVM}];
+const q=s=>`«${s}»`,lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a[a.length-1];
+const NOTA='La IA puede equivocarse: ejecute el código paso a paso, compare las cifras con lo visto en clase y pregúntele lo que no entienda.';
+const main=document.getElementById('main'),toc=document.getElementById('toc');
+let grupo='';
+TEC.forEach((t,i)=>{
+  if(t.tipo!==grupo){grupo=t.tipo;const g=document.createElement('li');g.className='grupo';g.textContent=grupo;toc.appendChild(g);}
+  const li=document.createElement('li');li.innerHTML=`<a href="#${t.id}"><span class="n">${String(i+1).padStart(2,'0')}</span><span class="t">${t.n}</span><span class="s">${t.datos.split(' · ')[0]}</span></a>`;toc.appendChild(li);
+  const sec=document.createElement('section');sec.className='tec';sec.id=t.id;
+  sec.innerHTML=`<header><div><p class="kick">Prompt ${i+1} · ${t.tipo}</p><h2>${t.n}</h2><p class="datos">${t.datos}</p></div>
+    <p class="links"><a href="${t.clase}">Ver la clase →</a><a href="${GH+t.nb}" target="_blank" rel="noopener">Notebook de práctica →</a></p></header>
+    <div class="pr"><div class="f">${t.P.campos}
+    <div class="nota">${NOTA}</div></div>
+    <div class="out"><textarea readonly aria-label="Prompt de ${t.n}"></textarea><div class="bar"><button type="button">Copiar el prompt</button><span class="ok" role="status"></span></div></div></div>`;
+  main.appendChild(sec);
+  const box=sec.querySelector('.pr'),$=n=>box.querySelector(`[name=${n}]`),ta=box.querySelector('textarea'),ok=box.querySelector('.ok');
+  if(t.P.init)t.P.init({box,$});
+  const armar=()=>{ta.value=t.P.armar({box,$,q,lista});ok.textContent='';};
+  box.addEventListener('input',armar);box.addEventListener('change',armar);armar();
+  box.querySelector('button').addEventListener('click',()=>{const listo=()=>{ok.textContent='✓ Copiado: péguelo en la IA';};
+    const viejo=()=>{ta.select();try{document.execCommand('copy');listo();}catch(e){ok.textContent='Seleccione el texto y cópielo con Ctrl+C';}};
+    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(ta.value).then(listo,viejo);else viejo();});
+});
+/* resalta en la tabla de contenido la técnica que está en pantalla */
+const enlaces=[...toc.querySelectorAll('a')],marcar=id=>enlaces.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+id));
+if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)marcar(e.target.id);}),{rootMargin:'-35% 0px -60% 0px'});
+  document.querySelectorAll('.tec').forEach(s=>io.observe(s));}
+/* las secciones se crean con JS: si la página se abrió con #técnica, ir allá */
+if(location.hash){const s=document.getElementById(location.hash.slice(1));if(s){s.scrollIntoView();marcar(s.id);}}
+</script>
+</body>
+</html>

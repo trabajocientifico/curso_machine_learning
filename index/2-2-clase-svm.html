@@ -285,33 +285,53 @@ function bosque(D,o){const r=rng(o.seed||1),T=[];
   const oob=(i,k=T.length)=>{let s=0,c=0;for(let b=0;b<k;b++)if(!T[b].en.has(i)){s+=prob(T[b].t,D[i]);c++;}return c?s/c:null;};
   return{T,p,oob};}
 
-/* fórmula con aspecto de artículo: \frac{a}{b}, ^{…} y _{…}; las letras sueltas (p, z, x, β) van en cursiva y las palabras y los números en redonda */
+/* fórmula con aspecto de artículo: \frac{a}{b}, ^{…}, _{…} (juntos se apilan), \sum_{…}^{…}, \sqrt{…}, \c{color}{…},
+   \t{texto} (en redonda) y \under{min}{w, b} (índice debajo); las letras sueltas (x, w, γ) van en cursiva, salvo la e */
 const MATHF="'STIX Two Text','Cambria Math','Times New Roman',serif";
-function formula(p,x,y,tex,o={}){const size=o.size||30,col=o.color||C.ink,g=G(p),tmp=G(g);
+function formula(p,x,y,tex,o={}){const size=o.size||30,g=G(p),tmp=G(g);
   function parse(s){const out=[];let i=0,buf='';const flush=()=>{if(buf){out.push({t:'txt',s:buf});buf='';}};
     const grupo=()=>{if(s[i]==='{'){let d=1,j=i+1;while(j<s.length&&d){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}const r=s.slice(i+1,j-1);i=j;return r;}return s[i++];};
     while(i<s.length){if(s.startsWith('\\frac',i)){flush();i+=5;const a=grupo(),b=grupo();out.push({t:'frac',a:parse(a),b:parse(b)});}
+      else if(s.startsWith('\\sum',i)){flush();i+=4;let lo=[],hi=[];while(s[i]==='_'||s[i]==='^'){const k=s[i++],v=parse(grupo());if(k==='_')lo=v;else hi=v;}out.push({t:'sum',lo,hi});}
+      else if(s.startsWith('\\sqrt',i)){flush();i+=5;out.push({t:'sqrt',a:parse(grupo())});}
+      else if(s.startsWith('\\under',i)){flush();i+=6;const a=grupo(),b=grupo();out.push({t:'under',a:parse(a),b:parse(b)});}
+      else if(s.startsWith('\\c{',i)){flush();i+=2;const c=grupo(),a=grupo();out.push({t:'col',c,a:parse(a)});}
+      else if(s.startsWith('\\t{',i)){flush();i+=2;out.push({t:'rm',s:grupo()});}
       else if(s[i]==='^'||s[i]==='_'){flush();const k=s[i++];out.push({t:k==='^'?'sup':'sub',a:parse(grupo())});}
       else buf+=s[i++];}
     flush();return out;}
-  const runs=s=>(s.match(/\p{L}+|[^\p{L}]+/gu)||[]).map(w=>({s:w.replace(/ /g,' '),it:/^\p{L}$/u.test(w)&&w!=='e'}));
-  const escribir=(gg,rs,sz,x0,y0)=>{const t=S('text',{x:x0,y:y0,'font-size':sz,fill:col,style:`font-family:${MATHF};fill:${col}`},gg);
+  const runs=(s,rm)=>(s.match(/\p{L}+|[^\p{L}]+/gu)||[]).map(w=>({s:w.replace(/ /g,' '),it:!rm&&/^\p{L}$/u.test(w)&&w!=='e'}));
+  const escribir=(gg,rs,sz,x0,y0,col)=>{const t=S('text',{x:x0,y:y0,'font-size':sz,style:`font-family:${MATHF};fill:${col}`},gg);
     rs.forEach(r=>{const s2=S('tspan',{'font-style':r.it?'italic':'normal'},t);s2.textContent=r.s;});return t;};
-  function txt(s,sz){const rs=runs(s),el=escribir(tmp,rs,sz,0,0),w=el.getComputedTextLength();el.remove();
-    return{w,asc:sz*.72,desc:sz*.22,draw:(gg,x0,y0)=>escribir(gg,rs,sz,x0,y0)};}
-  function fila(items,sz){const parts=[];let w=0,asc=sz*.72,desc=sz*.22;
-    items.forEach(it=>{let b;
-      if(it.t==='txt')b=txt(it.s,sz);
-      else if(it.t==='frac'){const A=fila(it.a,sz*.84),B=fila(it.b,sz*.84),ww=Math.max(A.w,B.w)+sz*.32,ax=sz*.3,gap=sz*.16;
+  function txt(s,sz,col,rm){const rs=runs(s,rm),el=escribir(tmp,rs,sz,0,0,col),w=el.getComputedTextLength();el.remove();
+    return{w,asc:sz*.72,desc:sz*.22,draw:(gg,x0,y0)=>escribir(gg,rs,sz,x0,y0,col)};}
+  function fila(items,sz,col){const parts=[];let w=0,asc=sz*.72,desc=sz*.22;
+    for(let n=0;n<items.length;n++){const it=items[n];let b;
+      if(it.t==='txt'||it.t==='rm')b=txt(it.s,sz,col,it.t==='rm');
+      else if(it.t==='col')b=fila(it.a,sz,C[it.c]||it.c);
+      else if(it.t==='frac'){const A=fila(it.a,sz*.84,col),B=fila(it.b,sz*.84,col),ww=Math.max(A.w,B.w)+sz*.32,ax=sz*.3,gap=sz*.16;
         b={w:ww,asc:ax+gap+A.desc+A.asc,desc:Math.max(0,-ax+gap+B.asc+B.desc),draw:(gg,x0,y0)=>{
           S('line',{x1:x0+sz*.06,x2:x0+ww-sz*.06,y1:y0-ax,y2:y0-ax,stroke:col,'stroke-width':Math.max(1.3,sz*.05)},gg);
           A.draw(gg,x0+(ww-A.w)/2,y0-ax-gap-A.desc);B.draw(gg,x0+(ww-B.w)/2,y0-ax+gap+B.asc);}};}
-      else{const A=fila(it.a,sz*.66),up=it.t==='sup'?sz*.42:-sz*.2;
-        b={w:A.w+sz*.05,asc:Math.max(0,up+A.asc),desc:Math.max(0,-up+A.desc),draw:(gg,x0,y0)=>A.draw(gg,x0+sz*.03,y0-up)};}
-      parts.push({b,x:w});w+=b.w;asc=Math.max(asc,b.asc);desc=Math.max(desc,b.desc);});
+      else if(it.t==='sum'){const Z=sz*1.45,E=txt('∑',Z,col),lo=fila(it.lo,sz*.6,col),hi=fila(it.hi,sz*.6,col),gap=sz*.1,ww=Math.max(E.w,lo.w,hi.w)+sz*.12;
+        const top=Z*.66,bot=Z*.27;   // el ∑ se baja un poco para quedar centrado en el eje de la fórmula
+        b={w:ww,asc:top+gap+(it.hi.length?hi.asc+hi.desc:0),desc:bot+gap+(it.lo.length?lo.asc+lo.desc:0),draw:(gg,x0,y0)=>{
+          E.draw(gg,x0+(ww-E.w)/2,y0+Z*.08);if(it.hi.length)hi.draw(gg,x0+(ww-hi.w)/2,y0-top-gap-hi.desc);
+          if(it.lo.length)lo.draw(gg,x0+(ww-lo.w)/2,y0+bot+gap+lo.asc);}};}
+      else if(it.t==='under'){const A=fila(it.a,sz,col),B=fila(it.b,sz*.62,col),gap=sz*.08,ww=Math.max(A.w,B.w)+sz*.1;
+        b={w:ww,asc:A.asc,desc:A.desc+gap+B.asc+B.desc,draw:(gg,x0,y0)=>{A.draw(gg,x0+(ww-A.w)/2,y0);B.draw(gg,x0+(ww-B.w)/2,y0+A.desc+gap+B.asc);}};}
+      else if(it.t==='sqrt'){const A=fila(it.a,sz,col),pad=sz*.12,rw=sz*.6,top=A.asc+pad,sw=Math.max(1.3,sz*.05);
+        b={w:rw+A.w+pad*2,asc:top+sw,desc:A.desc+sw,draw:(gg,x0,y0)=>{
+          S('path',{d:`M${x0+sz*.04},${y0-A.asc*.42} L${x0+rw*.28},${y0-A.asc*.52} L${x0+rw*.58},${y0+A.desc} L${x0+rw},${y0-top} L${x0+rw+A.w+pad*1.6},${y0-top}`,
+            fill:'none',stroke:col,'stroke-width':sw,'stroke-linejoin':'round','stroke-linecap':'round'},gg);A.draw(gg,x0+rw+pad*.8,y0);}};}
+      else{const nx=items[n+1],par=nx&&(nx.t==='sup'||nx.t==='sub')&&nx.t!==it.t;   // x^{2}_{i}: índice y exponente apilados
+        const up=it.t==='sup'?it:par?nx:null,dn=it.t==='sub'?it:par?nx:null;if(par)n++;
+        const U=up&&fila(up.a,sz*.66,col),D=dn&&fila(dn.a,sz*.66,col),hu=sz*.42,hd=sz*.2;
+        b={w:Math.max(U?U.w:0,D?D.w:0)+sz*.05,asc:U?hu+U.asc:0,desc:D?hd+D.desc:0,draw:(gg,x0,y0)=>{if(U)U.draw(gg,x0+sz*.03,y0-hu);if(D)D.draw(gg,x0+sz*.03,y0+hd);}};}
+      parts.push({b,x:w});w+=b.w;asc=Math.max(asc,b.asc);desc=Math.max(desc,b.desc);}
     return{w,asc,desc,draw:(gg,x0,y0)=>parts.forEach(q=>q.b.draw(gg,x0+q.x,y0))};}
-  const R=fila(parse(tex),size);tmp.remove();
-  R.draw(g,o.anchor==='middle'?x-R.w/2:o.anchor==='end'?x-R.w:x,y);g.ancho=R.w;return g;}
+  const R=fila(parse(tex),size,o.color||C.ink);tmp.remove();
+  R.draw(g,o.anchor==='middle'?x-R.w/2:o.anchor==='end'?x-R.w:x,y);g.ancho=R.w;g.alto=[R.asc,R.desc];return g;}
 
 /* ---------- escalar: media y desviación del entrenamiento; z = (x − media) / desviación ---------- */
 function escalador(D,feats){const mu=feats.map(f=>mean(D.map(d=>d[f]))),sd=feats.map((f,k)=>Math.sqrt(mean(D.map(d=>(d[f]-mu[k])**2)))||1);
@@ -450,6 +470,10 @@ function panel(g,X,y0,n=4){const paso=txl(g,X,y0,['',''],'h3',32),expl=txl(g,X,y
 function boton_nb(c,txt){const a=document.createElement('a');a.href=NB;a.target='_blank';a.rel='noopener';a.textContent=txt||'Práctica: notebook 2-2 con 1.200 hogares →';
   a.style.cssText='position:absolute;left:96px;top:800px;padding:14px 26px;border-radius:99px;background:#15181f;color:#fff;font:600 17px "Schibsted Grotesk",sans-serif;text-decoration:none;opacity:0';
   a.addEventListener('click',e=>e.stopPropagation());c.root.appendChild(a);return a;}
+/* qué es cada símbolo de una ecuación: filas [pieza, explicación (una línea o varias), color] */
+function simbolos(g,x,y,F,o={}){const dx=o.dx||170,paso=o.paso||46;let yy=y;
+  return F.map(([tex,t,col])=>{const gg=G(g),ls=[].concat(t);formula(gg,x,yy,tex,{size:o.size||24,color:col||C.ink});
+    txl(gg,x+dx,yy,ls,'sm',22,{style:`fill:${C.ink}`});yy+=paso+(ls.length-1)*22;return gg;});}
 
 /* ---------- rectas y calles en el plano: w₁·z_ingreso + w₂·z_educación + b = c ---------- */
 let CLIP=0;
@@ -480,7 +504,7 @@ slide({build(c){
 /* ---------- 2 · Ruta ---------- */
 slide({kicker:KA,title:'Lo que vamos a construir',build(c){
   return entrada(c,{gancho:'¿Dónde trazar la línea entre hogares pobres y no pobres?',
-    sub:'Cinco preguntas para entender las máquinas de soporte vectorial (SVM, por support vector machines):',meta:'Al final, una herramienta',reto:'un prompt para pedirle el modelo a una IA',
+    sub:'Cinco preguntas para entender las máquinas de soporte vectorial (SVM, por support vector machines):',meta:'Al final, una herramienta',reto:'un notebook de práctica y un prompt para una IA',
     paradas:[{q:['¿Qué es','el modelo?'],d:'la calle más ancha'},{q:['¿Y si se','mezclan?'],d:'margen suave y C'},
       {q:['¿Y si la frontera','es curva?'],d:'el truco del kernel'},{q:['¿Cómo','decide?'],d:'puntaje y umbral'},
       {q:['¿Funciona con','datos nuevos?'],d:'entrenar, validar y medir'}]});
@@ -537,7 +561,7 @@ slide({kicker:K1,title:'El margen: la calle más ancha posible',build(c){
 }});
 
 SEP({n:2,k:K2,titulo:['Cuando no se puede separar:','el margen suave'],pregunta:'¿Qué hace SVM cuando los grupos se mezclan?',
-  temas:['Permitir hogares dentro de la calle','El hiperparámetro C']});
+  temas:['Permitir hogares dentro de la calle','La ecuación: dónde entra C','El hiperparámetro C']});
 
 /* ---------- 8 · Margen suave ---------- */
 slide({kicker:K2,title:'Margen suave: permitir algunos errores',build(c){
@@ -556,10 +580,48 @@ slide({kicker:K2,title:'Margen suave: permitir algunos errores',build(c){
     T=>{paso(T,CS[3],0);decir(T,['C grande: calle angosta, casi sin','tolerancia. Se ajusta más al','entrenamiento y puede sobreajustar.',''],0);}];
 }});
 
-/* ---------- 9 · El hiperparámetro C ---------- */
+/* ---------- 9 · La ecuación del margen suave: dónde entra C ---------- */
+slide({kicker:K2,title:'La ecuación del margen suave: dónde entra C',build(c){
+  const g=G(c.svg);
+  const t0=tx(g,96,232,'Entrenar un SVM es resolver este problema: buscar los pesos w y el intercepto b que hacen mínima la suma de dos costos.','txt',{style:`fill:${C.ink}`});
+  const eq=formula(g,96,334,'\\under{min}{w, b, ξ}   \\c{st}{\\frac{1}{2} ‖w‖^{2}}  +  \\c{ml}{C} \\c{bad}{\\sum_{i=1}^{n} ξ_{i}}',{size:40});
+  const res=formula(g,96,424,'\\t{sujeto a}   y_{i} (w · x_{i} + b) ≥ 1 − ξ_{i}   \\t{y}   ξ_{i} ≥ 0,   \\t{para cada hogar} i',{size:26});
+  const sim=simbolos(g,96,486,[['\\frac{1}{2} ‖w‖^{2}','mide la calle: entre más pequeño, más ancha (ancho = 2 / ‖w‖)',C.st],
+    ['ξ_{i}',['holgura del hogar i: 0 si está bien ubicado y fuera de la calle,','entre 0 y 1 si está dentro, más de 1 si queda del lado equivocado'],C.bad],
+    ['\\sum ξ_{i}','suma de las holguras de los n hogares: el total de errores',C.bad],
+    ['C','el hiperparámetro: cuánto pesa ese total frente al ancho de la calle',C.ml],
+    ['y_{i}','la clase del hogar: +1 si es pobre, −1 si no lo es'],
+    ['w · x_{i} + b','el puntaje del hogar; la frontera es w · x + b = 0']],{dx:190,paso:46});
+  /* esquema: la calle y las holguras de dos hogares naranjas (y = +1) */
+  const bx=940,by=262,bw=564,bh=500,fx=1222,m=78,R=G(g);S('rect',{x:bx,y:by,width:bw,height:bh,rx:22,fill:C.soft},R);
+  S('rect',{x:fx-m,y:by+64,width:2*m,height:bh-150,fill:C.ink,'fill-opacity':.06},R);
+  [-m,m].forEach(d=>S('line',{x1:fx+d,x2:fx+d,y1:by+64,y2:by+bh-86,stroke:C.sub,'stroke-width':2,'stroke-dasharray':'8 7'},R));
+  S('line',{x1:fx,x2:fx,y1:by+64,y2:by+bh-86,stroke:C.ink,'stroke-width':3.5},R);
+  tx(R,bx+24,by+40,'no pobre · y = −1','sm',{style:`fill:${C.st};font-weight:600`});tx(R,bx+bw-24,by+40,'pobre · y = +1','sm',{'text-anchor':'end',style:`fill:${C.ml};font-weight:600`});
+  tx(R,fx-m,by+bh-62,'= −1','tick',{'text-anchor':'middle'});tx(R,fx,by+bh-62,'= 0','tick',{'text-anchor':'middle'});tx(R,fx+m,by+bh-62,'= +1','tick',{'text-anchor':'middle'});
+  tx(R,fx,by+bh-28,'w · x + b','mono',{'text-anchor':'middle',style:'font-size:16px'});
+  [[985,330],[1040,420],[1000,520],[1090,600],[1065,350]].forEach(([x,y])=>S('circle',{cx:x,cy:y,r:9,fill:C.st,stroke:C.w,'stroke-width':1.5},R));
+  [[1370,330],[1440,420],[1390,560],[1460,620]].forEach(([x,y])=>S('circle',{cx:x,cy:y,r:9,fill:C.ml,stroke:C.w,'stroke-width':1.5},R));
+  const ok0=tx(R,1370,362,'ξ = 0','mono',{'text-anchor':'middle',style:`font-size:15px;fill:${C.ok}`});
+  const xi=[[fx+.4*m,470],[fx-1.5*m,560]].map(([x,y])=>{const gg=G(g),v=1-(x-fx)/m;
+    S('line',{x1:x,x2:fx+m,y1:y,y2:y,stroke:C.bad,'stroke-width':3},gg);S('line',{x1:fx+m,x2:fx+m,y1:y-8,y2:y+8,stroke:C.bad,'stroke-width':3},gg);
+    S('circle',{cx:x,cy:y,r:10,fill:C.ml,stroke:C.ink,'stroke-width':2.5},gg);
+    tx(gg,(x+fx+m)/2,y-16,`ξ = ${fc(v,1)}`,'mono',{'text-anchor':'middle',style:halo+`font-size:16px;fill:${C.bad};font-weight:600`});
+    tx(gg,(x+fx+m)/2,y+30,v<1?'dentro de la calle':'del lado equivocado','sm',{'text-anchor':'middle',style:halo+`fill:${C.bad}`});return gg;});
+  const nota=G(g);S('rect',{x:96,y:798,width:1408,height:80,rx:18,fill:C.mlT},nota);
+  tx(nota,120,830,'C pequeño: manda ½‖w‖² → calle ancha que tolera holguras. C grande: manda C · Σξ → pocas holguras y calle angosta (riesgo de sobreajuste).','sm',{style:`fill:${C.ink}`});
+  tx(nota,120,856,'C no se calcula a partir de los datos: usted lo fija antes de entrenar, y el mejor valor se elige con validación cruzada (parte 5).','sm',{style:`fill:${C.ink}`});
+  hide(eq,res,sim,R,ok0,xi,nota);
+  return[T=>{fadeIn(T,t0,.1);fadeIn(T,eq,.4);fadeIn(T,R,.8);},
+    T=>{fadeIn(T,res,0);fadeIn(T,sim,.4,{st:.18,dx:-12,dy:0});},
+    T=>{fadeIn(T,ok0,0);fadeIn(T,xi,.3,{st:.4});},
+    T=>{fadeIn(T,nota,0);}];
+}});
+
+/* ---------- 10 · El hiperparámetro C ---------- */
 slide({kicker:K2,title:'C: ¿cuánto castigar los errores?',build(c){
   const g=G(c.svg),CX=[96,330,620,900,1160,1400];
-  const hd=['C','ancho de la calle','vectores de soporte','exactitud entr.','exactitud prueba'].map((t,j)=>tx(g,CX[j],270,t,'hdr',{style:'font-size:16px'}));
+  const hd=['C','ancho de la calle (2 / ‖w‖)','vectores de soporte','exactitud entr.','exactitud prueba'].map((t,j)=>tx(g,CX[j],270,t,'hdr',{style:'font-size:16px'}));
   const ln=S('line',{x1:96,x2:1504,y1:288,y2:288,stroke:C.frame},g);
   const filas=CS.map((C0,i)=>{const M=LIN(C0),gg=G(g),y=336+i*56,W=2/Math.hypot(...M.w);
     [String(C0).replace('.',','),fc(W,2)+' desv.',String(M.sv.length),fc(met(TRH,TRH.map(M.p)).exac,3),fc(met(PRH,PRH.map(M.p)).exac,3)].forEach((t,j)=>tx(gg,CX[j],y,t,j?'cell':'mono'));
@@ -575,9 +637,35 @@ slide({kicker:K2,title:'C: ¿cuánto castigar los errores?',build(c){
 }});
 
 SEP({n:3,k:K3,titulo:['Fronteras curvas:','el truco del kernel'],pregunta:'¿Y si ninguna recta separa bien?',
-  temas:['Subir los datos a otra dimensión','El kernel RBF: fronteras curvas','gamma: qué tan curva es la frontera']});
+  temas:['Qué es un kernel','Subir los datos a otra dimensión','En 3D: un plano que separa','El kernel RBF: fronteras curvas','Qué es gamma y cómo cambia la frontera']});
 
-/* ---------- 11 · Subir a otra dimensión ---------- */
+/* ---------- 12 · Qué es un kernel ---------- */
+slide({kicker:K3,title:'¿Qué es un kernel?',build(c){
+  const g=G(c.svg);
+  const t0=txl(g,96,232,['Un kernel es una función que mide qué tan parecidos son dos hogares. Para trazar la frontera, SVM no necesita los',
+    'datos en sí: solo el parecido entre cada par de hogares. Cambiar el kernel cambia la forma de la frontera.'],'txt',30,{style:`fill:${C.ink}`});
+  const e1=formula(g,96,362,'K(x_{i}, x_{j}) = φ(x_{i}) · φ(x_{j})',{size:34});
+  const s1=simbolos(g,96,418,[['K(x_{i}, x_{j})','el kernel: el parecido entre los hogares i y j',C.st],
+    ['φ(x)','transformación que sube cada hogar a más dimensiones (p. ej., agrega x²)'],
+    ['φ(x_{i}) · φ(x_{j})','producto punto: es grande cuando los dos se parecen'],
+    ['\\t{el truco}',['K entrega el resultado de φ(xᵢ) · φ(xⱼ) sin calcular φ: la subida','a otra dimensión nunca se hace de verdad'],C.ml]],{dx:170,paso:40});
+  const e2=formula(g,96,664,'f(x) = \\sum_{i ∈ \\t{VS}} α_{i} y_{i} K(x_{i}, x) + b',{size:34});
+  const s2=simbolos(g,96,738,[['α_{i}','peso de cada vector de soporte (VS); vale 0 para los demás hogares'],
+    ['y_{i}','su clase: +1 pobre, −1 no pobre'],['K(x_{i}, x)','parecido del hogar nuevo x con el vector de soporte i',C.st],
+    ['b','intercepto. Si f(x) > 0, el hogar nuevo se clasifica como pobre']],{dx:170,paso:36});
+  const kk=tx(g,940,330,'TRES KERNELS COMUNES','kick',{style:'font-size:13px'});
+  const KS=[['Lineal','K(x_{i}, x_{j}) = x_{i} · x_{j}','la frontera es una recta (o un plano)',C.ink],
+    ['Polinomial','K(x_{i}, x_{j}) = (x_{i} · x_{j} + 1)^{d}','fronteras curvas de grado d',C.ok],
+    ['RBF (gaussiano)','K(x_{i}, x_{j}) = e^{−γ ‖x_{i} − x_{j}‖^{2}}','cualquier forma; el más usado (siguen las láminas)',C.ml]];
+  const cards=KS.map(([n,f,d,col],i)=>{const gg=G(g),y=350+i*162;S('rect',{x:940,y,width:564,height:146,rx:20,fill:C.soft},gg);S('rect',{x:940,y,width:8,height:146,rx:4,fill:col},gg);
+    tx(gg,972,y+40,n,'h3',{style:`fill:${col};font-size:21px`});formula(gg,972,y+92,f,{size:26});tx(gg,972,y+128,d,'sm',{style:`fill:${C.ink}`});return gg;});
+  hide(e1,s1,e2,s2,kk,cards);
+  return[T=>{fadeIn(T,t0,.1,{st:.1});fadeIn(T,e1,.5);fadeIn(T,s1,.9,{st:.18,dx:-12,dy:0});},
+    T=>{fadeIn(T,e2,0);fadeIn(T,s2,.4,{st:.18,dx:-12,dy:0});},
+    T=>{fadeIn(T,kk,0);fadeIn(T,cards,.2,{st:.25,dx:12,dy:0});}];
+}});
+
+/* ---------- 13 · Subir a otra dimensión ---------- */
 slide({kicker:K3,title:'El truco: subir los datos a otra dimensión',build(c){
   const g=G(c.svg),r=rng(11),xs=Array.from({length:26},(_,i)=>-2.8+5.6*i/25+(r()-.5)*.12),Y0=640,sx=lin(-3,3,200,1000),sy=lin(0,9,Y0,250);
   const eje=G(g);S('line',{x1:180,x2:1020,y1:Y0,y2:Y0,stroke:C.frame,'stroke-width':2},eje);[-3,-2,-1,0,1,2,3].forEach(v=>tx(eje,sx(v),Y0+28,String(v).replace('-','−'),'tick',{'text-anchor':'middle'}));
@@ -598,18 +686,81 @@ slide({kicker:K3,title:'El truco: subir los datos a otra dimensión',build(c){
       pon(T,['De vuelta, la recta','es una frontera curva'],['En la variable original quedan dos','cortes. El kernel hace este «subir»','sin calcularlo: así SVM traza','fronteras curvas.'],.1);}];
 }});
 
-/* ---------- 12 · Kernel RBF ---------- */
+/* ---------- 14 · En 3D: un plano que separa ---------- */
+slide({kicker:K3,title:'En 3D: un plano separa lo que en el plano no se podía',build(c){
+  const g=G(c.svg),r=rng(21),D=[];
+  for(let i=0;i<34;i++){const a=r()*2*Math.PI,rr=Math.sqrt(r())*1.25;D.push({x:rr*Math.cos(a),y:rr*Math.sin(a),k:1});}
+  for(let i=0;i<46;i++){const a=r()*2*Math.PI,rr=2+r()*.9;D.push({x:rr*Math.cos(a),y:rr*Math.sin(a),k:0});}
+  D.forEach(d=>d.z=d.x*d.x+d.y*d.y);
+  /* cámara: th gira alrededor del eje z; e es la elevación (90 = vista desde arriba); lift sube los puntos a z */
+  const CZ=2.6,L=3.2,s=85,zs=44,st={e:90,th:-25,lift:0};
+  const proj=(x,y,z)=>{const t=st.th*Math.PI/180,e=st.e*Math.PI/180,xr=x*Math.cos(t)-y*Math.sin(t),yr=x*Math.sin(t)+y*Math.cos(t),cy=540+160*Math.cos(e);
+    return[540+s*xr,cy-z*zs*Math.cos(e)-yr*s*Math.sin(e)];};
+  const cuadro=z=>pathD([[-L,-L],[L,-L],[L,L],[-L,L]].map(([a,b])=>proj(a,b,z)))+'Z';
+  const piso=S('path',{fill:C.soft,stroke:C.frame,'stroke-width':1.5},g);
+  const ej=[0,1].map(()=>S('path',{fill:'none',stroke:C.frame,'stroke-width':1.5,'stroke-dasharray':'6 6'},g));
+  const ejT=['x₁','x₂'].map(t=>tx(g,0,0,t,'axl',{'text-anchor':'middle'}));
+  const zEje=S('path',{fill:'none',stroke:C.sub,'stroke-width':2},g),zT=tx(g,0,0,'z = x₁² + x₂²','axl',{'text-anchor':'end'});
+  const abajo=G(g),plano=S('path',{fill:C.ok,'fill-opacity':.2,stroke:C.ok,'stroke-width':2},g),aro=S('path',{fill:'none',stroke:C.ok,'stroke-width':4},g),arriba=G(g);
+  const dots=D.map(d=>S('circle',{r:8,fill:d.k?C.ml:C.st,stroke:C.w,'stroke-width':1.5},d.k?abajo:arriba));   // los del centro quedan bajo el plano
+  function dib(){piso.setAttribute('d',cuadro(0));
+    [[[-L,0],[L,0]],[[0,-L],[0,L]]].forEach((sg,i)=>ej[i].setAttribute('d',pathD(sg.map(([a,b])=>proj(a,b,0)))));
+    [[L+.45,0],[0,L+.45]].forEach(([a,b],i)=>{const q=proj(a,b,0);ejT[i].setAttribute('x',q[0]);ejT[i].setAttribute('y',q[1]+5);});
+    const z0=proj(-L,L,0),z1=proj(-L,L,8.8);zEje.setAttribute('d',pathD([z0,z1]));zT.setAttribute('x',z1[0]-12);zT.setAttribute('y',z1[1]+4);
+    plano.setAttribute('d',cuadro(CZ));aro.setAttribute('d',pathD(range(0,2*Math.PI,73).map(t=>proj(Math.sqrt(CZ)*Math.cos(t),Math.sqrt(CZ)*Math.sin(t),CZ))));
+    D.forEach((d,i)=>{const q=proj(d.x,d.y,d.z*st.lift);dots[i].setAttribute('cx',q[0]);dots[i].setAttribute('cy',q[1]);});}
+  dib();
+  const X=1040,phi=formula(g,X,292,'φ(x_{1}, x_{2}) = (x_{1}, x_{2}, x_{1}^{2} + x_{2}^{2})',{size:28});
+  const pon=panel(g,X,390,5);hide(zEje,zT,plano,aro,phi);
+  const mover=(T,o,at,d=1.6,ease='power2.inOut')=>T.to(st,{...o,duration:d,ease,onUpdate:dib},at);
+  return[T=>{T.from([piso,...ej,...ejT],{opacity:0,duration:.4},.1);popIn(T,dots,.3,{st:{amount:.8,from:'random'},d:.3});
+      pon(T,['Dos variables: un grupo','rodeado por el otro'],['Los naranjas están en el centro y los','azules alrededor. Ninguna recta los','separa. (Ejemplo de juguete.)'],.4);},
+    T=>{mover(T,{e:24,th:20},0);fadeIn(T,phi,.3);T.to([zEje,zT],{opacity:1,duration:.4},1.4);mover(T,{lift:1},1.6,1.6);
+      pon(T,['Se agrega una tercera','variable: z = x₁² + x₂²'],['φ «sube» cada hogar: z es su distancia','al centro, al cuadrado. Los del centro','quedan abajo y los de afuera, arriba.'],.1);},
+    T=>{T.to(plano,{opacity:1,duration:.6},0);T.to(aro,{opacity:1,duration:.6},.5);mover(T,{th:75},.3,3,'sine.inOut');
+      pon(T,['Ahora un plano','los separa'],['El plano z = 2,6 es la frontera de','decisión en 3D: debajo quedan los','naranjas y encima, los azules.'],.1);},
+    T=>{mover(T,{e:90,th:0},0,1.6);T.to(plano,{opacity:0,duration:.5},.9);T.to([zEje,zT],{opacity:0,duration:.4},.9);
+      pon(T,['Desde arriba, el plano','se ve como un círculo'],['El corte es la curva x₁² + x₂² = 2,6.','Una frontera plana en 3D es curva en','el plano original: eso es lo que hace','el kernel, sin calcular φ.'],.1);}];
+}});
+
+/* ---------- 15 · Kernel RBF ---------- */
 slide({kicker:K3,title:'El kernel RBF: fronteras curvas en el plano',build(c){
   const g=G(c.svg),P=planoL(g),M=RBF(1),capa=mapaF(g,P,M);g.insertBefore(capa,P.g);const pts=puntos(g,P,VIS,4.5);
   const L1=LIN(1),k=recorte(g,P),lr=S('path',{d:dRecta(P,L1.w,L1.b,0),fill:'none',stroke:C.ink,'stroke-width':3,'stroke-dasharray':'10 7'},k);prepDraw(lr);
-  const X=1040,fo=formula(g,X,300,'K = e^{−γ · d^{2}}',{size:40}),exp=txl(g,X,360,['K mide qué tan parecidos son dos hogares:','1 si son iguales; casi 0 si están lejos','(d es su distancia, con las variables','escaladas, como en kNN).'],'txt',28,{style:`fill:${C.ink}`});
-  const pon=panel(g,X,520,4);hide(capa,pts,fo,exp);
-  return[T=>{T.from(P.g,{opacity:0,duration:.4},.1);fadeIn(T,fo,.3);fadeIn(T,exp,.6,{st:.08});},
+  const X=1040,fo=formula(g,X,300,'K(x_{i}, x_{j}) = e^{−\\c{ml}{γ} ‖x_{i} − x_{j}‖^{2}}',{size:36});
+  const exp=simbolos(g,X,370,[['K(x_{i}, x_{j})','parecido de dos hogares: de 0 a 1',C.st],['x_{i}, x_{j}','los dos hogares (variables escaladas)'],
+    ['‖x_{i} − x_{j}‖','su distancia, como en kNN'],['γ','gamma: qué tan rápido cae el parecido',C.ml],['e^{−…}','1 si coinciden; casi 0 si están lejos']],{dx:150,paso:40});
+  const pon=panel(g,X,616,3);hide(capa,pts,fo,exp);
+  return[T=>{T.from(P.g,{opacity:0,duration:.4},.1);fadeIn(T,fo,.3);fadeIn(T,exp,.6,{st:.15,dx:-12,dy:0});},
     T=>{T.to(capa,{opacity:1,duration:1},0);T.to(pts,{opacity:1,duration:.5},.4);pon(T,['Con el kernel RBF,','la frontera se curva'],['La frontera se dobla para seguir a','los hogares pobres de bajo ingreso.'],.1);},
     T=>{drawIn(T,lr,0,1);pon(T,['La punteada: el SVM','lineal, una sola recta'],['Con estas dos variables, las dos','fronteras se parecen bastante.'],.1);}];
 }});
 
-/* ---------- 13 · gamma ---------- */
+/* ---------- 16 · Qué es gamma ---------- */
+slide({kicker:K3,title:'¿Qué es gamma?',build(c){
+  const g=G(c.svg),GS=[[.1,C.st,'pequeño','baja despacio: cada hogar influye lejos → frontera suave, casi recta'],
+    [1,C.ok,'medio','influye en los vecinos cercanos → frontera curva moderada'],
+    [50,C.ml,'grande','cae a 0 de inmediato → islas en cada hogar: sobreajuste']];
+  const A=axes(g,{x:150,y:300,w:680,h:380,xd:[0,3.5],yd:[0,1],xt:[0,1,2,3],yt:[0,.5,1],fy:v=>fc(v,1),xl:'distancia entre dos hogares ‖xᵢ − xⱼ‖ (escaladas)',yl:'parecido K'});
+  const mitad=S('line',{x1:A.sx(0),x2:A.sx(3.5),y1:A.sy(.5),y2:A.sy(.5),stroke:C.frame,'stroke-width':1.5,'stroke-dasharray':'6 6'},g);
+  const mT=tx(g,A.sx(3.5),A.sy(.5)+22,'la mitad del parecido','tick',{'text-anchor':'end'});
+  const cur=GS.map(([ga,col])=>{const gg=G(g),d=Math.sqrt(Math.log(2)/ga),p=S('path',{d:pathD(range(0,3.5,240).map(x=>[A.sx(x),A.sy(Math.exp(-ga*x*x))])),fill:'none',stroke:col,'stroke-width':4},gg);
+    prepDraw(p);S('circle',{cx:A.sx(d),cy:A.sy(.5),r:7,fill:col},gg);
+    const et=tx(gg,A.sx(d)+12,A.sy(.5)-14,`γ = ${String(ga).replace('.',',')}`,'mono',{style:halo+`font-size:17px;fill:${col};font-weight:600`});return{gg,p,et};});
+  const X=960,fo=formula(g,X,300,'K = e^{−\\c{ml}{γ} d^{2}}',{size:36}),dn=tx(g,X,344,'d = ‖xᵢ − xⱼ‖: la distancia entre los dos hogares','sm',{style:`fill:${C.ink}`});
+  const intro=txl(g,X,404,['gamma dice qué tan rápido cae el parecido con la','distancia: hasta dónde llega la influencia de cada hogar.'],'txt',28,{style:`fill:${C.ink}`});
+  const filas=GS.map(([ga,col,nm,t],i)=>{const gg=G(g),y=496+i*62;S('circle',{cx:X+8,cy:y-7,r:7,fill:col},gg);
+    tx(gg,X+26,y,`γ = ${String(ga).replace('.',',')} · ${nm}`,'lab',{style:`fill:${col};font-size:18px;font-weight:600`});tx(gg,X+26,y+24,t,'sm',{style:`fill:${C.ink}`});return gg;});
+  const sg=G(g);formula(sg,X,724,'γ = \\frac{1}{2σ^{2}}',{size:30});txl(sg,X+140,712,['σ: el ancho de la campana.','gamma grande = campana angosta.'],'sm',24,{style:`fill:${C.ink}`});
+  const nota=tx(g,96,826,'gamma no se calcula de los datos: se elige junto con C por validación cruzada. En la lámina siguiente, la frontera con cada valor.','sm',{style:`fill:${C.ink}`});
+  hide(cur.map(q=>q.gg),fo,dn,intro,filas,sg,nota);
+  const curva=(T,i,at)=>{T.to(cur[i].gg,{opacity:1,duration:.2},at);drawIn(T,cur[i].p,at,1);fadeIn(T,filas[i],at+.3,{dx:-12,dy:0});};
+  return[T=>{T.from([A.g,mitad,mT],{opacity:0,duration:.4},.1);fadeIn(T,fo,.3);fadeIn(T,dn,.5);fadeIn(T,intro,.7,{st:.1});curva(T,1,1);},
+    T=>{curva(T,0,0);curva(T,2,.8);},
+    T=>{fadeIn(T,sg,0);fadeIn(T,nota,.4);}];
+}});
+
+/* ---------- 17 · gamma: los mapas ---------- */
 slide({kicker:K3,title:'gamma: qué tan curva es la frontera',build(c){
   const g=G(c.svg),gs=[.1,1,50],txts=['gamma pequeño: frontera suave','gamma medio','gamma grande: islas alrededor de los hogares'];
   const pan=gs.map((ga,i)=>{const gg=G(g),L=96+i*478,P=planoL(gg,{L:L+40,R:L+430,T:300,B:600,xt:[0,750,1500],sinEtq:1}),M=RBF(ga);
@@ -626,7 +777,7 @@ slide({kicker:K3,title:'gamma: qué tan curva es la frontera',build(c){
 SEP({n:4,k:K4,titulo:['De la frontera','a la decisión'],pregunta:'¿Cómo pasa SVM de la frontera a un «Sí» o un «No»?',
   temas:['El puntaje: de qué lado y qué tan lejos','Del puntaje a la probabilidad y el umbral']});
 
-/* ---------- 15 · El puntaje ---------- */
+/* ---------- 19 · El puntaje ---------- */
 slide({kicker:K4,title:'El puntaje: de qué lado y qué tan lejos',build(c){
   const g=G(c.svg),P=planoL(g),M=LIN(1),ca=calle(g,P,M.w,M.b,1),pts=puntos(g,P,VIS,4.5);
   const H=[{ing:150,educ:4},{ing:380,educ:8},{ing:1100,educ:13}].map((d,i)=>({d:Object.assign({j:.5},d),f:M.f(d),n:'ABC'[i]}));
@@ -646,7 +797,7 @@ slide({kicker:K4,title:'El puntaje: de qué lado y qué tan lejos',build(c){
   return[T=>{T.from(P.g,{opacity:0,duration:.4},.1);fadeIn(T,fo,.3);popIn(T,mk,.5,{st:.2});},T=>{fadeIn(T,nr,0);popIn(T,nm,.4,{st:.2});fadeIn(T,lis,.6,{st:.15});},T=>{fadeIn(T,exp,0,{st:.1});}];
 }});
 
-/* ---------- 16 · Del puntaje a la probabilidad ---------- */
+/* ---------- 20 · Del puntaje a la probabilidad ---------- */
 slide({kicker:K4,title:'Del puntaje a la probabilidad y el umbral',build(c){
   const g=G(c.svg),M=LIN(1),[A,B]=M.platt,R=axes(g,{x:150,y:270,w:800,h:440,xd:[-4,4],yd:[0,1],xt:[-4,-2,0,2,4],fx:v=>String(v).replace('-','−'),yt:[0,.25,.5,.75,1],fy:v=>fc(v,2),xl:'Puntaje f del SVM',yl:'Probabilidad de ser pobre'});
   const pts=VIS.map(d=>S('circle',{cx:R.sx(clamp(M.f(d),-4,4)),cy:R.sy(d.pobre?1:0)+(d.j-.5)*30,r:5,fill:d.pobre?C.ml:C.st,'fill-opacity':.7},g));
@@ -665,7 +816,7 @@ slide({kicker:K4,title:'Del puntaje a la probabilidad y el umbral',build(c){
 SEP({n:5,k:K5,titulo:['Entrenar, validar','y medir el desempeño'],pregunta:'¿SVM acierta con hogares que nunca vio?',
   temas:['Escalar y elegir C y gamma','Matriz de confusión y métricas','Los modelos frente a frente']});
 
-/* ---------- 18 · Búsqueda de C y gamma ---------- */
+/* ---------- 22 · Búsqueda de C y gamma ---------- */
 slide({kicker:K5,title:'Elegir C y gamma con validación cruzada',build(c){
   const g=G(c.svg),B=BUSQ(),b=MEJOR(),x0=330,y0=320,W=200,H=110,all=B.flat(),lo=Math.min(...all),hi=Math.max(...all);
   tx(g,x0+1.5*W,y0-40,'gamma','hdr',{'text-anchor':'middle',style:'font-size:17px'});tx(g,x0-110,y0+1.5*H+6,'C','hdr',{style:'font-size:17px'});
@@ -678,18 +829,18 @@ slide({kicker:K5,title:'Elegir C y gamma con validación cruzada',build(c){
     T=>{pon(T,[`Gana C = ${String(b.C).replace('.',',')} y gamma = ${String(b.g).replace('.',',')}`],[`Exactitud de validación: ${fc(b.acc,3)}.`,'Con gamma grande el modelo memoriza','(islas) y la validación cae.','','Como en kNN: escalar con el','entrenamiento y no tocar la prueba.'],0);}];
 }});
 
-/* ---------- 19 · Matriz y métricas ---------- */
+/* ---------- 23 · Matriz y métricas ---------- */
 laminaMatriz(K5,'Matriz de confusión y métricas en prueba',()=>PRH.map(SVF().p),
   `SVM con kernel RBF, las 10 variables, C y gamma elegidos con validación cruzada. En los ${PRH.length} hogares de prueba, umbral 0,5.`);
 
-/* ---------- 20 · Comparación ---------- */
+/* ---------- 24 · Comparación ---------- */
 laminaComparar(K5,'Los modelos frente a frente',()=>{const kp=D=>knnVarios(KNN(),D,[9])[0];return[['Línea base: nadie es pobre',PRH.map(()=>0),TRH.map(()=>0),C.dot],
     ['Regresión logística (10 var.)',PRH.map(LG()),TRH.map(LG()),C.st],['Árbol ajustado (10 var.)',PRH.map(d=>prob(TA(),d)),TRH.map(d=>prob(TA(),d)),C.sub],
     ['kNN, k = 9 (2 var.)',kp(PRH),kp(TRH),C.ok],['SVM lineal (10 var.)',PRH.map(SVL().p),TRH.map(SVL().p),C.bad],['SVM con kernel RBF (10 var.)',PRH.map(SVF().p),TRH.map(SVF().p),C.ml,1]];},
   L=>{const s=L[5],l=L[4],lg=L[1];return[`El SVM lineal (AUC ${fc(l.te.auc,3)}) queda casi igual que la logística (${fc(lg.te.auc,3)}): con estas variables escaladas, la frontera es casi`,
     `una recta, y el kernel RBF no mejora (AUC ${fc(s.te.auc,3)}). Probar varios modelos con la misma prueba es la forma honesta de elegir.`];});
 
-/* ---------- 21 · Reto ---------- */
+/* ---------- 25 · Reto ---------- */
 slide({kicker:KC,title:'Reto: lea el puntaje',build(c){
   const g=G(c.svg);c.root.addEventListener('click',e=>e.stopPropagation());
   const q=[tx(g,96,250,'Un SVM lineal da a un hogar nuevo un puntaje f = 0,3 (la calle va de −1 a 1 y el lado positivo es «pobre»).','txt',{style:`fill:${C.ink};font-size:23px`}),
@@ -707,7 +858,11 @@ slide({kicker:KC,title:'Reto: lea el puntaje',build(c){
     T=>{T.call(()=>{ops[2].r.setAttribute('stroke',C.ok);ops[2].r.setAttribute('fill',C.okT);fb[0].textContent='Respuesta: C';fb[0].style.fill=C.ok;fb[1].textContent=O[2][2];},null,0);fadeIn(T,fb,.1,{st:.1});}];
 }});
 
-/* ---------- 22 · Síntesis ---------- */
+/* botón al prompt de esta técnica (página 2-2-prompts-ia.html), a la derecha del botón del notebook */
+function boton_prompt(c,id,junto){const b=document.createElement('a');b.href='2-2-prompts-ia.html#'+id;b.target='_blank';b.rel='noopener';b.textContent='Prompt para pedirle el modelo a una IA →';
+  b.style.cssText=`position:absolute;left:${96+junto.offsetWidth+16}px;top:800px;padding:14px 26px;border-radius:99px;background:#ea7317;color:#fff;font:600 17px "Schibsted Grotesk",sans-serif;text-decoration:none;opacity:0`;
+  b.addEventListener('click',e=>e.stopPropagation());c.root.appendChild(b);return b;}
+/* ---------- 26 · Síntesis ---------- */
 slide({kicker:KC,title:'En resumen',build(c){
   const g=G(c.svg);
   const R=[['El modelo','la frontera con la calle (margen) más ancha entre los dos grupos',C.st],['Vectores de soporte','los hogares del borde: solo ellos definen la frontera',C.st],
@@ -715,98 +870,9 @@ slide({kicker:KC,title:'En resumen',build(c){
     ['Se decide','con el puntaje (lado y distancia), pasado a probabilidad, y un umbral',C.ok],['Se evalúa','escalando con el entrenamiento, C y gamma por validación cruzada, métricas en prueba',C.ok],
     ['Sus límites','lento con muchos datos; no da efectos fáciles de leer ni probabilidades directas',C.bad]];
   const filas=R.map(([a,b,col],i)=>{const gg=G(g),y=262+i*74;S('circle',{cx:112,cy:y-8,r:9,fill:col},gg);tx(gg,140,y,a,'h3');tx(gg,440,y,b,'txt',{style:`fill:${C.ink}`});return gg;});
-  const a=boton_nb(c);hide(filas);
-  return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});T.to(a,{opacity:1,duration:.5},1.1);}];
+  const a=boton_nb(c),b=boton_prompt(c,'svm',a);hide(filas);
+  return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});T.to([a,b],{opacity:1,duration:.5,stagger:.15},1.1);}];
 }});
-
-/* encabezado y cierre comunes de los prompts: un proyecto local que se ejecuta desde la línea de comandos */
-function cabeceraProy(script,arch,libs,base){const s=script||'modelo.py';return[
-  `Escriba un script de Python llamado «${s}» que ejecutaré desde la línea de comandos (python ${s}) dentro de la carpeta del proyecto, que tiene esta estructura:`,'',
-  '    proyecto/',`    ├── ${s}`,`    ├── datos/${arch}        (datos de entrada)`,'    ├── resultados/          (tablas en Excel)','    └── visualizaciones/     (figuras .png)','',
-  'Requisitos del script:',
-  `a. Al inicio, antes de cualquier otro import, compruebe con importlib.util.find_spec si están instaladas las librerías que necesita (${libs}); instale con «sys.executable -m pip install» solo las que falten y después impórtelas. Tenga en cuenta que scikit-learn se importa como sklearn.`,
-  'b. Use rutas relativas a la carpeta del script (Path(__file__).resolve().parent) y cree resultados/ y visualizaciones/ si no existen.',
-  'c. Guarde cada figura como PNG numerado en visualizaciones/ (01_….png, 02_….png, con dpi=150) y ciérrela con plt.close(); no use plt.show().',
-  `d. Guarde todas las tablas en un solo Excel, resultados/${base}_resultados.xlsx, con una hoja por tabla (con openpyxl).`,
-  'e. Use random_state=42, comente cada bloque en español e imprima en la consola un resumen de cada paso.','',
-  'Pasos del análisis:'];}
-const CIERRE_PROY=['','Al final, agregue al Excel una hoja «resumen» con las cifras clave, explíqueme qué contiene cada archivo generado (cada hoja y cada figura) y cómo leerlo, y redacte un párrafo para un informe de investigación con sus limitaciones (por ejemplo, que una asociación no prueba causalidad).'];
-
-/* lámina final: un prompt que se arma con campos; o.extra = campos propios de la técnica, o.lineas(v) = los pasos */
-function laminaPrompt(o){slide({kicker:KC,title:'Pídale el modelo a una IA',build(c){
-  const g=G(c.svg);
-  const intro=tx(g,96,212,'Llene los campos con sus datos: el prompt se arma solo. Cópielo en ChatGPT, Gemini o Claude y revise lo que le devuelva.','txt');
-  const box=document.createElement('div');box.className='pr interactive';
-  box.innerHTML=`<style>
-    .pr{position:absolute;left:96px;top:240px;width:1408px;height:620px;display:grid;grid-template-columns:540px 1fr;gap:36px;font-family:'Schibsted Grotesk',sans-serif;color:#15181f}
-    .pr .f{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;align-content:start}
-    .pr label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:#565c6b}
-    .pr label.w{grid-column:1/-1}
-    .pr input[type=text],.pr select{font:500 17px 'Schibsted Grotesk',sans-serif;color:#15181f;padding:8px 12px;border:1.5px solid #d2d6de;border-radius:10px;background:#fff}
-    .pr input[type=text]:focus,.pr select:focus{outline:none;border-color:#2f5bea}
-    .pr .mets{display:flex;flex-wrap:wrap;gap:6px 18px;padding-top:4px}
-    .pr .mets label{flex-direction:row;align-items:center;gap:7px;font-size:16px;color:#15181f;font-weight:500}
-    .pr .nota{grid-column:1/-1;font-size:14px;color:#9aa0ad;line-height:1.4}
-    .pr .out{display:flex;flex-direction:column;gap:12px}
-    .pr textarea{flex:1;resize:none;border:0;border-radius:16px;background:#f5f6f8;padding:20px 22px;font:400 14px/1.55 'JetBrains Mono',monospace;color:#15181f}
-    .pr .bar{display:flex;align-items:center;gap:16px}
-    .pr button{border:0;border-radius:99px;padding:12px 26px;background:#ea7317;color:#fff;font:600 17px 'Schibsted Grotesk',sans-serif;cursor:pointer}
-    .pr .ok{font-size:15px;color:#1b9a68;font-weight:600}
-  </style>
-  <div class="f">
-    <label class="w">Archivo de datos<input type="text" name="arch" value="${o.archivo}"></label>
-    <label>Hoja o formato<input type="text" name="hoja" value="${o.hoja}"></label>
-    <label>Nombre del script<input type="text" name="script" value="${o.script}"></label>
-    <label>Variable Y · lo que quiere predecir<input type="text" name="y" value="${o.y}"></label>
-    <label>Clase positiva · la que quiere encontrar<input type="text" name="pos" value="${o.pos}"></label>
-    <label class="w">Variables X · separadas por comas<input type="text" name="x" value="${o.x}"></label>
-    ${o.extra}
-    <label>Datos de prueba (%)<select name="test"><option>20</option><option selected>25</option><option>30</option></select></label>
-    <label>Error más grave<select name="costo"><option value="fn">Que se escape un positivo</option><option value="fp">Una falsa alarma</option><option value="igual">Los dos pesan igual</option></select></label>
-    <label class="w">Métricas<span class="mets"><label><input type="checkbox" name="met" value="exac" checked>Exactitud</label><label><input type="checkbox" name="met" value="prec" checked>Precisión</label><label><input type="checkbox" name="met" value="sens" checked>Sensibilidad</label><label><input type="checkbox" name="met" value="f1">F1</label><label><input type="checkbox" name="met" value="auc" checked>AUC</label></span></label>
-    <div class="nota">La IA puede equivocarse: ejecute el código paso a paso, compare las cifras con lo visto en clase y pregúntele lo que no entienda.</div>
-  </div>
-  <div class="out"><textarea readonly></textarea><div class="bar"><button type="button">Copiar el prompt</button><span class="ok"></span></div></div>`;
-  c.root.appendChild(box);
-  ['click','pointerdown','mousedown','keydown'].forEach(ev=>box.addEventListener(ev,e=>e.stopPropagation()));
-  const $=n=>box.querySelector(`[name=${n}]`),ta=box.querySelector('textarea'),ok=box.querySelector('.ok');
-  const lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a[a.length-1],q=s=>`«${s}»`;
-  const MET={exac:'la exactitud (accuracy)',prec:'la precisión (precision)',sens:'la sensibilidad (recall)',f1:'el F1',auc:'el AUC de la curva ROC'};
-  const COSTO={fn:'Para mí es más grave que se escape un caso positivo: recomiende un umbral que priorice la sensibilidad.',fp:'Para mí es más grave una falsa alarma: recomiende un umbral que priorice la precisión.',igual:'Los dos errores pesan igual: recomiende el umbral con el mejor F1.'};
-  function armar(){
-    const v={xs:$('x').value.split(',').map(s=>s.trim()).filter(Boolean),Y:$('y').value.trim()||'Y',pos:$('pos').value.trim()||'1',p:+$('test').value,
-      ms:[...box.querySelectorAll('[name=met]:checked')].map(i=>MET[i.value]),costo:COSTO[$('costo').value],script:$('script').value.trim()||o.script,q,lista,$,
-      arch:$('arch').value.trim()||'datos.xlsx',hoja:$('hoja').value.trim()||'sin hoja'};
-    ta.value=o.lineas(v).join('\n');ok.textContent='';}
-  box.addEventListener('input',armar);box.addEventListener('change',armar);armar();
-  box.querySelector('button').addEventListener('click',()=>{const listo=()=>{ok.textContent='✓ Copiado: péguelo en la IA';};
-    const viejo=()=>{ta.select();try{document.execCommand('copy');listo();}catch(e){ok.textContent='Seleccione el texto y cópielo con Ctrl+C';}};
-    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(ta.value).then(listo,viejo);else viejo();});
-  hide(box);
-  return[T=>{fadeIn(T,intro,.2);fadeIn(T,box,.5,{dy:16});}];
-}});}
-
-/* ---------- 23 · Prompt ajustable para pedirle el modelo a una IA ---------- */
-laminaPrompt({archivo:'2-2-hogares-subsidio.xlsx',hoja:'hoja «hogares»',y:'pobre',pos:'Sí',script:'modelo_svm.py',x:'ingreso_pc, educacion_jefe, hacinamiento, menores_5, acueducto, piso_tierra, internet, zona',
-  extra:`<label>Kernel<select name="ker"><option value="ambos">Lineal y RBF (comparar)</option><option value="rbf">Solo RBF (fronteras curvas)</option><option value="lineal">Solo lineal</option></select></label>
-    <label>Comparar con<select name="comp"><option value="ambos">Una logística y un árbol</option><option value="log">Una logística</option><option value="nada">Nada</option></select></label>`,
-  lineas:v=>{const ker=v.$('ker').value,comp=v.$('comp').value,con={ambos:'una regresión logística y un árbol de decisión',log:'una regresión logística',nada:''}[comp];
-    const rbf=ker!=='lineal',lin=ker!=='rbf';return[
-    `Actúe como un profesor de análisis de datos. Estoy aprendiendo máquinas de soporte vectorial (SVM) por primera vez: explique cada paso con lenguaje sencillo.`,'',
-    `Quiero un SVM de clasificación en Python para predecir la variable ${v.q(v.Y)} (la clase positiva es ${v.q(v.pos)}) a partir de ${v.xs.length?v.lista(v.xs.map(v.q)):'las variables X'}. Los datos están en ${v.q(v.arch)} (${v.hoja}).`,'',
-    ...cabeceraProy(v.script,v.arch,'pandas, numpy, scikit-learn, matplotlib y openpyxl','svm'),
-    `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes, calcule qué porcentaje de casos es ${v.q(v.pos)} y guárdelo en la hoja «descripcion».`,
-    `2. Convierta ${v.q(v.Y)} en 0 y 1, y las X de texto en columnas de 0 y 1.`,
-    `3. Separe los datos en entrenamiento (${100-v.p} %) y prueba (${v.p} %), de forma estratificada; entrene solo con el primero y mida con el segundo.`,
-    `4. Arme un Pipeline con StandardScaler y SVC, y explique por qué hay que escalar. Con solo las dos primeras X numéricas, ajuste un SVC lineal y dibuje la frontera, los bordes de la calle (el margen) y los vectores de soporte resaltados → visualizaciones/01_margen.png; repítalo con C = 0,01, 1 y 100 lado a lado → visualizaciones/02_efecto_C.png, y explique qué hace C.`,
-    rbf?`5. Con esas dos variables, dibuje el mapa de decisión del kernel RBF con gamma = 0,1, 1 y 50 lado a lado → visualizaciones/03_efecto_gamma.png, con la exactitud en entrenamiento y en prueba de cada uno, y explique qué hace gamma.`:`5. Guarde los coeficientes del SVM lineal (con las variables escaladas) en la hoja «coeficientes» y explique qué dice su signo.`,
-    `6. Con todas las X, elija ${rbf&&lin?'el kernel (lineal o RBF), C y gamma':rbf?'C y gamma':'C'} con validación cruzada (GridSearchCV, 5 pliegues, AUC; C entre 0,01 y 100${rbf?' y gamma entre 0,001 y 10':''}) y guarde la búsqueda en la hoja «busqueda».`,
-    `7. Use probability=True para obtener probabilidades y explique la diferencia entre el puntaje (decision_function) y la probabilidad. Grafique la probabilidad frente al puntaje → visualizaciones/04_puntaje_probabilidad.png.`,
-    `8. Con el umbral 0,5, dibuje la matriz de confusión con las celdas rotuladas VP, FN, FP y VN → visualizaciones/05_matriz_confusion.png y explique cada celda.`,
-    `9. Calcule ${v.ms.length?v.lista(v.ms):'la exactitud, la precisión, la sensibilidad y el AUC'} en entrenamiento y en prueba, y compárelas con una línea base (la clase más común)${con?' y con '+con:''}; guárdelas en la hoja «metricas» y dígame si hay sobreajuste.`,
-    `10. Grafique las curvas ROC del SVM${con?' y de '+con:''} con su AUC → visualizaciones/06_curva_roc.png y guarde en la hoja «umbrales» las métricas para umbrales de 0,1 a 0,9. ${v.costo}`,
-    `11. Guarde las predicciones de prueba (real, puntaje, probabilidad y clase predicha) en la hoja «predicciones».`,
-    ...CIERRE_PROY];}});
 
 /* =====================================================================
    Motor de presentación
