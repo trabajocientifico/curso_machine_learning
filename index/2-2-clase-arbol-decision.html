@@ -498,13 +498,142 @@ slide({kicker:K2,title:'Buscar el mejor corte: probar todos los umbrales',build(
 
 /* ---------- 11 · CART: repetir en cada grupo ---------- */
 slide({kicker:K2,title:'Repetir en cada grupo: así crece el árbol (CART)',build(c){
-  const g=G(c.svg),P=plano(g,{L:150,R:800,T:260,B:740});puntos(g,P,TRH.slice(0,300),4.5);
-  const capas=[1,2,3].map(d=>{const t=T2(d),gr=G(g),rs=pintarRects(gr,t,P,.4),dg=G(g);diagrama(dg,t,{x:860,y:300,w:640,dy:130,fs:13});return{gr,dg,t};});
-  const nm=txl(g,860,760,['CART: Classification And Regression Trees (árboles de clasificación y regresión).','En cada grupo nuevo se vuelve a buscar el mejor corte; el árbol para cuando se lo indican.'],'sm',26,{style:`fill:${C.ink}`});
-  capas.forEach(k=>hide(k.gr,k.dg));hide(nm);
-  return[T=>{T.from(P.g,{opacity:0,duration:.4},.1);T.to([capas[0].gr,capas[0].dg],{opacity:1,duration:.6},.3);},
-    T=>{T.to([capas[0].gr,capas[0].dg],{opacity:0,duration:.3},0);T.to([capas[1].gr,capas[1].dg],{opacity:1,duration:.6},.2);},
-    T=>{T.to([capas[1].gr,capas[1].dg],{opacity:0,duration:.3},0);T.to([capas[2].gr,capas[2].dg],{opacity:1,duration:.6},.2);fadeIn(T,nm,.8,{st:.1});}];
+  const g=G(c.svg),P=plano(g,{L:150,R:760,T:275,B:690}),t=T2(2);
+  const fondos=G(g),datos=G(g),cortes=G(g);puntos(datos,P,TRH.slice(0,300),4.5);
+  tx(g,150,220,'CLASIFICACIÓN · ¿el hogar es pobre?','lab');
+  tx(g,850,220,'Una pregunta → dos grupos nuevos','lab');
+  const dg=diagrama(g,t,{x:830,y:305,w:680,dy:155,fs:16,n:true});
+  const aviso=txl(g,150,778,['Se muestran 300 de los 900 hogares de entrenamiento.','Naranja: pobre · Azul: no pobre. Cortes calculados con los 900.'],'sm',25);
+  const titulo=tx(g,850,730,'','h3'),exp=txl(g,850,766,['','',''],'txt',27);
+  tx(g,96,850,'→ / clic: siguiente paso · ←: volver · cada corte y cada rama tienen su propio paso','sm');
+  const escribir=(T,a,b)=>T.call(()=>{titulo.textContent=a;exp.forEach((e,i)=>e.textContent=b[i]||'');},null,0);
+  const grupos=new Map(),orden=[];
+  function registrar(n,box,idx){
+    const r=S('rect',{x:P.sx(box.x0),y:P.sy(box.y1),width:P.sx(box.x1)-P.sx(box.x0),height:P.sy(box.y0)-P.sy(box.y1),fill:colP(n.p),'fill-opacity':.16},fondos);
+    const resumen=G(g);S('rect',{x:n._x-78,y:n._y-22,width:156,height:44,rx:22,fill:C.w,stroke:C.frame,'stroke-width':2},resumen);
+    tx(resumen,n._x,n._y+5,`${n.n} hogares`,'lab',{'text-anchor':'middle',style:'font-size:17px'});
+    const o={n,box,idx,r,resumen,node:dg.nodes.find(d=>d.n===n).gg};grupos.set(n,o);
+    if(!n.f)return;
+    orden.push(o);const a={...box},b={...box};if(n.f==='ing'){a.x1=n.thr;b.x0=n.thr;}else{a.y1=n.thr;b.y0=n.thr;}
+    registrar(n.L,a,idx.filter(i=>TRH[i][n.f]<=n.thr));registrar(n.R,b,idx.filter(i=>TRH[i][n.f]>n.thr));
+  }
+  registrar(t,{x0:30,x1:3000,y0:0,y1:20},TRH.map((_,i)=>i));
+  const foco=S('rect',{x:150,y:275,width:610,height:415,fill:'none',stroke:C.ml,'stroke-width':4,'stroke-dasharray':'9 7'},cortes);
+  const borde=S('rect',{x:t._x-112,y:t._y-29,width:224,height:58,rx:28,fill:'none',stroke:C.ml,'stroke-width':3},g);
+  const linea=(o,v,color)=>o.n.f==='ing'?S('line',{x1:P.sx(v),x2:P.sx(v),y1:P.sy(o.box.y1),y2:P.sy(o.box.y0),stroke:color,'stroke-width':3},cortes):
+    S('line',{x1:P.sx(o.box.x0),x2:P.sx(o.box.x1),y1:P.sy(v),y2:P.sy(v),stroke:color,'stroke-width':3},cortes);
+  hide(foco,borde,...dg.nodes.map(d=>d.gg),...dg.edges.map(d=>d.e));
+  grupos.forEach(o=>hide(o.r,o.resumen));
+  const pasos=[T=>{fadeIn(T,grupos.get(t).resumen,.3);escribir(T,'0 · Empezamos con un solo grupo',['Todos los hogares están en la raíz.','Todavía no existe ningún corte.','Buscamos separar pobres y no pobres.']);}];
+  orden.forEach((o,i)=>{
+    const n=o.n,izq=grupos.get(n.L),der=grupos.get(n.R);
+    const vals=o.idx.map(j=>TRH[j][n.f]).sort((a,b)=>a-b);
+    const candidatos=[.25,.5,.75].map(q=>linea(o,vals[Math.floor((vals.length-1)*q)],C.muted));
+    const corte=linea(o,n.thr,C.ink);hide(candidatos,corte);prepDraw(corte);
+    const gDesp=(n.L.n*n.L.g+n.R.n*n.R.g)/n.n;
+    pasos.push(T=>{
+      T.set(foco,{attr:{x:P.sx(o.box.x0),y:P.sy(o.box.y1),width:P.sx(o.box.x1)-P.sx(o.box.x0),height:P.sy(o.box.y0)-P.sy(o.box.y1)}},0);
+      T.set(borde,{attr:{x:n._x-112,y:n._y-29}},0);T.to([foco,borde],{opacity:1,duration:.6},0);
+      escribir(T,`${i+1} · Elegir el grupo que vamos a dividir`,[`${n.n} hogares · Gini = ${fc(n.g,3)}`,i?'Solo buscamos dentro de esta región.':'La primera búsqueda usa todos los hogares.','Las otras regiones conservan sus cortes.']);
+    });
+    pasos.push(T=>{
+      candidatos.forEach((l,j)=>{T.to(l,{opacity:.9,duration:.65},j*1.25);T.to(l,{opacity:0,duration:.4},j*1.25+.85);});
+      escribir(T,`${i+1} · Probar umbrales`,[`Exploramos ${NOM[n.f]}.`,'Tres posiciones ilustran la búsqueda;','CART compara todos los cortes válidos en ambas variables.']);
+    });
+    pasos.push(T=>{
+      T.set(corte,{opacity:1},0);drawIn(T,corte,.2,2.2,{ease:'none'});
+      T.to(o.resumen,{opacity:0,duration:.4},1.8);fadeIn(T,o.node,2.2,{d:.8,dy:0});
+      escribir(T,`${i+1} · Fijar el mejor corte`,[preguntaQ(n.f,n.thr),`Gini ponderado: ${fc(n.g,3)} → ${fc(gDesp,3)}`,'La línea solo atraviesa el grupo seleccionado.']);
+    });
+    [[izq,'Sí',n.L],[der,'No',n.R]].forEach(([h,lab,child])=>{
+      const edge=dg.edges.find(d=>d.n===n&&d.c===child),path=edge.e.querySelector('path'),label=edge.e.querySelector('text');prepDraw(path);hide(label);
+      pasos.push(T=>{
+        T.set(edge.e,{opacity:1},0);drawIn(T,path,.1,1.7,{ease:'none'});fadeIn(T,label,.6,{dy:0});
+        T.to(h.r,{opacity:1,duration:1},.5);fadeIn(T,h.n.f?h.resumen:h.node,1.8,{d:.8,dy:0});
+        escribir(T,`${i+1} · Crear la rama «${lab}»`,[pregunta(n.f,n.thr,lab==='Sí'?'≤':'>'),`${child.n} hogares · ${pct(child.p,0)} pobres`,child.f?'Este grupo todavía puede dividirse.':`Hoja: predice ${child.p>=.5?'pobre':'no pobre'} (umbral del 50 %).`]);
+      });
+    });
+  });
+  pasos.push(T=>{
+    T.to([foco,borde],{opacity:0,duration:.6},0);
+    escribir(T,'Un árbol se construye una pregunta a la vez',['Aquí paramos en profundidad 2 para ver cada rama.','Cada hoja vota por la clase mayoritaria.','CART también sirve para regresión: veámoslo después.']);
+  });
+  return pasos;
+}});
+
+/* ---------- 12 · CART para regresión: cortes y promedios ---------- */
+slide({kicker:K2,title:'El mismo árbol, ahora para predecir un número',build(c){
+  const g=G(c.svg),D=[320,360,390,420,650,700,760,800,1150,1200,1280,1350].map((y,i)=>({x:i+3,y}));
+  // Ejemplo didáctico: se evalúan todos los puntos medios válidos con al menos 2 casos por hoja.
+  const error=ds=>{const m=mean(ds.map(d=>d.y));return ds.reduce((s,d)=>s+(d.y-m)**2,0);};
+  function ajustar(ds,depth=0){
+    const n={ds,m:mean(ds.map(d=>d.y)),sse:error(ds),depth};if(depth===2)return n;
+    let best=null;for(let j=2;j<=ds.length-2;j++){
+      const a=ds.slice(0,j),b=ds.slice(j),sse=error(a)+error(b);
+      if(!best||sse<best.sse)best={a,b,sse,thr:(ds[j-1].x+ds[j].x)/2};
+    }
+    if(best&&best.sse<n.sse){n.thr=best.thr;n.L=ajustar(best.a,depth+1);n.R=ajustar(best.b,depth+1);}return n;
+  }
+  const t=ajustar(D),P=axes(g,{x:150,y:290,w:610,h:390,xd:[2,15],yd:[200,1500],xt:[3,6,9,12,14],yt:[400,800,1200],xl:'Años de educación',yl:'Ingreso mensual por persona (miles de pesos)'});
+  tx(g,150,220,'REGRESIÓN · ¿cuánto ingreso predecimos?','lab');
+  tx(g,850,220,'Mismas preguntas, hojas con promedios','lab');
+  tx(g,150,770,'12 hogares ficticios · ejemplo didáctico, no relación causal.','sm');
+  tx(g,150,798,'Cada tramo predice el promedio de su hoja (redondeado).','sm');
+  tx(g,96,850,'→ / clic: siguiente paso · ←: volver · SSE = suma de los errores al cuadrado','sm');
+  const lineas=G(g),puntosG=G(g);D.forEach(d=>S('circle',{cx:P.sx(d.x),cy:P.sy(d.y),r:7,fill:C.st},puntosG));
+  const titulo=tx(g,850,730,'','h3'),exp=txl(g,850,766,['','',''],'txt',27);
+  const escribir=(T,a,b)=>T.call(()=>{titulo.textContent=a;exp.forEach((e,i)=>e.textContent=b[i]||'');},null,0);
+  const nodos=[],internos=[];let leaf=0;
+  function posicion(n){if(n.L){posicion(n.L);posicion(n.R);n.x=(n.L.x+n.R.x)/2;}else n.x=910+leaf++*170;n.y=305+n.depth*155;}
+  posicion(t);
+  function dibujar(n,lo,hi){
+    const box=G(g);S('rect',{x:n.x-77,y:n.y-24,width:154,height:48,rx:24,fill:C.mlT,stroke:C.ml,'stroke-width':2},box);
+    tx(box,n.x,n.y+6,`$${miles(n.m)} mil`,'lab',{'text-anchor':'middle',style:'font-size:18px'});
+    tx(box,n.x,n.y+46,`${n.ds.length} hogares`,'tick',{'text-anchor':'middle'});
+    const seg=S('line',{x1:P.sx(lo),x2:P.sx(hi),y1:P.sy(n.m),y2:P.sy(n.m),stroke:C.ml,'stroke-width':4},lineas);
+    n.box=box;n.seg=seg;n.lo=lo;n.hi=hi;nodos.push(n);hide(box,seg);prepDraw(seg);
+    if(!n.L)return;
+    internos.push(n);n.q=G(g);S('rect',{x:n.x-94,y:n.y-24,width:188,height:48,rx:24,fill:C.w,stroke:C.ink,'stroke-width':2},n.q);
+    tx(n.q,n.x,n.y+5,`¿educación ≤ ${fc(n.thr,1)}?`,'lab',{'text-anchor':'middle',style:'font-size:17px'});hide(n.q);
+    [[n.L,'sí'],[n.R,'no']].forEach(([ch,lab])=>{
+      const e=G(g),p=S('path',{d:`M${n.x},${n.y+25} C${n.x},${n.y+80} ${ch.x},${ch.y-80} ${ch.x},${ch.y-25}`,fill:'none',stroke:C.frame,'stroke-width':2.5},e);
+      tx(e,(n.x+ch.x)/2+(lab==='sí'?-20:20),(n.y+ch.y)/2,lab,'tick',{'text-anchor':'middle'});ch.edge=e;ch.path=p;hide(e);prepDraw(p);
+    });
+    dibujar(n.L,lo,n.thr);dibujar(n.R,n.thr,hi);
+  }
+  dibujar(t,2,15);
+  const residuos=D.map(d=>S('line',{x1:P.sx(d.x),x2:P.sx(d.x),y1:P.sy(d.y),y2:P.sy(t.m),stroke:C.muted,'stroke-width':1.5,'stroke-dasharray':'4 4'},lineas));hide(residuos);
+  const pasos=[T=>{fadeIn(T,t.box,.3,{dy:0});T.set(t.seg,{opacity:1},0);drawIn(T,t.seg,.3,1.8);
+    escribir(T,'0 · Sin cortes: un promedio para todos',[`Predicción inicial: $${miles(t.m)} mil.`,`Promedio de los ${D.length} ingresos observados.`,'Ahora la respuesta es un número, no una clase.']);},
+    T=>{fadeIn(T,residuos,0,{dy:0,st:.08});escribir(T,'1 · Medir el error, en lugar del Gini',['Cada distancia vertical es un error.',`SSE = Σ(ingreso − promedio)² = ${miles(t.sse)}`,'Buscamos el corte que más reduzca esta suma.']);}];
+  internos.forEach((n,i)=>{
+    const candidates=[];for(let j=2;j<=n.ds.length-2;j++)candidates.push((n.ds[j-1].x+n.ds[j].x)/2);
+    const prueba=S('line',{x1:P.sx(candidates[0]),x2:P.sx(candidates[0]),y1:290,y2:680,stroke:C.muted,'stroke-width':2,'stroke-dasharray':'7 7'},lineas);hide(prueba);
+    const corte=S('line',{x1:P.sx(n.thr),x2:P.sx(n.thr),y1:290,y2:680,stroke:C.ink,'stroke-width':2.5},lineas);hide(corte);prepDraw(corte);
+    pasos.push(T=>{
+      T.to(residuos,{opacity:0,duration:.4},0);T.to(prueba,{opacity:1,duration:.4},0);
+      candidates.forEach((v,j)=>T.to(prueba,{attr:{x1:P.sx(v),x2:P.sx(v)},duration:.65,ease:'power1.inOut'},.4+j*.85));
+      T.to(prueba,{opacity:0,duration:.4},.4+candidates.length*.85);
+      escribir(T,`${i+1} · Buscar dentro de este grupo`,[`${n.ds.length} hogares · promedio $${miles(n.m)} mil.`,`Probamos ${candidates.length} cortes con ≥ 2 hogares por hoja.`,'Cada candidato tiene dos promedios y una SSE total.']);
+    });
+    pasos.push(T=>{
+      T.set(corte,{opacity:1},0);drawIn(T,corte,0,2,{ease:'none'});T.to(n.box,{opacity:0,duration:.4},1.7);fadeIn(T,n.q,2,{dy:0});
+      escribir(T,`${i+1} · Elegir el corte con menor error`,[`Educación ≤ ${fc(n.thr,1)} años`,`SSE del grupo: ${miles(n.sse)} → ${miles(n.L.sse+n.R.sse)}`,'Se compara la suma del error de ambos hijos.']);
+    });
+    [[n.L,'Sí'],[n.R,'No']].forEach(([ch,lab],j)=>pasos.push(T=>{
+      T.set(ch.edge,{opacity:1},0);drawIn(T,ch.path,0,1.6,{ease:'none'});fadeIn(T,ch.box,1.7,{dy:0,d:.8});
+      T.set(ch.seg,{opacity:1},1.7);drawIn(T,ch.seg,1.7,1.5,{ease:'none'});if(j===1)T.to(n.seg,{opacity:0,duration:.6},1.7);
+      escribir(T,`${i+1} · Rama «${lab}»: un promedio propio`,[`${ch.ds.length} hogares → $${miles(ch.m)} mil`,j?'Ya hay dos predicciones distintas para este corte.':'Aparece un tramo horizontal a la altura del promedio.',ch.L?'Volveremos a buscar un corte dentro de este grupo.':'Esta hoja devuelve un número a todo hogar que llega.']);
+    }));
+  });
+  const ejemplo=G(g),xNuevo=10.5;let h=t;const ruta=[];while(h.L){h=xNuevo<=h.thr?h.L:h.R;ruta.push(h);}
+  S('circle',{cx:P.sx(xNuevo),cy:P.sy(h.m),r:12,fill:C.w,stroke:C.ml,'stroke-width':4},ejemplo);
+  tx(ejemplo,P.sx(xNuevo)+18,P.sy(h.m)-18,`Nuevo: $${miles(h.m)} mil`,'sm',{style:`fill:${C.ml};font-weight:600`});hide(ejemplo);
+  pasos.push(T=>{
+    ruta.forEach((n,i)=>T.to(n.path,{stroke:C.ml,'stroke-width':4,duration:.8},i*.9));fadeIn(T,ejemplo,ruta.length*.9,{dy:0});
+    escribir(T,'Predecir: recorrer las ramas y leer la hoja',[`Un hogar con ${fc(xNuevo,1)} años de educación`,`llega a una hoja que predice $${miles(h.m)} mil.`,'Clasificación: clase mayoritaria · Regresión: promedio.']);
+  });
+  return pasos;
 }});
 
 SEP({n:3,k:K3,titulo:['Leer y decidir'],pregunta:'¿Qué dice el árbol y cómo se pasa de una hoja a una decisión?',

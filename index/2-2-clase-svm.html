@@ -347,9 +347,11 @@ function knn(D,feats,o={}){const E=o.crudo?{z:d=>feats.map(f=>d[f])}:(o.E||escal
 function knnVarios(M,D,ks,sin){const out=ks.map(()=>[]);D.forEach(d=>{const o=M.orden(d).map(v=>M.y[v[1]]);if(sin)o.shift();let s=0,j=0;
   for(let k=1;k<=ks[ks.length-1];k++){s+=o[k-1];while(j<ks.length&&ks[j]===k){out[j].push(s/k);j++;}}});return out;}
 
-/* ---------- SVM: descenso por coordenadas en el problema dual, con el intercepto dentro del kernel (K + 1); y en ±1 ---------- */
-function svm(D,feats,o={}){const E=o.E||escalador(D,feats),X=D.map(E.z),y=D.map(d=>d.pobre?1:-1),n=X.length,Cc=o.C??1,gam=o.gamma??.5,lineal=o.kernel!=='rbf';
-  const K=lineal?(a,b)=>{let s=1;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}:(a,b)=>Math.exp(-gam*dist2(a,b))+1;
+/* ---------- SVM: descenso por coordenadas en el problema dual, con el intercepto dentro del kernel (K + 1); y en ±1 ----------
+   kernel: 'lineal' (por defecto), 'poly' ((x·x' + 1)^grado) o 'rbf' (e^(−gamma·distancia²)) */
+function svm(D,feats,o={}){const E=o.E||escalador(D,feats),X=D.map(E.z),y=D.map(d=>d.pobre?1:-1),n=X.length,Cc=o.C??1,gam=o.gamma??.5,ker=o.kernel||'lineal',lineal=ker==='lineal',gr=o.grado||3;
+  const pp=(a,b)=>{let s=1;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;};
+  const K=lineal?pp:ker==='poly'?(a,b)=>pp(a,b)**gr+1:(a,b)=>Math.exp(-gam*dist2(a,b))+1;
   const KM=Array.from({length:n},()=>new Float64Array(n));for(let i=0;i<n;i++)for(let j=i;j<n;j++){const v=K(X[i],X[j]);KM[i][j]=v;KM[j][i]=v;}
   const a=new Float64Array(n),F=new Float64Array(n),r=rng(o.seed||7),ord=Array.from({length:n},(_,i)=>i);
   for(let it=0;it<(o.maxIt||150);it++){shuffle(ord,r);let viol=0;
@@ -385,33 +387,76 @@ function planoL(g,o={}){const b=Object.assign({},PX,o),M=o.imax||IMAX;
   if(!o.sinEtq){tx(gA,b.R,b.B+56,o.xl||'Ingreso por persona (miles de pesos)','axl',{'text-anchor':'end'});tx(gA,b.L,b.T-20,o.yl||'Años de educación de quien encabeza el hogar','axl');}
   return{g:gA,sx,sy,b,pxI,pxE,ix:v=>(v-b.L)/(b.R-b.L)*M,iy:v=>(b.B-v)/(b.B-b.T)*20,x:d=>sx(d.ing),y:d=>sy(d.educ+(d.j-.5)*.8)};}
 const colP=p=>p>=.5?C.ml:C.st;
-/* mapa de decisión: una rejilla de celdas pintadas según la probabilidad de un modelo de dos variables */
-function mapa(g,P,f,o={}){const nx=o.nx||52,ny=o.ny||36,W=(P.b.R-P.b.L)/nx,H=(P.b.B-P.b.T)/ny,gg=G(g);
-  for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){const d={ing:(i+.5)/nx*IMAX,educ:(j+.5)/ny*20},p=f(d);
-    S('rect',{x:P.b.L+i*W,y:P.b.B-(j+1)*H,width:W,height:H,'shape-rendering':'crispEdges',fill:colP(p),'fill-opacity':((o.op??.38)*Math.abs(p-.5)*2+.04).toFixed(3)},gg);}
+/* mapa de decisión: una rejilla de celdas pintadas según la probabilidad de un modelo de dos variables.
+   o.punto(u,v) da el caso de cada celda (u y v de 0 a 1) si el plano no es ingreso × educación; gg.frontera() traza la curva p = 0,5 */
+function mapa(g,P,f,o={}){const nx=o.nx||52,ny=o.ny||36,W=(P.b.R-P.b.L)/nx,H=(P.b.B-P.b.T)/ny,gg=G(g),V=[];
+  for(let i=0;i<nx;i++){V.push([]);for(let j=0;j<ny;j++){const u=(i+.5)/nx,v=(j+.5)/ny,p=f(o.punto?o.punto(u,v):{ing:u*IMAX,educ:v*20});V[i].push(p);
+    S('rect',{x:P.b.L+i*W,y:P.b.B-(j+1)*H,width:W,height:H,'shape-rendering':'crispEdges',fill:colP(p),'fill-opacity':((o.op??.38)*Math.abs(p-.5)*2+.04).toFixed(3)},gg);}}
+  gg.frontera=()=>frontera(V,nx,ny,(a,b)=>[P.b.L+a*W,P.b.B-b*H]);
   return gg;}
+/* cuadrados marchantes: los tramos donde la rejilla V cruza el nivel; aPx(a,b) pasa coordenadas de la rejilla (en celdas) a píxeles */
+function frontera(V,nx,ny,aPx,niv=.5){let d='';
+  const pt=(i0,j0,i1,j1)=>{const a=V[i0][j0]-niv,t=a/(a-V[i1][j1]+niv),q=aPx(i0+.5+(i1-i0)*t,j0+.5+(j1-j0)*t);return q[0].toFixed(1)+','+q[1].toFixed(1);};
+  for(let i=0;i<nx-1;i++)for(let j=0;j<ny-1;j++){const c=[[i,j],[i+1,j],[i+1,j+1],[i,j+1]],s=c.map(([a,b])=>V[a][b]>=niv),E=[];
+    for(let e=0;e<4;e++){const n=(e+1)%4;if(s[e]!==s[n])E.push(pt(c[e][0],c[e][1],c[n][0],c[n][1]));}
+    for(let e=0;e+1<E.length;e+=2)d+=`M${E[e]}L${E[e+1]}`;}
+  return d;}
+/* un grupo que se descubre de izquierda a derecha (su recorte se ensancha), con una línea naranja que barre si barre = 1; k.abrir(T,at,d) lo anima */
+function cortina(g,b,barre){const id='crt'+(++CLIP),cp=S('clipPath',{id},g),cr=S('rect',{x:b.L,y:b.T-8,width:0,height:b.B-b.T+16},cp),k=G(g,{'clip-path':`url(#${id})`});
+  const barra=barre&&S('line',{x1:b.L,x2:b.L,y1:b.T,y2:b.B,stroke:C.ml,'stroke-width':3,opacity:0},g);
+  k.abrir=(T,at,d=1.4)=>{T.to(cr,{attr:{width:b.R-b.L},duration:d,ease:'power1.inOut'},at);if(!barra)return;
+    T.fromTo(barra,{opacity:1,attr:{x1:b.L,x2:b.L}},{attr:{x1:b.R,x2:b.R},duration:d,ease:'power1.inOut',immediateRender:false},at);T.to(barra,{opacity:0,duration:.25},at+d);};
+  return k;}
+/* el mapa de decisión y su frontera (p = 0,5) detrás de una cortina, por debajo de los ejes del plano */
+function mapaCortina(g,P,f,o={}){const k=cortina(g,P.b,1);if(P.g&&P.g.parentNode===g)g.insertBefore(k,P.g);
+  const capa=mapa(k,P,f,o),fr=S('path',{d:capa.frontera(),fill:'none',stroke:C.ink,'stroke-width':o.grueso||3,'stroke-linecap':'round'},k);
+  return{k,capa,fr,abrir:k.abrir};}
 const puntos=(g,P,D,r=6)=>D.map(d=>S('circle',{cx:P.x(d),cy:P.y(d),r,fill:d.pobre?C.ml:C.st,stroke:C.w,'stroke-width':1.2},g));
 const leyenda=(g,x,y)=>{const gg=G(g);[[C.ml,'pobre'],[C.st,'no pobre']].forEach(([col,t],i)=>{S('circle',{cx:x+8,cy:y+i*30,r:7,fill:col},gg);tx(gg,x+24,y+6+i*30,t,'sm');});return gg;};
 /* curva ROC de varias probabilidades sobre los mismos datos */
 function rocPts(y,p){const us=[...new Set(p)].sort((a,b)=>b-a);return[[0,0],...us.map(u=>{const m=clasif(y,p,u);return[m.fpr,m.sens];}),[1,1]];}
 
 /* ---------- láminas comunes de la parte 5 ---------- */
-/* matriz de confusión y las cinco métricas en prueba */
+/* matriz de confusión (qué es cada celda) y las métricas de clasificación; cada métrica enciende las celdas que usa.
+   En esta clase difiere de la de las otras clases 2.2: tiene la definición y un paso por métrica */
 function laminaMatriz(K,titulo,pf,nota){slide({kicker:K,title:titulo,build(c){
   const g=G(c.svg),y=Y(PRH),p=pf(),m=clasif(y,p,.5),A_=auc(y,p);
-  const X0=150,Y0=290,W=280,H=190;tx(g,X0+W,262,'predijo: no pobre · pobre','sm',{'text-anchor':'middle'});
-  tx(g,X0-14,Y0+H/2+6,'no pobre','sm',{'text-anchor':'end'});tx(g,X0-14,Y0+1.5*H+6,'pobre','sm',{'text-anchor':'end'});tx(g,X0-14,Y0-14,'real','kick',{'text-anchor':'end',style:'font-size:12px'});
-  const cel=[['VN',0,0,C.st,'no pobre y se predijo no pobre'],['FP',1,0,C.bad,'falsa alarma: se incluiría sin serlo'],['FN',0,1,C.bad,'se escapa: hogar pobre sin subsidio'],['VP',1,1,C.ok,'pobre y se predijo pobre']];
-  const cells=cel.map(([k,i,j,col,d])=>{const gg=G(g),x=X0+i*W,yy=Y0+j*H;S('rect',{x:x+4,y:yy+4,width:W-8,height:H-8,rx:16,fill:col,'fill-opacity':.08,stroke:col,'stroke-opacity':.4,'stroke-width':2},gg);
-    tx(gg,x+22,yy+42,k,'monoL',{style:`fill:${col};font-size:28px`});tx(gg,x+W-22,yy+90,String(m[k]),'monoL',{'text-anchor':'end',style:`fill:${col};font-size:40px`});
-    tx(gg,x+22,yy+140,d,'sm',{style:`fill:${C.ink};font-size:14px`});return gg;});
-  const M=[['Exactitud','qué parte acierta',m.exac],['Precisión','de los señalados, cuántos son pobres',m.prec],['Sensibilidad','de los pobres, a cuántos encuentra',m.sens],['F1','balance de precisión y sensibilidad',m.f1],['AUC','qué tan bien ordena el riesgo',A_]];
-  const X=780,mt=M.map(([n,d,v],i)=>{const gg=G(g),yy=290+i*92;S('rect',{x:X,y:yy,width:724,height:78,rx:16,fill:C.soft},gg);tx(gg,X+24,yy+34,n,'h3');tx(gg,X+24,yy+62,d,'sm');
-    tx(gg,X+700,yy+50,fc(v,3),'monoL',{'text-anchor':'end',style:`font-size:32px;fill:${C.ml}`});return gg;});
-  const nt=tx(g,150,790,nota||`En los ${PRH.length} hogares de prueba, con el umbral 0,5. Son las mismas métricas de la regresión logística y del árbol.`,'sm',{style:`fill:${C.ink}`});
-  hide(cells,mt,nt);
-  return[T=>{fadeIn(T,cells,.2,{st:.15,dy:10});},T=>{fadeIn(T,mt,0,{st:.12,dx:-14,dy:0});fadeIn(T,nt,.8);}];
+  const def=txl(g,96,214,['La matriz de confusión cruza lo real (filas) con lo que predijo el modelo (columnas). En la diagonal quedan los aciertos;',
+    'fuera de ella, los dos tipos de error. De sus cuatro conteos salen las métricas de clasificación.'],'txt',28,{style:`fill:${C.ink}`});
+  const X0=200,Y0=340,W=250,H=165,ejes=G(g);
+  tx(ejes,X0+W,296,'LO QUE PREDIJO EL MODELO','kick',{'text-anchor':'middle',style:'font-size:12px'});
+  tx(ejes,X0+W/2,326,'no pobre','sm',{'text-anchor':'middle'});tx(ejes,X0+1.5*W,326,'pobre','sm',{'text-anchor':'middle'});
+  tx(ejes,X0-14,326,'LO REAL','kick',{'text-anchor':'end',style:'font-size:12px'});
+  tx(ejes,X0-14,Y0+H/2+6,'no pobre','sm',{'text-anchor':'end'});tx(ejes,X0-14,Y0+1.5*H+6,'pobre','sm',{'text-anchor':'end'});
+  const cel=[['VN',0,0,C.st,['no pobre, y el modelo','dijo «no pobre»']],['FP',1,0,C.bad,['falsa alarma: recibiría','el subsidio sin serlo']],
+    ['FN',0,1,C.bad,['se escapa: es pobre y','queda sin subsidio']],['VP',1,1,C.ok,['pobre, y el modelo','dijo «pobre»']]];
+  const cells={};cel.forEach(([k,i,j,col,d])=>{const gg=G(g),x=X0+i*W,yy=Y0+j*H;
+    S('rect',{x:x+4,y:yy+4,width:W-8,height:H-8,rx:16,fill:col,'fill-opacity':.08,stroke:col,'stroke-opacity':.4,'stroke-width':2},gg);
+    tx(gg,x+22,yy+40,k,'monoL',{style:`fill:${col};font-size:26px`});tx(gg,x+W-22,yy+86,String(m[k]),'monoL',{'text-anchor':'end',style:`fill:${col};font-size:40px`});
+    txl(gg,x+22,yy+118,d,'sm',20,{style:`fill:${C.ink};font-size:14px`});cells[k]=gg;});
+  const tot=[tx(g,X0,Y0+2*H+36,`✓ Aciertos (la diagonal): VN + VP = ${m.VN} + ${m.VP} = ${m.VN+m.VP}`,'sm',{style:`fill:${C.ok};font-weight:600`}),
+    tx(g,X0,Y0+2*H+62,`✗ Errores: FP + FN = ${m.FP} + ${m.FN} = ${m.FP+m.FN} · total: ${m.n} hogares de prueba`,'sm',{style:`fill:${C.bad};font-weight:600`})];
+  const MT=[['Exactitud','de todos los hogares, qué parte acierta',`(VN + VP) / total = (${m.VN} + ${m.VP}) / ${m.n}`,m.exac],
+    ['Precisión','de los que el modelo señala como pobres, cuántos lo son',`VP / (VP + FP) = ${m.VP} / (${m.VP} + ${m.FP})`,m.prec],
+    ['Sensibilidad','de los hogares pobres, a cuántos encuentra',`VP / (VP + FN) = ${m.VP} / (${m.VP} + ${m.FN})`,m.sens],
+    ['F1','un solo número que equilibra precisión y sensibilidad','2 · precisión · sensibilidad / (precisión + sensibilidad)',m.f1],
+    ['AUC','qué tan bien ordena el riesgo: 0,5 = azar, 1 = perfecto','no usa el umbral: compara las probabilidades',A_]];
+  const X=780,mt=MT.map(([n,d,f,v],i)=>{const gg=G(g),yy=290+i*94;S('rect',{x:X,y:yy,width:724,height:86,rx:16,fill:C.soft},gg);
+    tx(gg,X+24,yy+32,n,'h3');tx(gg,X+24,yy+56,d,'sm',{style:`fill:${C.ink}`});tx(gg,X+24,yy+77,f,'mono',{style:`font-size:15px;fill:${C.sub}`});
+    tx(gg,X+700,yy+52,fc(v,3),'monoL',{'text-anchor':'end',style:`font-size:30px;fill:${C.ml}`});return gg;});
+  const nt=tx(g,96,800,nota||`En los ${PRH.length} hogares de prueba, con el umbral 0,5.`,'sm',{style:`fill:${C.ink}`});
+  const nt2=tx(g,96,830,'Son métricas de clasificación: sirven cuando Y es una categoría (pobre / no pobre). Si Y es un número, se usan otras (lámina siguiente).','sm',{style:`fill:${C.ml};font-weight:600`});
+  hide(def,ejes,Object.values(cells),tot,mt,nt,nt2);
+  /* enciende las celdas que usa una métrica y apaga las demás */
+  const luz=(T,ks,at)=>Object.entries(cells).forEach(([k,gg])=>T.to(gg,{opacity:!ks||ks.includes(k)?1:.2,duration:.4},at));
+  return[T=>{fadeIn(T,def,.1,{st:.1});fadeIn(T,ejes,.5,{dy:0});['VN','FP','FN','VP'].forEach((k,i)=>popIn(T,cells[k],.8+i*.35,{s0:.85,ease:'back.out(1.6)'}));
+      fadeIn(T,tot,2.4,{st:.2});fadeIn(T,nt,2.8);},
+    T=>{luz(T,['VN','VP'],0);fadeIn(T,mt[0],.2,{dx:-14,dy:0});},
+    T=>{luz(T,['VP','FP'],0);fadeIn(T,mt[1],.2,{dx:-14,dy:0});},
+    T=>{luz(T,['VP','FN'],0);fadeIn(T,mt[2],.2,{dx:-14,dy:0});},
+    T=>{luz(T,null,0);fadeIn(T,mt.slice(3),.2,{st:.25,dx:-14,dy:0});fadeIn(T,nt2,.9);}];
 }});}
+
 /* tabla de modelos (prueba en negro, entrenamiento en gris) y sus curvas ROC; Mo() = [[nombre, p(D) en prueba, p en entrenamiento, color, grueso]] */
 function laminaComparar(K,titulo,Mo,conclusion){slide({kicker:K,title:titulo,build(c){
   const g=G(c.svg),y=Y(PRH),L=Mo().map(([nm,pte,ptr,col,gr])=>({nm,col,gr,pte,te:met(PRH,pte),tr:met(TRH,ptr)}));
@@ -437,16 +482,22 @@ const RBF=g=>memo('rbf'+g,()=>svm(TRH,F2,{E:E2,C:10,kernel:'rbf',gamma:g}));
 /* un grupo que sí se puede separar con una recta: los hogares visibles que quedan fuera de la calle del SVM lineal */
 const SEPV=()=>memo('sepv',()=>VIS.filter(d=>(d.pobre?1:-1)*LIN(1).f(d)>=1).slice(0,60));
 const DURO=()=>memo('duro',()=>svm(SEPV(),F2,{E:E2,C:1000,maxIt:2000}));   // margen duro: no admite errores
-/* búsqueda de C y gamma con validación cruzada (3 pliegues) para el SVM con kernel RBF y las 10 variables */
+/* ejemplo de juguete para la lámina de kernels: dos lunas que se abrazan (pobre = 1 es la luna de abajo) */
+const LUNAS=(()=>{const r=rng(5),D=[];for(let i=0;i<120;i++){const k=i%2,t=Math.PI*r();
+  D.push({x1:(k?1-Math.cos(t):Math.cos(t))+randn(r)*.13,x2:(k?.5-Math.sin(t):Math.sin(t))+randn(r)*.13,pobre:k});}return D;})();
+const LDOM={x:[-1.6,2.6],y:[-1.1,1.6]};
+const KERS=()=>memo('kers',()=>[svm(LUNAS,['x1','x2'],{C:10}),svm(LUNAS,['x1','x2'],{C:10,kernel:'poly',grado:3}),svm(LUNAS,['x1','x2'],{C:10,kernel:'rbf',gamma:2})]);
+/* búsqueda de C y gamma con validación cruzada (5 pliegues de 180 hogares) para el SVM con kernel RBF y las 10 variables */
 const GC=[.1,1,10],GG=[.01,.1,1];
-/* son 27 ajustes: se calculan de a uno en segundo plano, para que la lámina no se congele al llegar */
-const PLG=pliegues(TRH.length,3,5),BQ=GC.map(()=>GG.map(()=>[]));
+/* son 45 ajustes: se calculan de a uno en segundo plano, para que la lámina no se congele al llegar */
+const PLG=pliegues(TRH.length,5,5),BQ=GC.map(()=>GG.map(()=>[]));
 function unAjuste(i,j,f){const s=new Set(PLG[f]),tr=TRH.filter((_,q)=>!s.has(q)),va=PLG[f].map(q=>TRH[q]);
   const M=svm(tr,FEATS,{C:GC[i],kernel:'rbf',gamma:GG[j],maxIt:60});BQ[i][j][f]=clasif(Y(va),va.map(M.p),.5).exac;}
-function pendiente(){for(let i=0;i<GC.length;i++)for(let j=0;j<GG.length;j++)for(let f=0;f<3;f++)if(BQ[i][j][f]===undefined)return[i,j,f];return null;}
+function pendiente(){for(let i=0;i<GC.length;i++)for(let j=0;j<GG.length;j++)for(let f=0;f<PLG.length;f++)if(BQ[i][j][f]===undefined)return[i,j,f];return null;}
 const BUSQ=()=>{let p;while((p=pendiente()))unAjuste(...p);return BQ.map(r=>r.map(mean));};
-/* empieza cuando la presentación llega a la parte 3 (allí se habla un buen rato); un ajuste cada 0,4 s */
-setTimeout(function seguir(){if(si<10)return setTimeout(seguir,1000);const p=pendiente();if(!p)return;unAjuste(...p);setTimeout(seguir,400);},1000);
+/* empieza cuando la presentación llega a la parte 3 (allí se habla un buen rato); un ajuste cada 0,4 s,
+   y solo mientras no haya una animación en curso, para no entrecortarla */
+setTimeout(function seguir(){if(si<9||(tl&&tl.isActive()))return setTimeout(seguir,si<9?1000:300);const p=pendiente();if(!p)return;unAjuste(...p);setTimeout(seguir,400);},1000);
 const MEJOR=()=>memo('mejor',()=>{const B=BUSQ();let m=[0,0];B.forEach((r,i)=>r.forEach((v,j)=>{if(v>B[m[0]][m[1]])m=[i,j];}));return{C:GC[m[0]],g:GG[m[1]],i:m[0],j:m[1],acc:B[m[0]][m[1]]};});
 const SVF=()=>memo('svf',()=>{const b=MEJOR();return svm(TRH,FEATS,{C:b.C,kernel:'rbf',gamma:b.g});});
 const SVL=()=>memo('svl',()=>svm(TRH,FEATS,{C:1}));
@@ -470,10 +521,6 @@ function panel(g,X,y0,n=4){const paso=txl(g,X,y0,['',''],'h3',32),expl=txl(g,X,y
 function boton_nb(c,txt){const a=document.createElement('a');a.href=NB;a.target='_blank';a.rel='noopener';a.textContent=txt||'Práctica: notebook 2-2 con 1.200 hogares →';
   a.style.cssText='position:absolute;left:96px;top:800px;padding:14px 26px;border-radius:99px;background:#15181f;color:#fff;font:600 17px "Schibsted Grotesk",sans-serif;text-decoration:none;opacity:0';
   a.addEventListener('click',e=>e.stopPropagation());c.root.appendChild(a);return a;}
-/* qué es cada símbolo de una ecuación: filas [pieza, explicación (una línea o varias), color] */
-function simbolos(g,x,y,F,o={}){const dx=o.dx||170,paso=o.paso||46;let yy=y;
-  return F.map(([tex,t,col])=>{const gg=G(g),ls=[].concat(t);formula(gg,x,yy,tex,{size:o.size||24,color:col||C.ink});
-    txl(gg,x+dx,yy,ls,'sm',22,{style:`fill:${C.ink}`});yy+=paso+(ls.length-1)*22;return gg;});}
 
 /* ---------- rectas y calles en el plano: w₁·z_ingreso + w₂·z_educación + b = c ---------- */
 let CLIP=0;
@@ -487,7 +534,8 @@ function calle(g,P,w,b,m=1){const k=recorte(g,P),fr=S('path',{fill:C.ink,'fill-o
   b2=S('path',{fill:'none',stroke:C.sub,'stroke-width':2,'stroke-dasharray':'8 7'},k),ln=S('path',{fill:'none',stroke:C.ink,'stroke-width':3.5},k);
   const set=(w,b,m)=>{fr.setAttribute('d',dCalle(P,w,b,m));b1.setAttribute('d',dRecta(P,w,b,-m));b2.setAttribute('d',dRecta(P,w,b,m));ln.setAttribute('d',dRecta(P,w,b,0));};
   set(w,b,m);return{g:k,fr,b1,b2,ln,set};}
-const mapaF=(g,P,M)=>mapa(g,P,d=>M.p(d));
+/* estrella de cinco puntas centrada en 0,0: el hogar nuevo */
+const estrella=r=>{let d='';for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*.45:r;d+=(i?'L':'M')+(q*Math.cos(a)).toFixed(1)+','+(q*Math.sin(a)).toFixed(1);}return d+'Z';};
 
 /* ---------- 1 · Portada ---------- */
 slide({build(c){
@@ -517,7 +565,7 @@ slide({kicker:KA,title:'Ficha técnica del modelo',build(c){
     ['ECUACIÓN',C.st,['Frontera (lineal):','w₁x₁ + w₂x₂ + b = 0'],1],
     ['PARÁMETROS',C.st,['Los pesos w y b, que dependen','solo de los vectores de soporte']],
     ['HIPERPARÁMETROS',C.ml,['C: cuánto castigar los errores','el kernel y su gamma']],
-    ['MÉTRICAS',C.ml,['Exactitud, precisión,','sensibilidad, F1 y AUC (en prueba)']],
+    ['MÉTRICAS',C.ml,['Exactitud, precisión, sensibilidad,','F1 y AUC (en prueba) · SVR: MAE, RMSE, R²']],
     ['CUÁNDO SÍ · CUÁNDO NO',C.ok,['✓ Datos medianos, muchas variables','✓ Fronteras claras o curvas','✗ Cientos de miles de datos: es lento','✗ Si se necesita leer cada efecto'],2]];
   const cards=F.map(([k,col,ls,mono],i)=>{const x=96+(i%3)*476,y=230+Math.floor(i/3)*290,gg=G(g);
     S('rect',{x,y,width:452,height:262,rx:22,fill:C.soft},gg);S('rect',{x,y,width:452,height:6,rx:3,fill:col},gg);
@@ -561,7 +609,7 @@ slide({kicker:K1,title:'El margen: la calle más ancha posible',build(c){
 }});
 
 SEP({n:2,k:K2,titulo:['Cuando no se puede separar:','el margen suave'],pregunta:'¿Qué hace SVM cuando los grupos se mezclan?',
-  temas:['Permitir hogares dentro de la calle','La ecuación: dónde entra C','El hiperparámetro C']});
+  temas:['Permitir hogares dentro de la calle','El hiperparámetro C']});
 
 /* ---------- 8 · Margen suave ---------- */
 slide({kicker:K2,title:'Margen suave: permitir algunos errores',build(c){
@@ -580,45 +628,7 @@ slide({kicker:K2,title:'Margen suave: permitir algunos errores',build(c){
     T=>{paso(T,CS[3],0);decir(T,['C grande: calle angosta, casi sin','tolerancia. Se ajusta más al','entrenamiento y puede sobreajustar.',''],0);}];
 }});
 
-/* ---------- 9 · La ecuación del margen suave: dónde entra C ---------- */
-slide({kicker:K2,title:'La ecuación del margen suave: dónde entra C',build(c){
-  const g=G(c.svg);
-  const t0=tx(g,96,232,'Entrenar un SVM es resolver este problema: buscar los pesos w y el intercepto b que hacen mínima la suma de dos costos.','txt',{style:`fill:${C.ink}`});
-  const eq=formula(g,96,334,'\\under{min}{w, b, ξ}   \\c{st}{\\frac{1}{2} ‖w‖^{2}}  +  \\c{ml}{C} \\c{bad}{\\sum_{i=1}^{n} ξ_{i}}',{size:40});
-  const res=formula(g,96,424,'\\t{sujeto a}   y_{i} (w · x_{i} + b) ≥ 1 − ξ_{i}   \\t{y}   ξ_{i} ≥ 0,   \\t{para cada hogar} i',{size:26});
-  const sim=simbolos(g,96,486,[['\\frac{1}{2} ‖w‖^{2}','mide la calle: entre más pequeño, más ancha (ancho = 2 / ‖w‖)',C.st],
-    ['ξ_{i}',['holgura del hogar i: 0 si está bien ubicado y fuera de la calle,','entre 0 y 1 si está dentro, más de 1 si queda del lado equivocado'],C.bad],
-    ['\\sum ξ_{i}','suma de las holguras de los n hogares: el total de errores',C.bad],
-    ['C','el hiperparámetro: cuánto pesa ese total frente al ancho de la calle',C.ml],
-    ['y_{i}','la clase del hogar: +1 si es pobre, −1 si no lo es'],
-    ['w · x_{i} + b','el puntaje del hogar; la frontera es w · x + b = 0']],{dx:190,paso:46});
-  /* esquema: la calle y las holguras de dos hogares naranjas (y = +1) */
-  const bx=940,by=262,bw=564,bh=500,fx=1222,m=78,R=G(g);S('rect',{x:bx,y:by,width:bw,height:bh,rx:22,fill:C.soft},R);
-  S('rect',{x:fx-m,y:by+64,width:2*m,height:bh-150,fill:C.ink,'fill-opacity':.06},R);
-  [-m,m].forEach(d=>S('line',{x1:fx+d,x2:fx+d,y1:by+64,y2:by+bh-86,stroke:C.sub,'stroke-width':2,'stroke-dasharray':'8 7'},R));
-  S('line',{x1:fx,x2:fx,y1:by+64,y2:by+bh-86,stroke:C.ink,'stroke-width':3.5},R);
-  tx(R,bx+24,by+40,'no pobre · y = −1','sm',{style:`fill:${C.st};font-weight:600`});tx(R,bx+bw-24,by+40,'pobre · y = +1','sm',{'text-anchor':'end',style:`fill:${C.ml};font-weight:600`});
-  tx(R,fx-m,by+bh-62,'= −1','tick',{'text-anchor':'middle'});tx(R,fx,by+bh-62,'= 0','tick',{'text-anchor':'middle'});tx(R,fx+m,by+bh-62,'= +1','tick',{'text-anchor':'middle'});
-  tx(R,fx,by+bh-28,'w · x + b','mono',{'text-anchor':'middle',style:'font-size:16px'});
-  [[985,330],[1040,420],[1000,520],[1090,600],[1065,350]].forEach(([x,y])=>S('circle',{cx:x,cy:y,r:9,fill:C.st,stroke:C.w,'stroke-width':1.5},R));
-  [[1370,330],[1440,420],[1390,560],[1460,620]].forEach(([x,y])=>S('circle',{cx:x,cy:y,r:9,fill:C.ml,stroke:C.w,'stroke-width':1.5},R));
-  const ok0=tx(R,1370,362,'ξ = 0','mono',{'text-anchor':'middle',style:`font-size:15px;fill:${C.ok}`});
-  const xi=[[fx+.4*m,470],[fx-1.5*m,560]].map(([x,y])=>{const gg=G(g),v=1-(x-fx)/m;
-    S('line',{x1:x,x2:fx+m,y1:y,y2:y,stroke:C.bad,'stroke-width':3},gg);S('line',{x1:fx+m,x2:fx+m,y1:y-8,y2:y+8,stroke:C.bad,'stroke-width':3},gg);
-    S('circle',{cx:x,cy:y,r:10,fill:C.ml,stroke:C.ink,'stroke-width':2.5},gg);
-    tx(gg,(x+fx+m)/2,y-16,`ξ = ${fc(v,1)}`,'mono',{'text-anchor':'middle',style:halo+`font-size:16px;fill:${C.bad};font-weight:600`});
-    tx(gg,(x+fx+m)/2,y+30,v<1?'dentro de la calle':'del lado equivocado','sm',{'text-anchor':'middle',style:halo+`fill:${C.bad}`});return gg;});
-  const nota=G(g);S('rect',{x:96,y:798,width:1408,height:80,rx:18,fill:C.mlT},nota);
-  tx(nota,120,830,'C pequeño: manda ½‖w‖² → calle ancha que tolera holguras. C grande: manda C · Σξ → pocas holguras y calle angosta (riesgo de sobreajuste).','sm',{style:`fill:${C.ink}`});
-  tx(nota,120,856,'C no se calcula a partir de los datos: usted lo fija antes de entrenar, y el mejor valor se elige con validación cruzada (parte 5).','sm',{style:`fill:${C.ink}`});
-  hide(eq,res,sim,R,ok0,xi,nota);
-  return[T=>{fadeIn(T,t0,.1);fadeIn(T,eq,.4);fadeIn(T,R,.8);},
-    T=>{fadeIn(T,res,0);fadeIn(T,sim,.4,{st:.18,dx:-12,dy:0});},
-    T=>{fadeIn(T,ok0,0);fadeIn(T,xi,.3,{st:.4});},
-    T=>{fadeIn(T,nota,0);}];
-}});
-
-/* ---------- 10 · El hiperparámetro C ---------- */
+/* ---------- 9 · El hiperparámetro C ---------- */
 slide({kicker:K2,title:'C: ¿cuánto castigar los errores?',build(c){
   const g=G(c.svg),CX=[96,330,620,900,1160,1400];
   const hd=['C','ancho de la calle (2 / ‖w‖)','vectores de soporte','exactitud entr.','exactitud prueba'].map((t,j)=>tx(g,CX[j],270,t,'hdr',{style:'font-size:16px'}));
@@ -637,35 +647,38 @@ slide({kicker:K2,title:'C: ¿cuánto castigar los errores?',build(c){
 }});
 
 SEP({n:3,k:K3,titulo:['Fronteras curvas:','el truco del kernel'],pregunta:'¿Y si ninguna recta separa bien?',
-  temas:['Qué es un kernel','Subir los datos a otra dimensión','En 3D: un plano que separa','El kernel RBF: fronteras curvas','Qué es gamma y cómo cambia la frontera']});
+  temas:['Qué es un kernel y los tres más comunes','Subir los datos a otra dimensión','En 3D: un plano que separa','El kernel RBF: fronteras curvas','Qué es gamma: qué tan curva es la frontera']});
 
-/* ---------- 12 · Qué es un kernel ---------- */
-slide({kicker:K3,title:'¿Qué es un kernel?',build(c){
+/* ---------- 11 · Qué es un kernel y los tres más comunes ---------- */
+slide({kicker:K3,title:'¿Qué es un kernel y para qué sirve?',build(c){
   const g=G(c.svg);
-  const t0=txl(g,96,232,['Un kernel es una función que mide qué tan parecidos son dos hogares. Para trazar la frontera, SVM no necesita los',
-    'datos en sí: solo el parecido entre cada par de hogares. Cambiar el kernel cambia la forma de la frontera.'],'txt',30,{style:`fill:${C.ink}`});
-  const e1=formula(g,96,362,'K(x_{i}, x_{j}) = φ(x_{i}) · φ(x_{j})',{size:34});
-  const s1=simbolos(g,96,418,[['K(x_{i}, x_{j})','el kernel: el parecido entre los hogares i y j',C.st],
-    ['φ(x)','transformación que sube cada hogar a más dimensiones (p. ej., agrega x²)'],
-    ['φ(x_{i}) · φ(x_{j})','producto punto: es grande cuando los dos se parecen'],
-    ['\\t{el truco}',['K entrega el resultado de φ(xᵢ) · φ(xⱼ) sin calcular φ: la subida','a otra dimensión nunca se hace de verdad'],C.ml]],{dx:170,paso:40});
-  const e2=formula(g,96,664,'f(x) = \\sum_{i ∈ \\t{VS}} α_{i} y_{i} K(x_{i}, x) + b',{size:34});
-  const s2=simbolos(g,96,738,[['α_{i}','peso de cada vector de soporte (VS); vale 0 para los demás hogares'],
-    ['y_{i}','su clase: +1 pobre, −1 no pobre'],['K(x_{i}, x)','parecido del hogar nuevo x con el vector de soporte i',C.st],
-    ['b','intercepto. Si f(x) > 0, el hogar nuevo se clasifica como pobre']],{dx:170,paso:36});
-  const kk=tx(g,940,330,'TRES KERNELS COMUNES','kick',{style:'font-size:13px'});
-  const KS=[['Lineal','K(x_{i}, x_{j}) = x_{i} · x_{j}','la frontera es una recta (o un plano)',C.ink],
-    ['Polinomial','K(x_{i}, x_{j}) = (x_{i} · x_{j} + 1)^{d}','fronteras curvas de grado d',C.ok],
-    ['RBF (gaussiano)','K(x_{i}, x_{j}) = e^{−γ ‖x_{i} − x_{j}‖^{2}}','cualquier forma; el más usado (siguen las láminas)',C.ml]];
-  const cards=KS.map(([n,f,d,col],i)=>{const gg=G(g),y=350+i*162;S('rect',{x:940,y,width:564,height:146,rx:20,fill:C.soft},gg);S('rect',{x:940,y,width:8,height:146,rx:4,fill:col},gg);
-    tx(gg,972,y+40,n,'h3',{style:`fill:${col};font-size:21px`});formula(gg,972,y+92,f,{size:26});tx(gg,972,y+128,d,'sm',{style:`fill:${C.ink}`});return gg;});
-  hide(e1,s1,e2,s2,kk,cards);
-  return[T=>{fadeIn(T,t0,.1,{st:.1});fadeIn(T,e1,.5);fadeIn(T,s1,.9,{st:.18,dx:-12,dy:0});},
-    T=>{fadeIn(T,e2,0);fadeIn(T,s2,.4,{st:.18,dx:-12,dy:0});},
-    T=>{fadeIn(T,kk,0);fadeIn(T,cards,.2,{st:.25,dx:12,dy:0});}];
+  const FR=[['QUÉ ES',C.st,['Una forma de medir qué tan parecidos son dos hogares:','vale mucho si se parecen y poco si son muy distintos.']],
+    ['PARA QUÉ SIRVE',C.ml,['Para trazar fronteras curvas. SVM sigue buscando la calle','más ancha, pero en un espacio donde los grupos sí se separan.']]];
+  const fr=FR.map(([k,col,ls],i)=>{const gg=G(g),x=96+i*714;S('rect',{x,y:196,width:694,height:122,rx:20,fill:C.soft},gg);S('rect',{x,y:196,width:8,height:122,rx:4,fill:col},gg);
+    tx(gg,x+30,232,k,'kick',{style:`font-size:13px;fill:${col}`});txl(gg,x+30,268,ls,'txt',30,{style:`fill:${C.ink}`});return gg;});
+  const kk=tx(g,96,360,'LOS TRES KERNELS MÁS COMUNES · ejemplo de juguete: los mismos 120 puntos y un SVM entrenado con cada kernel','kick',{style:'font-size:13px'});
+  const KS=[['Lineal',C.ink,'la frontera es una recta (o un plano)',['si hay muchas variables o los grupos se separan','casi en línea recta. Es el más rápido.']],
+    ['Polinomial',C.ok,'una curva suave; el grado d da su forma (aquí, 3)',['si la relación es curva pero suave, por ejemplo','cuando importan combinaciones de variables.']],
+    ['RBF (gaussiano)',C.ml,'cualquier forma: puede rodear a un grupo',['si no sabe qué forma tiene la frontera. Es el que','scikit-learn usa por defecto; siguen sus láminas.']]];
+  const [x0,x1]=LDOM.x,[y0,y1]=LDOM.y,MS=KERS();
+  const pan=KS.map(([n,col,fro,uso],i)=>{const x=96+i*476,y=376,gg=G(g),M=MS[i];
+    S('rect',{x,y,width:452,height:462,rx:22,fill:C.soft},gg);S('rect',{x,y,width:452,height:6,rx:3,fill:col},gg);
+    tx(gg,x+26,y+44,n,'h3',{style:`fill:${col};font-size:24px`});tx(gg,x+26,y+72,fro,'sm',{style:`fill:${C.ink}`});
+    const b={L:x+26,R:x+426,T:y+92,B:y+332},P={b,g:G(gg)};S('rect',{x:b.L,y:b.T,width:b.R-b.L,height:b.B-b.T,fill:'none',stroke:C.frame,'stroke-width':1.5},P.g);
+    gg.insertBefore(S('rect',{x:b.L,y:b.T,width:b.R-b.L,height:b.B-b.T,fill:C.w}),P.g);
+    const sx=v=>b.L+(v-x0)/(x1-x0)*(b.R-b.L),sy=v=>b.B-(v-y0)/(y1-y0)*(b.B-b.T);
+    const mc=mapaCortina(gg,P,M.p,{nx:40,ny:24,punto:(u,v)=>({x1:x0+u*(x1-x0),x2:y0+v*(y1-y0)})});
+    const pts=LUNAS.map(d=>S('circle',{cx:sx(d.x1),cy:sy(d.x2),r:4.5,fill:d.pobre?C.ml:C.st,stroke:C.w,'stroke-width':1},gg));
+    const us=txl(gg,x+26,y+366,['Úselo '+uso[0],uso[1]],'sm',24,{style:`fill:${C.ink}`});
+    const ac=tx(gg,x+26,y+428,`acierta con el ${Math.round(clasif(Y(LUNAS),LUNAS.map(M.p),.5).exac*100)} % de los puntos`,'mono',{style:`font-size:16px;fill:${col}`});
+    hide(pts,us,ac);return{gg,mc,pts,us,ac};});
+  hide(fr,kk,pan.map(p=>p.gg));
+  const ver=(T,p)=>{fadeIn(T,p.gg,0,{dy:12});popIn(T,p.pts,.3,{st:{amount:.5,from:'random'},d:.3});p.mc.abrir(T,.9,1.3);fadeIn(T,[...p.us,p.ac],1.9,{st:.1});};
+  return[T=>{fadeIn(T,fr,.2,{st:.35,dx:-14,dy:0});},
+    T=>{fadeIn(T,kk,0,{dy:0});ver(T,pan[0]);},T=>ver(T,pan[1]),T=>ver(T,pan[2])];
 }});
 
-/* ---------- 13 · Subir a otra dimensión ---------- */
+/* ---------- 12 · Subir a otra dimensión ---------- */
 slide({kicker:K3,title:'El truco: subir los datos a otra dimensión',build(c){
   const g=G(c.svg),r=rng(11),xs=Array.from({length:26},(_,i)=>-2.8+5.6*i/25+(r()-.5)*.12),Y0=640,sx=lin(-3,3,200,1000),sy=lin(0,9,Y0,250);
   const eje=G(g);S('line',{x1:180,x2:1020,y1:Y0,y2:Y0,stroke:C.frame,'stroke-width':2},eje);[-3,-2,-1,0,1,2,3].forEach(v=>tx(eje,sx(v),Y0+28,String(v).replace('-','−'),'tick',{'text-anchor':'middle'}));
@@ -686,7 +699,7 @@ slide({kicker:K3,title:'El truco: subir los datos a otra dimensión',build(c){
       pon(T,['De vuelta, la recta','es una frontera curva'],['En la variable original quedan dos','cortes. El kernel hace este «subir»','sin calcularlo: así SVM traza','fronteras curvas.'],.1);}];
 }});
 
-/* ---------- 14 · En 3D: un plano que separa ---------- */
+/* ---------- 13 · En 3D: un plano que separa ---------- */
 slide({kicker:K3,title:'En 3D: un plano separa lo que en el plano no se podía',build(c){
   const g=G(c.svg),r=rng(21),D=[];
   for(let i=0;i<34;i++){const a=r()*2*Math.PI,rr=Math.sqrt(r())*1.25;D.push({x:rr*Math.cos(a),y:rr*Math.sin(a),k:1});}
@@ -723,61 +736,75 @@ slide({kicker:K3,title:'En 3D: un plano separa lo que en el plano no se podía',
       pon(T,['Desde arriba, el plano','se ve como un círculo'],['El corte es la curva x₁² + x₂² = 2,6.','Una frontera plana en 3D es curva en','el plano original: eso es lo que hace','el kernel, sin calcular φ.'],.1);}];
 }});
 
-/* ---------- 15 · Kernel RBF ---------- */
+/* ---------- 14 · Kernel RBF ---------- */
 slide({kicker:K3,title:'El kernel RBF: fronteras curvas en el plano',build(c){
-  const g=G(c.svg),P=planoL(g),M=RBF(1),capa=mapaF(g,P,M);g.insertBefore(capa,P.g);const pts=puntos(g,P,VIS,4.5);
-  const L1=LIN(1),k=recorte(g,P),lr=S('path',{d:dRecta(P,L1.w,L1.b,0),fill:'none',stroke:C.ink,'stroke-width':3,'stroke-dasharray':'10 7'},k);prepDraw(lr);
-  const X=1040,fo=formula(g,X,300,'K(x_{i}, x_{j}) = e^{−\\c{ml}{γ} ‖x_{i} − x_{j}‖^{2}}',{size:36});
-  const exp=simbolos(g,X,370,[['K(x_{i}, x_{j})','parecido de dos hogares: de 0 a 1',C.st],['x_{i}, x_{j}','los dos hogares (variables escaladas)'],
-    ['‖x_{i} − x_{j}‖','su distancia, como en kNN'],['γ','gamma: qué tan rápido cae el parecido',C.ml],['e^{−…}','1 si coinciden; casi 0 si están lejos']],{dx:150,paso:40});
-  const pon=panel(g,X,616,3);hide(capa,pts,fo,exp);
-  return[T=>{T.from(P.g,{opacity:0,duration:.4},.1);fadeIn(T,fo,.3);fadeIn(T,exp,.6,{st:.15,dx:-12,dy:0});},
-    T=>{T.to(capa,{opacity:1,duration:1},0);T.to(pts,{opacity:1,duration:.5},.4);pon(T,['Con el kernel RBF,','la frontera se curva'],['La frontera se dobla para seguir a','los hogares pobres de bajo ingreso.'],.1);},
-    T=>{drawIn(T,lr,0,1);pon(T,['La punteada: el SVM','lineal, una sola recta'],['Con estas dos variables, las dos','fronteras se parecen bastante.'],.1);}];
+  const g=G(c.svg),P=planoL(g),M=RBF(1),mc=mapaCortina(g,P,M.p),pts=puntos(g,P,VIS,4.5);
+  const L1=LIN(1),kl=cortina(g,P.b),lr=S('path',{d:dRecta(P,L1.w,L1.b,0),fill:'none',stroke:C.ink,'stroke-width':3,'stroke-dasharray':'10 7'},recorte(kl,P));
+  /* el hogar nuevo (estrella), unido a vectores de soporte cercanos y lejanos: los puestos 1, 2, 3, 4, 6, 9, 14… en parecido */
+  const SV=M.sv.filter(i=>TRH[i].ing<=IMAX),PU=[0,1,2,3,5,8,13,21,34,55,89,144],red=G(g),LN=[],AN=[];
+  PU.forEach(()=>{LN.push(S('line',{'stroke-linecap':'round'},red));AN.push(S('circle',{r:7,fill:'none','stroke-width':2},red));});
+  const eg=G(g),est=S('path',{d:estrella(17),stroke:C.w,'stroke-width':2.5,'stroke-linejoin':'round'},eg);
+  const X=1040,fo=formula(g,X,292,'K(x_{i}, x_{j}) = e^{−\\c{ml}{γ} ‖x_{i} − x_{j}‖^{2}}',{size:32});
+  const fe=txl(g,X,342,['El parecido de dos hogares: vale 1 si son','iguales y cae hacia 0 a medida que se alejan.'],'txt',28,{style:`fill:${C.ink}`});
+  const lt=tx(g,X,432,'hogar nuevo (★) · probabilidad de ser pobre','sm'),pv=tx(g,X,482,'','monoL'),pl=tx(g,X+130,480,'','h3');
+  /* recorrido de la estrella por el plano (ingreso, educación): cruza la frontera dos veces */
+  const WP=[[150,9],[420,4],[850,6],[1250,11],[800,16],[200,15]],seg=WP.slice(1).map((q,i)=>Math.hypot((q[0]-WP[i][0])/IMAX,(q[1]-WP[i][1])/20)),tot=seg.reduce((a,b)=>a+b);
+  const enT=t=>{let s=t*tot,i=0;while(i<seg.length-1&&s>seg[i]){s-=seg[i];i++;}const u=Math.min(1,s/seg[i]),a=WP[i],b=WP[i+1];return{ing:a[0]+(b[0]-a[0])*u,educ:a[1]+(b[1]-a[1])*u};};
+  const ubicar=t=>{const d=enT(t),z=E2.z(d),x=P.sx(d.ing),y=P.sy(d.educ),p=M.p(d);
+    const orden=SV.map(i=>[i,Math.exp(-dist2(M.X[i],z))]).sort((a,b)=>b[1]-a[1]);
+    PU.forEach((r,q)=>{const [i,k]=orden[r],h=TRH[i],col=h.pobre?C.ml:C.st,hx=P.x(h),hy=P.y(h);
+      Object.entries({x1:x,y1:y,x2:hx,y2:hy,stroke:col,'stroke-width':(1+6*k).toFixed(2),'stroke-opacity':(.12+.88*k).toFixed(2)}).forEach(([a,v])=>LN[q].setAttribute(a,v));
+      AN[q].setAttribute('cx',hx);AN[q].setAttribute('cy',hy);AN[q].setAttribute('stroke',col);AN[q].setAttribute('stroke-opacity',(.3+.7*k).toFixed(2));});
+    eg.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);est.setAttribute('fill',colP(p));
+    pv.textContent=fc(p,2);pv.style.fill=colP(p);pl.textContent=p>=.5?'→ pobre':'→ no pobre';pl.style.fill=colP(p);};
+  const st={t:0};ubicar(0);
+  const pon=panel(g,X,560,4);hide(pts,fo,fe,lt,pv,pl,red,est);
+  return[T=>{T.from(P.g,{opacity:0,duration:.4},.1);T.to(pts,{opacity:.55,duration:.5},.3);fadeIn(T,fo,.3);fadeIn(T,fe,.5,{st:.1});
+      popIn(T,est,.9,{s0:.2});T.to(red,{opacity:1,duration:.6},1.2);fadeIn(T,[lt,pv,pl],1.2,{st:.08});
+      pon(T,['Un hogar nuevo se compara','con los vectores de soporte'],['Cada línea lo une con uno de ellos: más','gruesa, más parecidos. Los cercanos','pesan mucho; los lejanos, casi nada.','(Aquí, 12 de ellos, cerca y lejos.)'],.4);},
+    T=>{T.to(st,{t:1,duration:7,ease:'sine.inOut',onUpdate:()=>ubicar(st.t)},.1);
+      pon(T,['Al moverse, cambian sus','vecinos y su probabilidad'],['Cerca de hogares pobres (naranja) la','probabilidad sube. Donde los dos grupos','pesan igual (0,5) cambia de lado:','esa es la frontera.'],.1);},
+    T=>{T.to([red,eg],{opacity:0,duration:.4},0);T.to(pts,{opacity:1,duration:.4},0);mc.abrir(T,.3,1.6);
+      pon(T,['Haciendo eso en cada','punto sale el mapa'],['Naranja donde el modelo diría «pobre»;','azul donde diría «no pobre». La línea','negra es la frontera: se dobla para','seguir a los hogares pobres.'],.1);},
+    T=>{kl.abrir(T,0,1.2);pon(T,['La punteada: el SVM','lineal, una sola recta'],['Con estas dos variables, las dos','fronteras se parecen bastante.'],.1);}];
 }});
 
-/* ---------- 16 · Qué es gamma ---------- */
-slide({kicker:K3,title:'¿Qué es gamma?',build(c){
-  const g=G(c.svg),GS=[[.1,C.st,'pequeño','baja despacio: cada hogar influye lejos → frontera suave, casi recta'],
-    [1,C.ok,'medio','influye en los vecinos cercanos → frontera curva moderada'],
-    [50,C.ml,'grande','cae a 0 de inmediato → islas en cada hogar: sobreajuste']];
-  const A=axes(g,{x:150,y:300,w:680,h:380,xd:[0,3.5],yd:[0,1],xt:[0,1,2,3],yt:[0,.5,1],fy:v=>fc(v,1),xl:'distancia entre dos hogares ‖xᵢ − xⱼ‖ (escaladas)',yl:'parecido K'});
-  const mitad=S('line',{x1:A.sx(0),x2:A.sx(3.5),y1:A.sy(.5),y2:A.sy(.5),stroke:C.frame,'stroke-width':1.5,'stroke-dasharray':'6 6'},g);
-  const mT=tx(g,A.sx(3.5),A.sy(.5)+22,'la mitad del parecido','tick',{'text-anchor':'end'});
-  const cur=GS.map(([ga,col])=>{const gg=G(g),d=Math.sqrt(Math.log(2)/ga),p=S('path',{d:pathD(range(0,3.5,240).map(x=>[A.sx(x),A.sy(Math.exp(-ga*x*x))])),fill:'none',stroke:col,'stroke-width':4},gg);
-    prepDraw(p);S('circle',{cx:A.sx(d),cy:A.sy(.5),r:7,fill:col},gg);
-    const et=tx(gg,A.sx(d)+12,A.sy(.5)-14,`γ = ${String(ga).replace('.',',')}`,'mono',{style:halo+`font-size:17px;fill:${col};font-weight:600`});return{gg,p,et};});
-  const X=960,fo=formula(g,X,300,'K = e^{−\\c{ml}{γ} d^{2}}',{size:36}),dn=tx(g,X,344,'d = ‖xᵢ − xⱼ‖: la distancia entre los dos hogares','sm',{style:`fill:${C.ink}`});
-  const intro=txl(g,X,404,['gamma dice qué tan rápido cae el parecido con la','distancia: hasta dónde llega la influencia de cada hogar.'],'txt',28,{style:`fill:${C.ink}`});
-  const filas=GS.map(([ga,col,nm,t],i)=>{const gg=G(g),y=496+i*62;S('circle',{cx:X+8,cy:y-7,r:7,fill:col},gg);
-    tx(gg,X+26,y,`γ = ${String(ga).replace('.',',')} · ${nm}`,'lab',{style:`fill:${col};font-size:18px;font-weight:600`});tx(gg,X+26,y+24,t,'sm',{style:`fill:${C.ink}`});return gg;});
-  const sg=G(g);formula(sg,X,724,'γ = \\frac{1}{2σ^{2}}',{size:30});txl(sg,X+140,712,['σ: el ancho de la campana.','gamma grande = campana angosta.'],'sm',24,{style:`fill:${C.ink}`});
-  const nota=tx(g,96,826,'gamma no se calcula de los datos: se elige junto con C por validación cruzada. En la lámina siguiente, la frontera con cada valor.','sm',{style:`fill:${C.ink}`});
-  hide(cur.map(q=>q.gg),fo,dn,intro,filas,sg,nota);
-  const curva=(T,i,at)=>{T.to(cur[i].gg,{opacity:1,duration:.2},at);drawIn(T,cur[i].p,at,1);fadeIn(T,filas[i],at+.3,{dx:-12,dy:0});};
-  return[T=>{T.from([A.g,mitad,mT],{opacity:0,duration:.4},.1);fadeIn(T,fo,.3);fadeIn(T,dn,.5);fadeIn(T,intro,.7,{st:.1});curva(T,1,1);},
-    T=>{curva(T,0,0);curva(T,2,.8);},
-    T=>{fadeIn(T,sg,0);fadeIn(T,nota,.4);}];
+/* ---------- 15 · gamma: qué es y qué tan curva queda la frontera ---------- */
+slide({kicker:K3,title:'¿Qué es gamma? Qué tan curva queda la frontera',build(c){
+  const g=G(c.svg),gs=[.1,1,50],cap=['llega lejos: frontera suave, casi recta','llega a los vecinos: frontera curva','solo a los más cercanos: islas'];
+  const def=txl(g,96,204,['gamma dice hasta dónde llega la influencia de cada hogar. Con gamma pequeño, cada hogar pesa aun sobre los lejanos y la',
+    'frontera sale suave; con gamma grande, solo pesa sobre los muy cercanos y la frontera se arruga alrededor de cada uno.'],'txt',28,{style:`fill:${C.ink}`});
+  /* seis hogares de referencia repartidos por el plano; la mancha de cada uno llega hasta donde su parecido con otro hogar cae a 0,1 */
+  const REF=[[200,5],[450,11],[750,7],[1050,14],[1300,9],[350,16]].map(([i,e])=>VIS.reduce((m,d)=>{const s=((d.ing-i)/IMAX)**2+((d.educ-e)/20)**2;return s<m[0]?[s,d]:m;},[1e9,null])[1]);
+  const mancha=[C.ml,C.st].map(col=>{const id='mch'+(++CLIP),rg=S('radialGradient',{id},S('defs',{},g));
+    [[0,.5],[.45,.22],[1,0]].forEach(([o,a])=>S('stop',{offset:o,'stop-color':col,'stop-opacity':a},rg));return`url(#${id})`;});
+  const pan=gs.map((ga,i)=>{const gg=G(g),L=96+i*478,P=planoL(gg,{L:L+40,R:L+430,T:390,B:650,xt:[0,750,1500],sinEtq:1}),M=RBF(ga),mc=mapaCortina(gg,P,M.p);
+    const cab=G(gg);tx(cab,L,306,`gamma = ${String(ga).replace('.',',')}`,'h2');tx(cab,L,352,cap[i],'sm',{style:`fill:${C.ink}`});
+    /* mini campana: el parecido según la distancia (en desviaciones estándar) */
+    const bx=L+262,bw=168,by=266,bh=50;S('line',{x1:bx,x2:bx+bw,y1:by+bh,y2:by+bh,stroke:C.frame,'stroke-width':1.5},cab);S('line',{x1:bx,x2:bx,y1:by-4,y2:by+bh,stroke:C.frame,'stroke-width':1.5},cab);
+    tx(cab,bx-8,by+8,'parecido','tick',{'text-anchor':'end'});tx(cab,bx+bw,by+bh+18,'distancia →','tick',{'text-anchor':'end'});
+    const cu=S('path',{d:pathD(range(0,3,90).map(d=>[bx+d/3*bw,by+bh-bh*Math.exp(-ga*d*d)])),fill:'none',stroke:C.ml,'stroke-width':3},gg);prepDraw(cu);
+    const dh=Math.sqrt(Math.log(10)/ga),k=recorte(gg,P),halos=REF.map(d=>({e:S('ellipse',{cx:P.x(d),cy:P.y(d),rx:0,ry:0,fill:mancha[d.pobre?0:1]},k),
+      rx:dh*E2.sd[0]*P.pxI,ry:dh*E2.sd[1]*P.pxE}));
+    const cen=REF.map(d=>S('circle',{cx:P.x(d),cy:P.y(d),r:5.5,fill:d.pobre?C.ml:C.st,stroke:C.w,'stroke-width':1.5},gg));
+    const at=met(TRH,TRH.map(M.p)).exac,ap=met(PRH,PRH.map(M.p)).exac;
+    const e1=tx(gg,L+40,700,'','mono',{style:'font-size:16px'}),e2=tx(gg,L+40,726,'','mono',{style:`font-size:16px;fill:${C.ml}`});
+    hide(cab,P.g,cen,e1,e2);return{gg,P,cab,cu,halos,cen,mc,e1,e2,at,ap};});
+  const lec=txl(g,96,790,[`Con gamma = 50 el modelo se ciñe a cada hogar del entrenamiento (como kNN con k = 1): sube su exactitud allí (${fc(pan[2].at,3)}), pero no`,
+    `la de prueba (${fc(pan[2].ap,3)}, igual que con gamma = 1). C y gamma se eligen juntos con validación cruzada (parte 5). En los tres mapas, C = 10.`],'sm',28,{style:`fill:${C.ink}`});
+  hide(def,lec);
+  const ver=(T,p)=>{fadeIn(T,[p.cab,p.P.g],0,{dy:10});drawIn(T,p.cu,.3,.9);popIn(T,p.cen,.5,{st:.06});
+    p.halos.forEach((h,j)=>T.to(h.e,{attr:{rx:h.rx,ry:h.ry},duration:1,ease:'power2.out'},.9+j*.06));
+    p.mc.abrir(T,1.9,1.3);T.to(p.halos.map(h=>h.e),{opacity:.15,duration:.5},2.4);
+    T.to([p.e1,p.e2],{opacity:1,duration:.3},2.9);countTo(T,p.e1,0,p.at,2.9,1,v=>`exactitud · entrenamiento ${fc(v,3)}`);countTo(T,p.e2,0,p.ap,2.9,1,v=>`exactitud · prueba ${fc(v,3)}`);};
+  return[T=>{fadeIn(T,def,.1,{st:.1});ver(T,pan[0]);},T=>ver(T,pan[1]),T=>{ver(T,pan[2]);fadeIn(T,lec,3.6,{st:.1});}];
 }});
 
-/* ---------- 17 · gamma: los mapas ---------- */
-slide({kicker:K3,title:'gamma: qué tan curva es la frontera',build(c){
-  const g=G(c.svg),gs=[.1,1,50],txts=['gamma pequeño: frontera suave','gamma medio','gamma grande: islas alrededor de los hogares'];
-  const pan=gs.map((ga,i)=>{const gg=G(g),L=96+i*478,P=planoL(gg,{L:L+40,R:L+430,T:300,B:600,xt:[0,750,1500],sinEtq:1}),M=RBF(ga);
-    const capa=mapaF(gg,P,M);gg.insertBefore(capa,P.g);
-    tx(gg,L,236,`gamma = ${String(ga).replace('.',',')}`,'h2');tx(gg,L,266,txts[i],'sm');
-    tx(gg,L+40,650,`exactitud · entrenamiento ${fc(met(TRH,TRH.map(M.p)).exac,3)}`,'mono',{style:'font-size:16px'});
-    tx(gg,L+40,676,`exactitud · prueba ${fc(met(PRH,PRH.map(M.p)).exac,3)}`,'mono',{style:`font-size:16px;fill:${C.ml}`});return gg;});
-  const lec=txl(g,96,760,['gamma dice qué tan lejos llega la influencia de cada hogar: con gamma grande solo cuentan los muy cercanos y la frontera',
-    'se arruga alrededor de cada uno (como kNN con k = 1). C y gamma se eligen juntos con validación cruzada. En los tres, C = 10.'],'sm',28,{style:`fill:${C.ink}`});
-  hide(pan,lec);
-  return[T=>{fadeIn(T,pan[0],.2,{dy:10});},T=>{fadeIn(T,pan[1],0,{dy:10});},T=>{fadeIn(T,pan[2],0,{dy:10});fadeIn(T,lec,.4,{st:.1});}];
-}});
 
 SEP({n:4,k:K4,titulo:['De la frontera','a la decisión'],pregunta:'¿Cómo pasa SVM de la frontera a un «Sí» o un «No»?',
   temas:['El puntaje: de qué lado y qué tan lejos','Del puntaje a la probabilidad y el umbral']});
 
-/* ---------- 19 · El puntaje ---------- */
+/* ---------- 17 · El puntaje ---------- */
 slide({kicker:K4,title:'El puntaje: de qué lado y qué tan lejos',build(c){
   const g=G(c.svg),P=planoL(g),M=LIN(1),ca=calle(g,P,M.w,M.b,1),pts=puntos(g,P,VIS,4.5);
   const H=[{ing:150,educ:4},{ing:380,educ:8},{ing:1100,educ:13}].map((d,i)=>({d:Object.assign({j:.5},d),f:M.f(d),n:'ABC'[i]}));
@@ -797,7 +824,7 @@ slide({kicker:K4,title:'El puntaje: de qué lado y qué tan lejos',build(c){
   return[T=>{T.from(P.g,{opacity:0,duration:.4},.1);fadeIn(T,fo,.3);popIn(T,mk,.5,{st:.2});},T=>{fadeIn(T,nr,0);popIn(T,nm,.4,{st:.2});fadeIn(T,lis,.6,{st:.15});},T=>{fadeIn(T,exp,0,{st:.1});}];
 }});
 
-/* ---------- 20 · Del puntaje a la probabilidad ---------- */
+/* ---------- 18 · Del puntaje a la probabilidad ---------- */
 slide({kicker:K4,title:'Del puntaje a la probabilidad y el umbral',build(c){
   const g=G(c.svg),M=LIN(1),[A,B]=M.platt,R=axes(g,{x:150,y:270,w:800,h:440,xd:[-4,4],yd:[0,1],xt:[-4,-2,0,2,4],fx:v=>String(v).replace('-','−'),yt:[0,.25,.5,.75,1],fy:v=>fc(v,2),xl:'Puntaje f del SVM',yl:'Probabilidad de ser pobre'});
   const pts=VIS.map(d=>S('circle',{cx:R.sx(clamp(M.f(d),-4,4)),cy:R.sy(d.pobre?1:0)+(d.j-.5)*30,r:5,fill:d.pobre?C.ml:C.st,'fill-opacity':.7},g));
@@ -814,24 +841,126 @@ slide({kicker:K4,title:'Del puntaje a la probabilidad y el umbral',build(c){
 }});
 
 SEP({n:5,k:K5,titulo:['Entrenar, validar','y medir el desempeño'],pregunta:'¿SVM acierta con hogares que nunca vio?',
-  temas:['Escalar y elegir C y gamma','Matriz de confusión y métricas','Los modelos frente a frente']});
+  temas:['Entrenamiento y prueba: 80 % / 20 %','Validación cruzada: elegir C y gamma','Matriz de confusión y métricas de clasificación','Métricas de regresión','Los modelos frente a frente']});
 
-/* ---------- 22 · Búsqueda de C y gamma ---------- */
-slide({kicker:K5,title:'Elegir C y gamma con validación cruzada',build(c){
-  const g=G(c.svg),B=BUSQ(),b=MEJOR(),x0=330,y0=320,W=200,H=110,all=B.flat(),lo=Math.min(...all),hi=Math.max(...all);
-  tx(g,x0+1.5*W,y0-40,'gamma','hdr',{'text-anchor':'middle',style:'font-size:17px'});tx(g,x0-110,y0+1.5*H+6,'C','hdr',{style:'font-size:17px'});
-  GG.forEach((ga,j)=>tx(g,x0+j*W+W/2,y0-12,String(ga).replace('.',','),'mono',{'text-anchor':'middle',style:'font-size:17px'}));
-  GC.forEach((C0,i)=>tx(g,x0-16,y0+i*H+H/2+6,String(C0).replace('.',','),'mono',{'text-anchor':'end',style:'font-size:17px'}));
-  const cel=[];B.forEach((r,i)=>r.forEach((v,j)=>{const gg=G(g),t=(v-lo)/(hi-lo||1);S('rect',{x:x0+j*W+3,y:y0+i*H+3,width:W-6,height:H-6,rx:12,fill:C.ml,'fill-opacity':(.08+.6*t).toFixed(2),stroke:i===b.i&&j===b.j?C.ink:'none','stroke-width':3},gg);
-    tx(gg,x0+j*W+W/2,y0+i*H+H/2+8,fc(v,3),'mono',{'text-anchor':'middle',style:'font-size:22px'});cel.push(gg);}));
-  const X=1040,pon=panel(g,X,262,7);hide(cel);
-  return[T=>{fadeIn(T,cel,.2,{st:.06,dy:6});pon(T,['9 combinaciones,','3 pliegues cada una'],['SVM con kernel RBF y las 10 variables','escaladas. Cada casilla es la exactitud','promedio en los pliegues de validación.'],.3);},
-    T=>{pon(T,[`Gana C = ${String(b.C).replace('.',',')} y gamma = ${String(b.g).replace('.',',')}`],[`Exactitud de validación: ${fc(b.acc,3)}.`,'Con gamma grande el modelo memoriza','(islas) y la validación cae.','','Como en kNN: escalar con el','entrenamiento y no tocar la prueba.'],0);}];
+/* ---------- 20 · Entrenamiento y prueba ---------- */
+slide({kicker:K5,title:'Entrenamiento y prueba: lo común es 80 % / 20 %',build(c){
+  const g=G(c.svg),X0=96,Y0=330,PA=40,NR=10,perm=shuffle(Array.from({length:200},(_,i)=>i),rng(9));
+  /* 200 cuadros de 6 hogares, en 20 columnas × 10 filas; las columnas desde «corte» son la prueba y se corren a la derecha */
+  const pos=(s,corte)=>{const cc=Math.floor(s/NR);return[X0+cc*PA+(cc>=corte?44:0),Y0+(s%NR)*PA];};
+  const Q=perm.map((_,i)=>{const [x,y]=pos(i,99);return S('rect',{x,y,width:32,height:32,rx:7,fill:C.dot},g);});
+  const tot=tx(g,X0,Y0-24,'1.200 hogares · cada cuadro = 6 hogares','h3');
+  const trN=tx(g,X0,Y0-44,'Entrenamiento · 80 %','h3',{style:`fill:${C.st}`}),trC=tx(g,X0,Y0-16,'960 hogares','sm');
+  const te=G(g),teN=tx(te,X0+16*PA+44,Y0-44,'Prueba · 20 %','h3',{style:`fill:${C.ml}`}),teC=tx(te,X0+16*PA+44,Y0-16,'240 hogares','sm');
+  lock(te,X0+18*PA+40,Y0+NR*PA+30,1.3,C.ml);tx(te,X0+18*PA+40,Y0+NR*PA+76,'bajo llave hasta el final','sm',{'text-anchor':'middle'});
+  const pon=panel(g,1040,262,5);hide(Q,tot,trN,trC,te);
+  const mover=(T,corte,at)=>perm.forEach((s,i)=>{const [x,y]=pos(s,corte);T.to(Q[i],{attr:{x,y},fill:Math.floor(s/NR)<corte?C.st:C.ml,duration:.9,ease:'power2.inOut'},at+(i%37)*.012);});
+  return[T=>{popIn(T,Q,.2,{st:{amount:.9,from:'random'},d:.3,s0:.4});fadeIn(T,tot,.4);
+      pon(T,['1.200 hogares con la','respuesta conocida'],['Cada cuadro representa 6 hogares de los','que ya se sabe si son pobres. Antes de','entrenar, se aparta una parte para','medir el modelo al final.'],.3);},
+    T=>{T.to(tot,{opacity:0,duration:.3},0);
+      /* barajar: cada cuadro vuela a otra casilla; luego se parte en las columnas 16 | 4 */
+      perm.forEach((s,i)=>{const [x,y]=pos(perm[(i*53)%200],99);T.to(Q[i],{attr:{x,y},duration:.7,ease:'power2.inOut'},.2+(i%29)*.01);});
+      mover(T,16,1.2);fadeIn(T,[trN,trC,te],2.3,{st:.12,dy:8});
+      pon(T,['Lo más común: 80 % para','entrenar y 20 % para probar'],['Se barajan al azar y se parten. El modelo','aprende solo con el entrenamiento; la','prueba queda bajo llave y se usa una','sola vez, al final, para medirlo.'],.2);},
+    T=>{T.to([trN,trC,teN,teC],{opacity:0,duration:.3},0);
+      T.call(()=>{trN.textContent='Entrenamiento · 75 %';trC.textContent='900 hogares (TRH)';teN.textContent='Prueba · 25 %';teC.textContent='300 hogares (PRH)';},null,.3);
+      mover(T,15,.3);T.to(te,{x:-PA,duration:.9,ease:'power2.inOut'},.3);T.to([trN,trC,teN,teC],{opacity:1,duration:.4},1.1);
+      pon(T,['En esta clase: 900 para','entrenar y 300 para probar'],['Es 75 % / 25 %, igual que en el notebook;','también se usa 70 % / 30 %. Las medias y','desviaciones para escalar se calculan','solo con el entrenamiento.'],.2);}];
 }});
 
-/* ---------- 23 · Matriz y métricas ---------- */
-laminaMatriz(K5,'Matriz de confusión y métricas en prueba',()=>PRH.map(SVF().p),
+/* ---------- 21 · Validación cruzada ---------- */
+slide({kicker:K5,title:'Validación cruzada: elegir sin tocar la prueba',build(c){
+  const g=G(c.svg),B=BUSQ(),b=MEJOR(),FV=BQ[b.i][b.j],K=FV.length,cg=v=>String(v).replace('.',',');
+  /* arriba: los 900 de entrenamiento en 5 pliegues de 180, y la prueba aparte */
+  const tit=tx(g,96,236,`entrenamiento · ${TRH.length} hogares en ${K} pliegues de ${TRH.length/K}`,'sm'),BW=128;
+  const cab=FV.map((_,f)=>{const gg=G(g),x=96+f*(BW+8);S('rect',{x,y:250,width:BW,height:46,rx:10,fill:C.stT,stroke:C.st,'stroke-width':1.5},gg);
+    tx(gg,x+BW/2,279,`pliegue ${f+1}`,'lab',{'text-anchor':'middle',style:`fill:${C.st};font-size:16px`});return gg;});
+  const pr=G(g);S('rect',{x:800,y:250,width:200,height:46,rx:10,fill:C.line},pr);lock(pr,826,268,1,C.sub);tx(pr,848,279,`prueba · ${PRH.length}`,'lab',{style:`fill:${C.sub};font-size:16px`});
+  tx(pr,900,318,'no se toca','sm',{'text-anchor':'middle'});
+  /* las rondas: en la ronda r valida el pliegue r y entrena con los demás */
+  const RW=108,rondas=FV.map((v,r)=>{const gg=G(g),y=352+r*62,bl=[];tx(gg,96,y+27,`ronda ${r+1}`,'sm',{style:`fill:${C.ink}`});
+    for(let f=0;f<K;f++){const x=190+f*(RW+8),va=f===r,q=G(gg);S('rect',{x,y,width:RW,height:40,rx:9,fill:va?C.ml:C.st,'fill-opacity':va?1:.8},q);
+      tx(q,x+RW/2,y+25,va?'validar':'entrenar','pill',{'text-anchor':'middle',style:`fill:${C.w};font-size:11px`});bl.push(q);}
+    const sc=tx(gg,790,y+27,'','mono',{style:'font-size:18px'});return{gg,bl,sc,v};});
+  const lp=S('line',{x1:790,x2:1000,y1:664,y2:664,stroke:C.ink,'stroke-width':2},g);
+  const pm=tx(g,790,702,'','mono',{style:`font-size:24px;font-weight:600;fill:${C.ml}`}),pmT=tx(g,790,728,`nota de C = ${cg(b.C)} y gamma = ${cg(b.g)}`,'sm');
+  /* cómo se aplica: el mismo promedio para las 9 combinaciones de C y gamma */
+  const x0=1170,y0=600,W=110,H=46,all=B.flat(),lo=Math.min(...all),hi=Math.max(...all),rej=G(g);
+  tx(rej,x0+1.5*W,y0-36,'gamma','hdr',{'text-anchor':'middle'});tx(rej,x0-16,y0-12,'C','hdr',{'text-anchor':'end'});
+  GG.forEach((ga,j)=>tx(rej,x0+j*W+W/2,y0-12,cg(ga),'mono',{'text-anchor':'middle',style:'font-size:15px'}));
+  GC.forEach((C0,i)=>tx(rej,x0-16,y0+i*H+H/2+5,cg(C0),'mono',{'text-anchor':'end',style:'font-size:15px'}));
+  const cel=[];B.forEach((r,i)=>r.forEach((v,j)=>{const gg=G(rej),t=(v-lo)/(hi-lo||1);S('rect',{x:x0+j*W+3,y:y0+i*H+3,width:W-6,height:H-6,rx:9,fill:C.ml,'fill-opacity':(.08+.6*t).toFixed(2)},gg);
+    tx(gg,x0+j*W+W/2,y0+i*H+H/2+6,fc(v,3),'mono',{'text-anchor':'middle',style:'font-size:16px'});cel.push(gg);}));
+  const gan=S('rect',{x:x0+b.j*W+1,y:y0+b.i*H+1,width:W-2,height:H-2,rx:10,fill:'none',stroke:C.ink,'stroke-width':3},g);
+  const ganT=tx(g,x0,y0+3*H+30,`gana C = ${cg(b.C)} y gamma = ${cg(b.g)}`,'sm',{style:`fill:${C.ink};font-weight:600`});
+  const pon=panel(g,1040,262,5);hide(tit,cab,pr,rondas.map(q=>q.gg),lp,pm,pmT,rej,cel,gan,ganT);
+  const ronda=(T,q,at)=>{T.to(q.gg,{opacity:1,duration:.2},at);fadeIn(T,q.bl,at,{st:.06,dx:-10,dy:0,d:.35});
+    T.fromTo(q.bl[rondas.indexOf(q)],{scale:1.25,transformOrigin:'50% 50%'},{scale:1,duration:.5,ease:'back.out(2)'},at+.4);
+    countTo(T,q.sc,0,q.v,at+.6,.7,v=>`exactitud ${fc(v,3)}`);};
+  return[T=>{fadeIn(T,tit,.1);fadeIn(T,cab,.3,{st:.15,dy:10});fadeIn(T,pr,1.1,{dx:12,dy:0});
+      pon(T,['Se parte el entrenamiento',`en ${K} pliegues`],[`Los ${TRH.length} hogares de entrenamiento se`,`reparten al azar en ${K} grupos de ${TRH.length/K}`,'(pliegues). La prueba no se toca.'],.3);},
+    T=>{ronda(T,rondas[0],0);
+      pon(T,[`Ronda 1: entrena con ${K-1}`,'pliegues y valida con 1'],[`El modelo aprende con ${TRH.length-TRH.length/K} hogares y se`,`mide con los ${TRH.length/K} que no vio. Aquí, un SVM`,`con kernel RBF, C = ${cg(b.C)} y gamma = ${cg(b.g)}.`],.1);},
+    T=>{rondas.slice(1).forEach((q,r)=>ronda(T,q,r*.55));
+      pon(T,[`Se repite ${K} veces`],['En cada ronda valida un pliegue distinto:',`cada hogar se usa ${K-1} veces para entrenar`,'y 1 vez para validar.'],.1);},
+    T=>{T.to(rondas.map(q=>q.sc),{fill:C.ml,duration:.3,stagger:.08},0);T.to(rondas.map(q=>q.sc),{fill:C.ink,duration:.3},.8);
+      T.to([lp,pm,pmT],{opacity:1,duration:.3},.6);countTo(T,pm,0,b.acc,.6,.9,v=>`promedio ${fc(v,3)}`);
+      pon(T,['La nota: el promedio',`de las ${K} rondas`],['Es más estable que medir con una sola','partición, porque no depende de qué','hogares cayeron en el grupo de validación.'],.1);},
+    T=>{T.to(rej,{opacity:1,duration:.3},.2);fadeIn(T,cel,.3,{st:.07,dy:6});popIn(T,gan,1.1,{s0:.6});fadeIn(T,ganT,1.4);
+      pon(T,['Así se eligen C y gamma'],[`Se repite con cada combinación: ${GC.length*GG.length} × ${K} =`,`${GC.length*GG.length*K} entrenamientos. Gana la de mejor`,`promedio; con ella se entrena con los ${TRH.length}`,'y se mide una sola vez en la prueba.'],.1);}];
+}});
+
+/* ---------- 22 · Matriz y métricas de clasificación ---------- */
+laminaMatriz(K5,'Matriz de confusión y métricas de clasificación',()=>PRH.map(SVF().p),
   `SVM con kernel RBF, las 10 variables, C y gamma elegidos con validación cruzada. En los ${PRH.length} hogares de prueba, umbral 0,5.`);
+
+/* ---------- 23 · Métricas de regresión ---------- */
+/* personas ocupadas simuladas con la misma ecuación de Mincer de la clase de regresión lineal (ingreso laboral en millones de pesos al mes) */
+function trabajadores(seed,n){const r=rng(seed),out=[];
+  for(let i=0;i<n;i++){const rural=r()<.2,mujer=r()<.45,educ=Math.round(clamp(randn(r)*3.2+(rural?8:11.5),0,20)),
+    exp=Math.round(clamp(6+r()*34,1,45)),horas=Math.round(clamp(46+randn(r)*9,15,70)),formal=r()<1/(1+Math.exp(-(-3.2+.28*educ-.7*rural))),
+    estrato=Math.round(clamp(1+.28*educ-.6*rural+randn(r)*.7,1,6)),
+    lw=12.55+.085*educ+.042*exp-.0006*exp*exp+.16*formal-.13*mujer-.22*rural+.006*(horas-46)+randn(r)*.33;
+    out.push({educ,exp,horas,estrato,formal:+formal,mujer:+mujer,rural:+rural,ing:Math.exp(lw)/1e6});}
+  return out;}
+slide({kicker:K5,title:'¿Y si Y es un número? Métricas de regresión',build(c){
+  const g=G(c.svg),BIG=trabajadores(31,600),PRU=trabajadores(23,200),o=ols(BIG.map(d=>d.educ),BIG.map(d=>d.ing)),n=PRU.length;
+  const e=PRU.map(d=>d.ing-o.f(d.educ)),my=mean(PRU.map(d=>d.ing)),mae=mean(e.map(Math.abs)),rmse=Math.sqrt(mean(e.map(v=>v*v)));
+  const r2=1-e.reduce((s,v)=>s+v*v,0)/PRU.reduce((s,d)=>s+(d.ing-my)**2,0),r2a=1-(1-r2)*(n-1)/(n-2),pesos=v=>'$'+miles(v*1000)+' mil';
+  const def=txl(g,96,214,['Si Y es un número (por ejemplo, un ingreso), no hay matriz de confusión: el error de cada caso es la distancia entre el valor',
+    `real y el predicho. Ejemplo de la clase de regresión lineal: una recta ajustada con ${BIG.length} personas y medida con ${n} que no vio.`],'txt',28,{style:`fill:${C.ink}`});
+  const A=axes(g,{x:150,y:300,w:740,h:380,xd:[0,20],yd:[0,5],xt:[0,5,10,15,20],yt:[0,1,2,3,4,5],fy:v=>'$'+v,xl:'Años de educación',yl:'Ingreso laboral (millones de pesos al mes)'});
+  /* 20 personas de prueba; un leve corrimiento horizontal separa a las que tienen los mismos años */
+  const D=PRU.slice(0,20).map((d,i)=>({x:A.sx(d.educ+((i*7)%5-2)*.1),y:A.sy(d.ing),f:A.sy(o.f(d.educ))}));
+  const k=recorte(g,{b:{L:150,R:890,T:300,B:680}}),sq=D.map(d=>{const s=Math.abs(d.y-d.f);return{e:S('rect',{x:d.x,y:Math.min(d.y,d.f),width:0,height:0,fill:C.ml,'fill-opacity':.14,stroke:C.ml,'stroke-opacity':.6,'stroke-width':1.5},k),s};});
+  const am=D.map(d=>S('line',{x1:d.x-5,x2:d.x-5,y1:d.y,y2:A.sy(my),stroke:C.muted,'stroke-width':2,'stroke-dasharray':'3 4'},g));
+  const ml_=S('line',{x1:A.sx(0),x2:A.sx(20),y1:A.sy(my),y2:A.sy(my),stroke:C.sub,'stroke-width':2.5,'stroke-dasharray':'9 7'},g);
+  const mlT=tx(g,A.sx(0)+8,A.sy(my)-10,`promedio: ${pesos(my)}`,'sm',{style:halo+`fill:${C.sub};font-weight:600`});
+  const rl=S('line',{x1:A.sx(0),y1:A.sy(o.f(0)),x2:A.sx(20),y2:A.sy(o.f(20)),stroke:C.ink,'stroke-width':3.5},g);prepDraw(rl);
+  const rlT=tx(g,A.sx(19.6),A.sy(o.f(19.6))-14,'lo que predice la recta','sm',{'text-anchor':'end',style:halo+`fill:${C.ink}`});
+  const res=D.map(d=>S('line',{x1:d.x,x2:d.x,y1:d.y,y2:d.f,stroke:C.bad,'stroke-width':2.5},g));prepDraw(res);
+  const dots=D.map(d=>S('circle',{cx:d.x,cy:d.y,r:7,fill:C.st,stroke:C.w,'stroke-width':1.5},g));
+  /* el rótulo del error va a la izquierda del mayor residuo por encima de la recta */
+  const im=D.reduce((m,d,i)=>d.f-d.y>D[m].f-D[m].y?i:m,0),eT=tx(g,D[im].x-12,(D[im].y+D[im].f)/2+5,'error = real − predicho','sm',{'text-anchor':'end',style:halo+`fill:${C.bad};font-weight:600`});
+  const X=960,CM=[['MAE',pesos(mae),['Error absoluto medio: el promedio de los errores, sin','signo y en las unidades de Y (aquí, pesos al mes).']],
+    ['RMSE',pesos(rmse),['Raíz del error cuadrático medio: eleva cada error al','cuadrado antes de promediar; los grandes pesan más.']],
+    ['R²',fc(r2,2),['Qué parte de la variación del ingreso explica el modelo,','frente a predecir siempre el promedio (de 0 a 1).']],
+    ['R² ajustado',fc(r2a,2),['El mismo R², castigado por el número de variables:','sirve para comparar modelos con distintas X.']]];
+  const cards=CM.map(([nm,v,ls],i)=>{const gg=G(g),yy=290+i*104;S('rect',{x:X,y:yy,width:544,height:94,rx:16,fill:C.soft},gg);
+    tx(gg,X+24,yy+34,nm,'h3');tx(gg,X+520,yy+38,v,'monoL',{'text-anchor':'end',style:`font-size:28px;fill:${C.ml}`});txl(gg,X+24,yy+62,ls,'sm',21,{style:`fill:${C.ink}`});return gg;});
+  const BD=[['CLASIFICACIÓN · Y ES UNA CATEGORÍA',C.st,'matriz de confusión, exactitud, precisión, sensibilidad, F1 y AUC'],
+    ['REGRESIÓN · Y ES UN NÚMERO',C.ml,'MAE, RMSE, R² y R² ajustado · con SVM se llama SVR']];
+  const banda=BD.map(([kk,col,t],i)=>{const gg=G(g),x=96+i*714;S('rect',{x,y:768,width:694,height:86,rx:18,fill:C.soft},gg);S('rect',{x,y:768,width:8,height:86,rx:4,fill:col},gg);
+    tx(gg,x+30,800,kk,'kick',{style:`font-size:13px;fill:${col}`});tx(gg,x+30,834,t,'txt',{style:`fill:${C.ink}`});return gg;});
+  hide(def,dots,eT,am,ml_,mlT,rlT,cards,banda);
+  return[T=>{fadeIn(T,def,.1,{st:.1});T.from(A.g,{opacity:0,duration:.4},.2);popIn(T,dots,.4,{st:.04});drawIn(T,rl,1.2,.9);fadeIn(T,rlT,1.8);drawIn(T,res,2,.5,{st:.04});fadeIn(T,eT,2.8);},
+    T=>{T.to(res,{attr:{'stroke-width':5},duration:.35,stagger:.03},0);T.to(res,{attr:{'stroke-width':3},duration:.35},.9);fadeIn(T,cards[0],.2,{dx:14,dy:0});},
+    T=>{sq.forEach((q,i)=>T.to(q.e,{attr:{width:q.s,height:q.s},duration:.7,ease:'power2.out'},i*.04));fadeIn(T,cards[1],.3,{dx:14,dy:0});},
+    T=>{T.to(sq.map(q=>q.e),{opacity:0,duration:.4},0);T.to([ml_,mlT],{opacity:1,duration:.5},.2);T.to(am,{opacity:1,duration:.4,stagger:.03},.6);
+      fadeIn(T,cards[2],.9,{dx:14,dy:0});fadeIn(T,cards[3],1.3,{dx:14,dy:0});},
+    T=>{fadeIn(T,banda,0,{st:.25,dy:12});}];
+}});
+
 
 /* ---------- 24 · Comparación ---------- */
 laminaComparar(K5,'Los modelos frente a frente',()=>{const kp=D=>knnVarios(KNN(),D,[9])[0];return[['Línea base: nadie es pobre',PRH.map(()=>0),TRH.map(()=>0),C.dot],
@@ -867,7 +996,7 @@ slide({kicker:KC,title:'En resumen',build(c){
   const g=G(c.svg);
   const R=[['El modelo','la frontera con la calle (margen) más ancha entre los dos grupos',C.st],['Vectores de soporte','los hogares del borde: solo ellos definen la frontera',C.st],
     ['Margen suave','C decide cuánto se castigan los hogares mal ubicados',C.ml],['Kernel','fronteras curvas; gamma dice qué tan curvas',C.ml],
-    ['Se decide','con el puntaje (lado y distancia), pasado a probabilidad, y un umbral',C.ok],['Se evalúa','escalando con el entrenamiento, C y gamma por validación cruzada, métricas en prueba',C.ok],
+    ['Se decide','con el puntaje (lado y distancia), pasado a probabilidad, y un umbral',C.ok],['Se evalúa','entrenamiento y prueba separados, C y gamma por validación cruzada, métricas en prueba',C.ok],
     ['Sus límites','lento con muchos datos; no da efectos fáciles de leer ni probabilidades directas',C.bad]];
   const filas=R.map(([a,b,col],i)=>{const gg=G(g),y=262+i*74;S('circle',{cx:112,cy:y-8,r:9,fill:col},gg);tx(gg,140,y,a,'h3');tx(gg,440,y,b,'txt',{style:`fill:${C.ink}`});return gg;});
   const a=boton_nb(c),b=boton_prompt(c,'svm',a);hide(filas);

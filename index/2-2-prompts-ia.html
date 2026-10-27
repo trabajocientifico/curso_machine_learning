@@ -83,7 +83,7 @@ main{padding:48px 0 120px;min-width:0}
   <aside>
     <a class="volver" href="../index.html#4">← Volver al módulo</a>
     <div>
-      <p class="kick">Módulo 2 · Tema 2.2</p>
+      <p class="kick">Módulo 2 · Temas 2.2 y 2.3</p>
       <h1>Prompts para pedirle el modelo a una IA</h1>
     </div>
     <nav aria-label="Tabla de contenido"><ol class="toc" id="toc"></ol></nav>
@@ -94,7 +94,7 @@ main{padding:48px 0 120px;min-width:0}
       <h2>El modelo, en un script de Python</h2>
       <p>Cada prompt pide un script que se ejecuta desde la línea de comandos en una carpeta de proyecto con <code>datos/</code>, <code>resultados/</code> (un Excel con una hoja por tabla) y <code>visualizaciones/</code> (figuras PNG numeradas), con los mismos pasos, métricas y figuras de la clase.</p>
       <ol class="pasos">
-        <li><span>1</span><b>Llene los campos</b>con su archivo, su Y y sus X: el prompt se arma solo.</li>
+        <li><span>1</span><b>Llene los campos</b>con su archivo y sus variables: el prompt se arma solo.</li>
         <li><span>2</span><b>Cópielo</b>y péguelo en ChatGPT, Gemini o Claude.</li>
         <li><span>3</span><b>Revise lo que le devuelva</b>ejecútelo paso a paso y compare las cifras con la clase.</li>
       </ol>
@@ -290,6 +290,93 @@ const P_SVM=promptClasif({archivo:'2-2-hogares-subsidio.xlsx',hoja:'hoja «hogar
     `11. Guarde las predicciones de prueba (real, puntaje, probabilidad y clase predicha) en la hoja «predicciones».`,
     ...CIERRE_PROY];}});
 
+/* ---------- K-means (no supervisado: no hay Y) ---------- */
+const P_KMEANS={
+  campos:`<label class="w">Archivo de datos<input type="text" name="arch" value="ej2_privaciones_ipm_2018.csv"></label>
+    <label>Hoja o formato<input type="text" name="hoja" value="archivo CSV en UTF-8"></label>
+    <label>Nombre del script<input type="text" name="script" value="modelo_k_means.py"></label>
+    <label>Identificador de cada caso<input type="text" name="id" value="municipio"></label>
+    <label>Variable de contexto · para cruzar<input type="text" name="ctx" value="region"></label>
+    <label class="w">Variables para agrupar · separadas por comas<input type="text" name="x" value="bajo_logro_educativo, sin_agua_mejorada"></label>
+    <label>Variable externa · para validar (no se usa al agrupar)<input type="text" name="ext" value="ipm"></label>
+    <label>Elegir k<select name="kk"><option value="auto">Con el codo y la silueta (2 a 8)</option><option value="3">Fijo: k = 3</option><option value="4">Fijo: k = 4</option></select></label>`,
+  armar:({$,q,lista})=>{
+    const xs=$('x').value.split(',').map(s=>s.trim()).filter(Boolean),kk=$('kk').value,id=$('id').value.trim(),ctx=$('ctx').value.trim(),ext=$('ext').value.trim();
+    const script=$('script').value.trim()||'modelo_k_means.py',arch=$('arch').value.trim()||'datos.csv',hoja=$('hoja').value.trim()||'sin hoja',dos=xs.length===2;
+    const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo K-means (agrupamiento no supervisado) por primera vez: explique cada paso con lenguaje sencillo.`,'',
+      `Quiero agrupar con K-means en Python los casos de ${q(arch)} (${hoja}) según ${xs.length?lista(xs.map(q)):'las variables numéricas'}. No hay una variable Y que predecir: quiero encontrar grupos de casos parecidos${id?` (cada caso se identifica con ${q(id)})`:''}.`,'',
+      ...cabeceraProy(script,arch,'pandas, numpy, scikit-learn, matplotlib y openpyxl','k_means'),
+      `1. Cargue los datos con pandas, revise filas, columnas, tipos y datos faltantes de las variables para agrupar, y guarde su descripción (media, desviación, mínimo, máximo) en la hoja «descripcion».`,
+      `2. ${dos?`Grafique ${q(xs[0])} frente a ${q(xs[1])} en un diagrama de dispersión → visualizaciones/01_dispersion.png y dígame si se ven grupos a simple vista.`:'Grafique la distribución de cada variable para agrupar → visualizaciones/01_distribuciones.png.'}`,
+      `3. Escale las variables con StandardScaler (z = (valor − media) / desviación) y explique por qué. Agrupe con y sin escalar, compare las dos agrupaciones con el índice de Rand ajustado (adjusted_rand_score) y el porcentaje de casos que cambia de grupo, y guárdelo en la hoja «escalado».`,
+      kk==='auto'?`4. Para k de 1 a 8, ajuste KMeans(n_init=10, random_state=42) y guarde la inercia; grafique el codo → visualizaciones/02_codo.png. Para k de 2 a 8 calcule la silueta promedio y grafíquela → visualizaciones/03_silueta.png. Guarde las dos en la hoja «eleccion_k», explique qué mide cada una y elija k combinándolas.`
+        :`4. Use k = ${kk}. Aun así, para k de 1 a 8 grafique el codo de la inercia → visualizaciones/02_codo.png y la silueta promedio de 2 a 8 → visualizaciones/03_silueta.png, guárdelas en la hoja «eleccion_k» y dígame si apoyan k = ${kk}.`,
+      `5. Explique cómo funciona el algoritmo (sembrar centroides con k-means++, asignar cada caso al centroide más cercano, mover cada centroide al promedio, repetir) y por qué se usan varios inicios (n_init).`,
+      `6. Ajuste el modelo final. ${dos?'Dibuje los casos coloreados por grupo con sus centroides → visualizaciones/04_grupos.png. ':''}Dibuje la silueta de cada caso, ordenada por grupo (silhouette_samples) → visualizaciones/05_siluetas.png, y liste en la hoja «frontera» los casos con silueta negativa o cercana a 0.`,
+      `7. Arme el perfil de cada grupo: número de casos, centroides en las unidades originales${ext?` y el promedio de ${q(ext)}, que no se usó para agrupar`:''}; guárdelo en la hoja «perfiles», grafíquelo → visualizaciones/06_perfiles.png y proponga un nombre corto para cada grupo.${ext?` Dígame si ${q(ext)} cambia de un grupo a otro: es una forma de validar que los grupos tienen sentido.`:''}`,
+      ctx?`8. Cruce los grupos con ${q(ctx)} en porcentajes por fila → hoja «grupos_${ctx}» y visualizaciones/07_grupos_${ctx}.png (barras apiladas). Dígame si los grupos son lo mismo que ${q(ctx)} o si la atraviesan.`:`8. Compare el tamaño de los grupos y dígame si alguno es demasiado pequeño para interpretarlo.`,
+      `9. Pruebe la estabilidad: 10 veces, tome el 80 % de los casos al azar, agrupe de nuevo y compare con la agrupación de todos con el índice de Rand ajustado (ARI: 1 = idénticas, 0 = como el azar). Haga lo mismo con k + 3 grupos para comparar. Guárdelo en la hoja «estabilidad» y grafíquelo → visualizaciones/08_estabilidad.png.`,
+      `10. Guarde la asignación de cada caso${id?` (${q(id)}`:' ('}, grupo y silueta) en la hoja «asignaciones». Recuérdeme que K-means supone grupos redondos y de tamaño parecido, y que los grupos dependen de las variables elegidas.`,
+      ...CIERRE_PROY];
+    return L.join('\n');}};
+
+/* ---------- componentes principales (no supervisado: no hay Y) ---------- */
+const P_PCA={
+  campos:`<label class="w">Archivo de datos<input type="text" name="arch" value="ej2_privaciones_ipm_2018.csv"></label>
+    <label>Hoja o formato<input type="text" name="hoja" value="archivo CSV en UTF-8"></label>
+    <label>Nombre del script<input type="text" name="script" value="modelo_pca.py"></label>
+    <label>Identificador de cada caso<input type="text" name="id" value="municipio"></label>
+    <label>Variable de contexto · para colorear y cruzar<input type="text" name="ctx" value="region"></label>
+    <label class="w">Variables para resumir · separadas por comas, o «todas las numéricas»<input type="text" name="x" value="las 15 privaciones (de analfabetismo a trabajo_informal)"></label>
+    <label>Variable externa · para validar el índice<input type="text" name="ext" value="ipm"></label>
+    <label>Cuántas componentes<select name="kk"><option value="auto">Con los tres criterios</option><option value="2">Fijo: 2 (para graficar)</option><option value="1">Solo PC1 (un índice)</option></select></label>
+    <label>Además<select name="km"><option value="si">Agrupar con K-means sobre las componentes</option><option value="no">Solo PCA</option></select></label>`,
+  armar:({$,q})=>{
+    const kk=$('kk').value,id=$('id').value.trim(),ctx=$('ctx').value.trim(),ext=$('ext').value.trim(),km=$('km').value==='si',xs=$('x').value.trim();
+    const script=$('script').value.trim()||'modelo_pca.py',arch=$('arch').value.trim()||'datos.csv',hoja=$('hoja').value.trim()||'sin hoja';
+    const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo el análisis de componentes principales (PCA) por primera vez: explique cada paso con lenguaje sencillo.`,'',
+      `Quiero resumir con PCA en Python las variables ${xs?q(xs):'numéricas'} de ${q(arch)} (${hoja})${id?`; cada caso se identifica con ${q(id)}`:''}. No hay una variable Y que predecir: quiero pocas componentes que guarden casi toda la información${kk==='1'?' y un índice compuesto con la primera':''}.`,'',
+      ...cabeceraProy(script,arch,'pandas, numpy, scikit-learn, matplotlib y openpyxl','pca'),
+      `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes de las variables, y guarde su descripción (media, desviación, mínimo, máximo) en la hoja «descripcion».`,
+      `2. Calcule la matriz de correlaciones, dibújela como mapa de calor → visualizaciones/01_correlaciones.png, guárdela en la hoja «correlaciones» y dígame cuántos pares tienen r positiva y mayor que 0,5. Explique por qué la información repetida permite resumir.`,
+      `3. Escale las variables con StandardScaler y explique por qué. Para mostrarlo, haga también un PCA sin escalar y dígame qué variables dominan su primera componente.`,
+      `4. Ajuste PCA con todas las componentes. Guarde en la hoja «varianza» el autovalor, la varianza explicada y la acumulada de cada una; dibuje el gráfico de sedimentación y la varianza acumulada → visualizaciones/02_varianza.png. ${kk==='auto'?'Aplique tres criterios (el codo, autovalor mayor que 1 y 70 % acumulado) y recomiende cuántas componentes conservar.':kk==='2'?'Conserve 2 componentes y dígame qué porcentaje de la información guardan.':'Conserve solo PC1 y dígame qué porcentaje de la información guarda.'}`,
+      `5. Guarde las cargas de las componentes conservadas en la hoja «cargas» y dibújelas como barras o mapa de calor → visualizaciones/03_cargas.png. Interprete cada componente por el signo y el tamaño de sus cargas (por ejemplo, «privación general» o «un contraste entre…») y recuérdeme que el signo de una componente es arbitrario.`,
+      `6. Dibuje los casos en el plano PC1 × PC2${ctx?`, coloreados por ${q(ctx)}`:''}, con los extremos de cada componente rotulados → visualizaciones/04_plano_componentes.png. Guarde los puntajes en la hoja «puntajes».`,
+      `7. Construya un índice reescalando PC1 de 0 a 100. ${ext?`Compárelo con ${q(ext)} (correlación y diagrama de dispersión → visualizaciones/05_indice.png) y `:''}compárelo con una línea base: el promedio simple de las variables escaladas. Explique qué aporta PCA frente a ese promedio. Guarde el ranking en la hoja «indice».`,
+      `8. Pruebe la estabilidad: 20 veces, tome el 80 % de los casos al azar, rehaga el PCA y compare sus cargas de PC1 y PC2 con las de todos (correlación en valor absoluto). Guárdelo en la hoja «estabilidad».`,
+      km?`9. Agrupe con K-means (n_init=10, random_state=42) sobre los puntajes de las componentes conservadas, elija k entre 2 y 6 con la silueta, dibuje los grupos en el plano PC1 × PC2 → visualizaciones/06_grupos.png y describa cada grupo${ext?` con el promedio de ${q(ext)}`:''} en la hoja «grupos».`:`9. Explique los límites de PCA: solo capta relaciones lineales, depende de escalar, pierde lo que no explica y sus componentes no son causas.`,
+      ...CIERRE_PROY];
+    return L.join('\n');}};
+
+/* ---------- detección de anomalías (no supervisado: no hay Y) ---------- */
+const P_ANOM={
+  campos:`<label class="w">Archivo de datos<input type="text" name="arch" value="ej2_privaciones_ipm_2018.csv"></label>
+    <label>Hoja o formato<input type="text" name="hoja" value="archivo CSV en UTF-8"></label>
+    <label>Nombre del script<input type="text" name="script" value="modelo_anomalias.py"></label>
+    <label>Identificador de cada caso<input type="text" name="id" value="municipio"></label>
+    <label>Una variable para empezar<input type="text" name="v1" value="inasistencia_escolar"></label>
+    <label class="w">Variables para buscar anomalías · separadas por comas, o «todas las numéricas»<input type="text" name="x" value="las 15 privaciones (de analfabetismo a trabajo_informal)"></label>
+    <label>Casos a revisar (%)<select name="rev"><option>1</option><option selected>3</option><option>5</option></select></label>
+    <label>Probar con errores sembrados<select name="sem"><option value="si">Sí: 30 errores de digitación</option><option value="no">No</option></select></label>`,
+  armar:({$,q})=>{
+    const id=$('id').value.trim(),v1=$('v1').value.trim(),xs=$('x').value.trim(),rev=+$('rev').value,sem=$('sem').value==='si';
+    const script=$('script').value.trim()||'modelo_anomalias.py',arch=$('arch').value.trim()||'datos.csv',hoja=$('hoja').value.trim()||'sin hoja';
+    const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo detección de anomalías (no supervisada) por primera vez: explique cada paso con lenguaje sencillo.`,'',
+      `Quiero encontrar los casos raros de ${q(arch)} (${hoja}) según ${xs?q(xs):'las variables numéricas'}${id?`; cada caso se identifica con ${q(id)}`:''}. No hay etiquetas: nadie sabe cuáles son anómalos. Recuérdeme que raro no siempre es error: puede ser un error, un caso extremo real o un caso interesante.`,'',
+      ...cabeceraProy(script,arch,'pandas, numpy, scipy, scikit-learn, matplotlib y openpyxl','anomalias'),
+      `1. Cargue los datos con pandas, revise filas, columnas y datos faltantes, escale las variables con StandardScaler y guarde la descripción en la hoja «descripcion».`,
+      `2. Con una sola variable${v1?`, ${q(v1)}`:''}, compare dos reglas: z > 3 y fuera de los bigotes de la caja (Q3 + 1,5 · IQR). Dibuje el histograma y la caja → visualizaciones/01_una_variable.png y dígame cuántos casos señala cada regla y por qué difieren.`,
+      `3. Calcule la distancia de Mahalanobis con todas las variables (EmpiricalCovariance) y explique por qué detecta casos raros por la combinación de valores. Si hay dos variables correlacionadas, dibuje sus elipses de distancia 1, 2 y 3 → visualizaciones/02_mahalanobis.png.`,
+      `4. Calcule el puntaje de Isolation Forest (100 árboles, random_state=42) y explique la idea de aislar con cortes al azar.`,
+      `5. Calcule el LOF (LocalOutlierFactor, 20 vecinos) y explique la diferencia entre una anomalía global y una local.`,
+      `6. Con el ${rev} % más raro de cada método, haga una tabla de qué casos señala cada uno, cuántos comparten y la correlación de rangos entre puntajes; guárdela en la hoja «comparacion» y grafíquela → visualizaciones/03_comparacion.png. Liste los 10 primeros de cada método con sus valores en la hoja «mas_raros».`,
+      sem?`7. Evalúe los métodos con un ejemplo de juguete: en una copia de los datos siembre 30 errores de digitación (coma corrida, dígitos invertidos, un cero de más o de menos), calcule cuántos encuentra cada método en su ${rev} % más raro (precisión y sensibilidad) y grafique los errores encontrados según cuántos casos se revisan → visualizaciones/04_errores_sembrados.png. Guárdelo en la hoja «evaluacion».`
+        :`7. Explique cómo evaluaría los métodos sin etiquetas (revisión de la fuente, errores sembrados) y qué limita cada uno.`,
+      `8. Para cada caso señalado, proponga qué hacer: revisar la fuente, corregir si es un error, conservar si es real (y analizar con y sin él) o estudiarlo si es interesante. Guarde la lista en la hoja «decisiones». Recuérdeme que nunca se borra un caso solo porque el método lo señaló.`,
+      ...CIERRE_PROY];
+    return L.join('\n');}};
+
 /* =====================================================================
    Página: una sección por técnica y la tabla de contenido
    ===================================================================== */
@@ -300,7 +387,10 @@ const TEC=[
   {id:'arbol',n:'Árbol de decisión',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-arbol-decision.html',nb:'2-2-arbol-decision.ipynb',P:P_ARBOL},
   {id:'random-forest',n:'Random forest',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-random-forest.html',nb:'2-2-random-forest.ipynb',P:P_BOSQUE},
   {id:'k-vecinos',n:'k vecinos más cercanos',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-k-vecinos.html',nb:'2-2-k-vecinos.ipynb',P:P_KNN},
-  {id:'svm',n:'Máquinas de soporte vectorial (SVM)',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-svm.html',nb:'2-2-svm.ipynb',P:P_SVM}];
+  {id:'svm',n:'Máquinas de soporte vectorial (SVM)',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-svm.html',nb:'2-2-svm.ipynb',P:P_SVM},
+  {id:'k-means',n:'K-means',tipo:'No supervisado',datos:'1.122 municipios reales · privaciones del IPM 2018',clase:'2-3-clase-k-means.html',nb:'2-3-k-means.ipynb',P:P_KMEANS},
+  {id:'pca',n:'Componentes principales (PCA)',tipo:'No supervisado',datos:'1.122 municipios reales · 15 privaciones del IPM 2018',clase:'2-3-clase-pca.html',nb:'2-3-pca.ipynb',P:P_PCA},
+  {id:'anomalias',n:'Detección de anomalías',tipo:'No supervisado',datos:'1.122 municipios reales · 15 privaciones del IPM 2018',clase:'2-3-clase-anomalias.html',nb:'2-3-anomalias.ipynb',P:P_ANOM}];
 const q=s=>`«${s}»`,lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a[a.length-1];
 const NOTA='La IA puede equivocarse: ejecute el código paso a paso, compare las cifras con lo visto en clase y pregúntele lo que no entienda.';
 const main=document.getElementById('main'),toc=document.getElementById('toc');
