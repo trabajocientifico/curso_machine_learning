@@ -365,7 +365,86 @@ slide({kicker:KA,title:'Lo que vamos a construir',build(c){
       {q:['¿Funciona con','datos nuevos?'],d:'entrenar, validar y medir'}]});
 }});
 
-/* ---------- 3 · Ficha técnica ---------- */
+/* ---------- 3 · Del árbol al bosque ---------- */
+slide({kicker:KA,title:'Del árbol de decisión al bosque aleatorio',build(c){
+  const g=G(c.svg),N=12,F2=['ing','educ'],y=Y(PRH);
+  const B2=memo('b2',()=>bosque(TRH,{n:40,feats:F2,mtry:1,minLeaf:5,seed:3}));   // el bosque de la portada; aquí se usan sus primeros 12 árboles
+  const D=memo('dab',()=>{const r=rng(23),boot=()=>Array.from({length:TRH.length},()=>Math.floor(r()*TRH.length)),bs=[1,2,3,4].map(boot);
+    const ts=[TRH.map((_,i)=>i),bs[0],bs[3]].map(idx=>cart(TRH,idx,{feats:F2,maxDepth:3}));
+    const otro=bosque(TRH,{n:N,feats:F2,mtry:1,minLeaf:5,seed:11}),dis=(f,h)=>mean(PRH.map(d=>(f(d)>=.5)!==(h(d)>=.5)?1:0));
+    let s=0,m=0;for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){s+=dis(d=>prob(B2.T[i].t,d),d=>prob(B2.T[j].t,d));m++;}
+    return{ts,acc:B2.T.slice(0,N).map(o=>clasif(y,PRH.map(d=>prob(o.t,d))).exac),af:clasif(y,PRH.map(d=>B2.p(d,N))).exac,dT:s/m,dF:dis(d=>B2.p(d,N),d=>otro.p(d))};});
+  /* plano: rectángulos de cada árbol suelto, capas de los 12 árboles, mapa del bosque, puntos y el hogar nuevo */
+  const P=plano(g,{L:980,R:1500,T:250,B:680});
+  const solos=D.ts.map(t=>{const gg=G(g);pintarRects(gg,t,P,.5);return gg;});
+  const gS=G(g),capas=B2.T.slice(0,N).map(o=>{const gg=G(gS);
+    rects(o.t,P).forEach(({t:h,box})=>S('rect',{x:P.sx(box.x0),y:P.sy(box.y1),width:P.sx(box.x1)-P.sx(box.x0),height:P.sy(box.y0)-P.sy(box.y1),fill:colP(h.p),'fill-opacity':(.18*Math.abs(h.p-.5)).toFixed(3)},gg));return gg;});
+  const hc=calor(g,P,d=>B2.p(d,N),36,22);puntos(G(g),P,EST,5);
+  const h=PRH.find(d=>{const v=B2.T.slice(0,N).reduce((s,o)=>s+(prob(o.t,d)>=.5),0);return d.pobre&&v>=8&&v<=10&&d.ing>60;})||PRH[0];
+  const votos=B2.T.slice(0,N).map(o=>prob(o.t,h)>=.5?1:0),v=votos.reduce((s,a)=>s+a,0);
+  const est=G(g),hx=P.sx(h.ing),hy=P.sy(h.educ);
+  S('path',{d:Array.from({length:10},(_,i)=>{const a=-Math.PI/2+i*Math.PI/5,q=i%2?9:21;return(i?'L':'M')+(hx+q*Math.cos(a)).toFixed(1)+','+(hy+q*Math.sin(a)).toFixed(1);}).join('')+'Z',fill:C.ink,stroke:C.w,'stroke-width':2.5},est);
+  tx(est,hx+28,hy+6,'hogar nuevo','lab',{style:halo+'font-size:17px'});
+  /* izquierda: el árbol (tres versiones) y luego los arbolitos */
+  const rot=tx(g,96,236,'','h3',{style:'font-size:21px'});
+  const dgs=D.ts.map(t=>{const gg=G(g);return{gg,...diagrama(gg,t,{x:80,y:300,w:800,dy:118,fs:13})};});
+  dgs.forEach(o=>o.edges.forEach(e=>prepDraw(e.e.querySelector('path'))));hide(dgs[1].gg,dgs[2].gg,solos,gS,hc,est);
+  const AX=i=>170+(i%4)*210,AY=i=>320+Math.floor(i/4)*130;
+  const arb=Array.from({length:N},(_,i)=>{const gg=arbolito(g,AX(i),AY(i),C.dot,1),lb=tx(g,AX(i),AY(i)+56,`muestra ${i+1}`,'tick',{'text-anchor':'middle'});return{gg,lb};});
+  const urna=G(g),seg=votos.map((_,i)=>S('rect',{x:140+i*40,y:690,width:36,height:16,rx:4,fill:C.line},urna)),cuenta=tx(urna,140+N*40+14,704,'','lab',{style:'font-size:17px'});
+  hide(arb.map(a=>a.gg),arb.map(a=>a.lb),urna);
+  /* final: tabla árbol → bosque */
+  const mx=Math.max(...D.acc),mn=Math.min(...D.acc);
+  const FILAS=[['¿Quién decide?','un solo árbol',`${N} árboles que votan`],['¿Con qué datos?','todos los hogares','una muestra bootstrap por árbol'],
+    ['Exactitud en prueba',`${fc(mn,3)} a ${fc(mx,3)} según la muestra`,D.af>mx?`${fc(D.af,3)}: más que cualquier árbol`:`${fc(D.af,3)} (los árboles: ${fc(mean(D.acc),3)} en promedio)`],
+    ['¿Es estable?',`dos árboles difieren en el ${pct(D.dT,0)}`,`dos bosques, en el ${pct(D.dF,0)}`],['¿Se lee fácil?','sí: reglas en cadena','menos: se lee con importancia']];
+  const tab=G(g);tx(tab,340,276,'ÁRBOL DE DECISIÓN','kick',{style:`fill:${C.sub}`});tx(tab,620,276,'RANDOM FOREST','kick',{style:`fill:${C.ml}`});
+  arrowHead(tab,604,271,0,C.ml,.9);S('line',{x1:564,x2:594,y1:271,y2:271,stroke:C.ml,'stroke-width':2.5},tab);
+  const filas=FILAS.map((f,i)=>{const gg=G(tab),yy=340+i*74;S('line',{x1:96,x2:910,y1:yy-40,y2:yy-40,stroke:C.line},gg);
+    tx(gg,96,yy,f[0],'lab',{style:'font-size:17px'});tx(gg,340,yy,f[1],'txt',{style:`font-size:18px;fill:${C.sub}`});tx(gg,620,yy,f[2],'txt',{style:`font-size:18px;fill:${C.ml};font-weight:600`});return gg;});
+  hide(tab);
+  /* lectura al pie, cambia en cada paso */
+  const lee=txl(g,96,792,['',''],'txt',34,{style:`fill:${C.ink}`}),
+    leer=(T,ls,at)=>{T.call(()=>lee.forEach((e,j)=>e.textContent=ls[j]||''),null,at);T.fromTo(lee,{opacity:0,y:8},{opacity:1,y:0,duration:.45,stagger:.06},at);},
+    rotular=(T,t,at)=>{T.call(()=>rot.textContent=t,null,at);T.fromTo(rot,{opacity:0},{opacity:1,duration:.35},at);};
+  const crece=(T,o,at)=>{o.nodes.forEach(({gg,n})=>popIn(T,gg,at+n.depth*.45,{s0:.5}));
+    o.edges.forEach(({e,n})=>{drawIn(T,e.querySelector('path'),at+n.depth*.45+.2,.45);T.fromTo(e.querySelector('text'),{opacity:0},{opacity:1,duration:.3},at+n.depth*.45+.5);});};
+  const primera=t=>`primera pregunta: ${preguntaQ(t.f,t.thr)}`;
+  const cambio=(T,a,b,at)=>{T.to([dgs[a].gg,solos[a]],{opacity:0,duration:.4},at);T.set(dgs[b].gg,{opacity:1},at+.4);T.to(solos[b],{opacity:1,duration:.6},at+.4);crece(T,dgs[b],at+.4);
+    rotular(T,`Muestra bootstrap ${b} · ${primera(dgs[b].nodes[0].n)}`,at+.4);};
+  return[T=>{rotular(T,`Un árbol con los ${TRH.length} hogares · ${primera(D.ts[0])}`,.2);crece(T,dgs[0],.4);T.to(solos[0],{opacity:1,duration:.8},.6);
+      leer(T,['Un árbol de decisión hace preguntas en cadena y parte el plano en rectángulos: cada hoja es un rectángulo.',
+        'Cada punto es un hogar: naranja, pobre; azul, no pobre. El color del rectángulo es lo que responde la hoja.'],.8);},
+    T=>{cambio(T,0,1,0);cambio(T,1,2,2.4);
+      leer(T,[`Se sortea otra muestra (los mismos ${TRH.length} hogares, con reemplazo) y el árbol cambia: otra primera pregunta, otras hojas.`,
+        'Un árbol es inestable: un cambio pequeño en los datos lo cambia todo. Ese es su punto débil.'],.6);},
+    T=>{T.to(dgs[2].gg,{scale:.12,x:AX(0)-480,y:AY(0)-477,opacity:0,transformOrigin:'50% 50%',duration:.8,ease:'power2.in'},0);T.to(solos[2],{opacity:0,duration:.6},.2);
+      popIn(T,arb[0].gg,.7,{s0:.4});popIn(T,arb.slice(1).map(a=>a.gg),1,{st:.09,s0:.2});fadeIn(T,arb.map(a=>a.lb),1,{st:.09,dy:6});
+      rotular(T,`Un bosque: ${N} árboles, cada uno con su propia muestra`,.7);
+      leer(T,['La idea del random forest: no confiar en un solo árbol, sino entrenar muchos y hacerlos distintos a propósito.',
+        'Dos ingredientes: (1) cada árbol ve una muestra bootstrap de los hogares; (2) en cada corte solo puede usar variables sorteadas.'],1.6);},
+    T=>{T.set(gS,{opacity:1},0);capas.forEach(cp=>T.set(cp,{opacity:0},0));
+      arb.forEach((a,i)=>{const at=.2+i*.32;T.to(capas[i],{opacity:1,duration:.3},at);
+        T.fromTo(a.gg,{scale:1},{scale:1.25,yoyo:true,repeat:1,duration:.15,transformOrigin:'50% 50%'},at);
+        T.call(()=>a.gg.querySelectorAll('circle').forEach(cc=>cc.setAttribute('fill',C.sub)),null,at);
+        T.call(()=>rot.textContent=`Árboles superpuestos: ${i+1} de ${N}`,null,at);});
+      const fin=.4+N*.32;T.to(gS,{opacity:0,duration:1},fin);T.to(hc,{opacity:1,duration:1},fin);
+      T.call(()=>rot.textContent=`El bosque: el promedio de los ${N} árboles`,null,fin+.5);
+      leer(T,[`Cada árbol parte el plano a su manera. Al superponer los ${N}, los escalones se promedian…`,
+        '…y queda una frontera suave: la del bosque. Donde los árboles dudan, el color se aclara.'],fin);},
+    T=>{popIn(T,est,0,{s0:.3});rotular(T,'Un hogar nuevo: cada árbol vota',0);T.to(urna,{opacity:1,duration:.3},.4);
+      arb.forEach((a,i)=>{const at=.6+i*.14,col=votos[i]?C.ml:C.st;T.call(()=>{a.gg.querySelectorAll('circle').forEach(cc=>cc.setAttribute('fill',col));seg[i].setAttribute('fill',col);
+        a.lb.textContent=votos[i]?'pobre':'no pobre';a.lb.style.fill=col;},null,at);});
+      T.call(()=>cuenta.textContent=`${v} pobre · ${N-v} no pobre`,null,.8+N*.14);
+      leer(T,[`El hogar (★: $${miles(h.ing)} mil por persona, ${h.educ} ${h.educ===1?'año':'años'} de educación) pasa por los ${N} árboles y cada uno vota.`,
+        `${v} de ${N} votan «pobre» → el bosque dice «${v/N>=.5?'pobre':'no pobre'}», con probabilidad ≈ ${fc(v/N,2)}. En la realidad: ${h.pobre?'pobre':'no pobre'}.`],.9+N*.14);},
+    T=>{T.to([...arb.map(a=>a.gg),...arb.map(a=>a.lb),urna,rot,est],{opacity:0,duration:.5},0);T.set(tab,{opacity:1},.5);
+      fadeIn(T,[...tab.children].slice(0,4),.5,{dy:0});fadeIn(T,filas,.8,{st:.22,dx:-14,dy:0});
+      leer(T,['El random forest no cambia de método: usa el mismo árbol de decisión, muchas veces y con datos distintos.',
+        'Gana estabilidad y acierto; pierde la regla única y legible. El resto de la clase muestra cómo y cuánto.'],.8+FILAS.length*.22);}];
+}});
+
+/* ---------- 4 · Ficha técnica ---------- */
 slide({kicker:KA,title:'Ficha técnica del modelo',build(c){
   const g=G(c.svg);
   const F=[['TIPO',C.ink,['Aprendizaje supervisado: ensamble','clasificación (votos) o regresión (promedio)']],
@@ -386,7 +465,7 @@ slide({kicker:KA,title:'Ficha técnica del modelo',build(c){
 SEP({n:1,k:K1,titulo:['Por qué un bosque:','un árbol es inestable'],pregunta:'¿Qué pasa si cambian un poco los datos?',
   temas:['Tres muestras, tres árboles distintos','La sabiduría de muchos árboles']});
 
-/* ---------- 5 · Un árbol es inestable ---------- */
+/* ---------- 6 · Un árbol es inestable ---------- */
 slide({kicker:K1,title:'Tres muestras parecidas, tres árboles distintos',build(c){
   const g=G(c.svg),r=rng(17),tri=[0,1,2].map(k=>{const idx=Array.from({length:TRH.length},()=>Math.floor(r()*TRH.length));
     return{idx,t2:cart(TRH,idx,{feats:['ing','educ'],maxDepth:3}),t6:cart(TRH,idx,{feats:FEATS,maxDepth:6})};});
@@ -401,7 +480,7 @@ slide({kicker:K1,title:'Tres muestras parecidas, tres árboles distintos',build(
   return[T=>{fadeIn(T,pans,.2,{st:.4,dy:12});},T=>{fadeIn(T,msg,0,{st:.15});}];
 }});
 
-/* ---------- 6 · Muchas opiniones ---------- */
+/* ---------- 7 · Muchas opiniones ---------- */
 slide({kicker:K1,title:'Muchos árboles se equivocan menos que uno',build(c){
   const g=G(c.svg),B=BQ(),y=Y(PRH),acc=B.T.map(o=>clasif(y,PRH.map(d=>prob(o.t,d)),.5).exac),af=clasif(y,PB(),.5).exac;
   const lo=Math.floor(Math.min(...acc)*50)/50,hi=Math.ceil(Math.max(af,...acc)*50)/50+.01;
@@ -420,7 +499,7 @@ slide({kicker:K1,title:'Muchos árboles se equivocan menos que uno',build(c){
 SEP({n:2,k:K2,titulo:['Cómo se construye:','bootstrap, azar y votos'],pregunta:'¿Cómo se hacen árboles distintos con los mismos datos?',
   temas:['La muestra bootstrap','Variables al azar en cada corte','La votación']});
 
-/* ---------- 8 · Bootstrap ---------- */
+/* ---------- 9 · Bootstrap ---------- */
 slide({kicker:K2,title:'Bootstrap: sortear hogares con reemplazo',build(c){
   const g=G(c.svg),N=20,r=rng(5),saca=Array.from({length:N},()=>Math.floor(r()*N)),veces=Array(N).fill(0);saca.forEach(i=>veces[i]++);
   const D=TRH.slice(0,N),ox=i=>150+i*66,orig=D.map((d,i)=>{const gg=G(g);S('circle',{cx:ox(i),cy:330,r:24,fill:d.pobre?C.ml:C.st},gg);tx(gg,ox(i),337,String(i+1),'lab',{'text-anchor':'middle',style:`fill:${C.w};font-size:16px`});return gg;});
@@ -438,7 +517,7 @@ slide({kicker:K2,title:'Bootstrap: sortear hogares con reemplazo',build(c){
     T=>{fuera.forEach(i=>T.to(orig[i],{opacity:.25,duration:.4},0));fadeIn(T,oobT,.3,{st:.15});}];
 }});
 
-/* ---------- 9 · Variables al azar ---------- */
+/* ---------- 10 · Variables al azar ---------- */
 slide({kicker:K2,title:'En cada corte, solo unas variables al azar',build(c){
   const g=G(c.svg),r=rng(9),all=TRH.map((_,i)=>i);
   const chips=FEATS.map((f,i)=>{const gg=G(g),x=96+(i%5)*284,y=270+Math.floor(i/5)*70;const rc=S('rect',{x,y,width:268,height:52,rx:26,fill:C.w,stroke:C.frame,'stroke-width':2},gg);
@@ -456,7 +535,7 @@ slide({kicker:K2,title:'En cada corte, solo unas variables al azar',build(c){
     T=>{T.call(()=>chips.forEach(ch=>{ch.rc.setAttribute('fill',C.w);ch.rc.setAttribute('stroke',C.frame);ch.gg.style.opacity=1;}),null,0);fadeIn(T,fin,.2,{st:.15});}];
 }});
 
-/* ---------- 10 · La votación ---------- */
+/* ---------- 11 · La votación ---------- */
 slide({kicker:K2,title:'La votación: cada árbol opina',build(c){
   const g=G(c.svg),B=BQ(),h=PRH.find(d=>{const p=B.p(d);return d.pobre&&p>.55&&p<.85;})||PRH[0],votos=B.T.map(o=>prob(o.t,h)>=.5?1:0),k=votos.reduce((s,v)=>s+v,0),p=B.p(h);
   const card=G(g);S('rect',{x:96,y:240,width:420,height:250,rx:18,fill:C.soft},card);tx(card,120,280,'Un hogar nuevo','h3');
@@ -479,7 +558,7 @@ slide({kicker:K2,title:'La votación: cada árbol opina',build(c){
 SEP({n:3,k:K3,titulo:['Leer y decidir'],pregunta:'Si ya no hay una regla, ¿cómo se explica lo que hace el bosque?',
   temas:['La probabilidad son votos','Importancia: por impureza y por permutación','Dependencia parcial: la forma del efecto']});
 
-/* ---------- 12 · La probabilidad son votos ---------- */
+/* ---------- 13 · La probabilidad son votos ---------- */
 slide({kicker:K3,title:'Probabilidades del bosque y el umbral',build(c){
   const g=G(c.svg),y=Y(PRH),p=PB();
   const A=axes(g,{x:150,y:280,w:900,h:420,xd:[0,1],yd:[0,1],xt:[0,.25,.5,.75,1],fx:v=>fc(v,2),yt:[],xl:'Probabilidad de pobreza que da el bosque (hogares de prueba)'});
@@ -505,7 +584,7 @@ slide({kicker:K3,title:'Probabilidades del bosque y el umbral',build(c){
       pon(T,['Inténtelo usted'],['¿Cuántos hogares pobres se escapan','con cada umbral?'],.1);}];
 }});
 
-/* ---------- 13 · Importancia ---------- */
+/* ---------- 14 · Importancia ---------- */
 slide({kicker:K3,title:'¿Qué variables usa el bosque? Dos formas de medirlo',build(c){
   const g=G(c.svg),B=BQ(),y=Y(PRH),base=auc(y,PB());
   const imp=memo('imp',()=>{const acc={};B.T.forEach(o=>{const im=importancia(o.t),tot=Object.values(im).reduce((s,v)=>s+v,0)||1;FEATS.forEach(f=>acc[f]=(acc[f]||0)+(im[f]||0)/tot/B.T.length);});return acc;});
@@ -523,7 +602,7 @@ slide({kicker:K3,title:'¿Qué variables usa el bosque? Dos formas de medirlo',b
     T=>{T.to(R.gg,{opacity:1,duration:.01},0);T.from(R.bars,{attr:{width:0},duration:.6,stagger:.08},.1);},T=>{fadeIn(T,lec,0,{st:.1});}];
 }});
 
-/* ---------- 14 · Dependencia parcial ---------- */
+/* ---------- 15 · Dependencia parcial ---------- */
 slide({kicker:K3,title:'Dependencia parcial: ¿en qué dirección actúa cada variable?',build(c){
   const g=G(c.svg),B=BQ(),M=TRH.slice(0,150);
   const pd=memo('pd',()=>({ing:Array.from({length:22},(_,i)=>{const v=Math.exp(Math.log(50)+i/21*(Math.log(2500)-Math.log(50)));return[v,mean(M.map(d=>B.p(Object.assign({},d,{ing:v}))))];}),
@@ -544,7 +623,7 @@ slide({kicker:K3,title:'Dependencia parcial: ¿en qué dirección actúa cada va
 SEP({n:4,k:K4,titulo:['Hiperparámetros','y error OOB'],pregunta:'¿Cuántos árboles hacen falta y cómo se valida sin gastar la prueba?',
   temas:['¿Cuántos árboles?','El error OOB: una validación gratis','max_features y el tamaño de las hojas']});
 
-/* ---------- 16 · ¿Cuántos árboles? ---------- */
+/* ---------- 17 · ¿Cuántos árboles? ---------- */
 slide({kicker:K4,title:'¿Cuántos árboles? El error se estabiliza',build(c){
   const g=G(c.svg),B=BQ(),y=Y(TRH),yt=Y(PRH),KS=[1,2,3,5,8,12,20,30,50,75,100,150];
   const cur=memo('ntree',()=>KS.map(k=>{const o=TRH.map((_,i)=>B.oob(i,k)),idx=o.map((v,i)=>v===null?-1:i).filter(i=>i>=0);
@@ -559,7 +638,7 @@ slide({kicker:K4,title:'¿Cuántos árboles? El error se estabiliza',build(c){
     T=>{T.to(p2,{opacity:1,duration:.6},0);pon(T,['…hasta que','se estabiliza'],['Desde unos 50 árboles casi no cambia.','Más árboles no sobreajustan: solo','cuestan más tiempo. Por eso se usan','unos cientos.'],.1);}];
 }});
 
-/* ---------- 17 · El error OOB ---------- */
+/* ---------- 18 · El error OOB ---------- */
 slide({kicker:K4,title:'El error OOB: cada hogar lo evalúan los árboles que no lo vieron',build(c){
   const g=G(c.svg),B=BQ(),i0=TRH.findIndex(d=>d.pobre),h=TRH[i0],N=30,y=Y(TRH);
   const card=G(g);S('rect',{x:96,y:240,width:420,height:200,rx:18,fill:C.soft},card);tx(card,120,280,`Hogar ${i0+1} (de entrenamiento)`,'h3');
@@ -581,7 +660,7 @@ slide({kicker:K4,title:'El error OOB: cada hogar lo evalúan los árboles que no
     T=>{fadeIn(T,fin,0,{st:.15});}];
 }});
 
-/* ---------- 18 · max_features y hojas ---------- */
+/* ---------- 19 · max_features y hojas ---------- */
 slide({kicker:K4,title:'max_features y el tamaño de las hojas',build(c){
   const g=G(c.svg),y=Y(TRH);
   const res=memo('mtry',()=>[1,2,3,5,10].map(m=>{const B=bosque(TRH,{n:50,mtry:m,minLeaf:5,seed:21}),o=TRH.map((_,i)=>B.oob(i)),k=o.map((v,i)=>v===null?-1:i).filter(i=>i>=0);
@@ -601,7 +680,7 @@ slide({kicker:K4,title:'max_features y el tamaño de las hojas',build(c){
 SEP({n:5,k:K5,titulo:['Entrenar, validar','y medir el desempeño'],pregunta:'¿Cuánto mejor que un árbol y que la logística?',
   temas:['Curvas ROC de los tres modelos','Métricas en entrenamiento, OOB y prueba']});
 
-/* ---------- 20 · Curvas ROC ---------- */
+/* ---------- 21 · Curvas ROC ---------- */
 slide({kicker:K5,title:'Árbol, bosque y logística en la misma prueba',build(c){
   const g=G(c.svg),y=Y(PRH),Ms=[['Regresión logística',PRH.map(LG()),C.st],['Árbol ajustado',PRH.map(d=>prob(TA(),d)),C.sub],['Random forest',PB(),C.ml]];
   const A=axes(g,{x:150,y:250,w:520,h:520,xd:[0,1],yd:[0,1],xt:[0,.25,.5,.75,1],fx:v=>fc(v,2),yt:[0,.25,.5,.75,1],fy:v=>fc(v,2),xl:'Tasa de falsas alarmas',yl:'Sensibilidad'});
@@ -615,7 +694,7 @@ slide({kicker:K5,title:'Árbol, bosque y logística en la misma prueba',build(c)
   return[T=>{T.from(A.g,{opacity:0,duration:.4},.1);curvas.forEach((o,i)=>{drawIn(T,o.pa,.3+i*1,1.2);fadeIn(T,ley[i],.3+i*1,{dx:-10,dy:0});});},T=>{fadeIn(T,lec,0,{st:.1});}];
 }});
 
-/* ---------- 21 · Métricas ---------- */
+/* ---------- 22 · Métricas ---------- */
 slide({kicker:K5,title:'Las métricas: entrenamiento, OOB y prueba',build(c){
   const g=G(c.svg),B=BQ(),yt=Y(TRH);
   const met=(D,p)=>{const y=Y(D),m=clasif(y,p,.5);return{...m,auc:auc(y,p)};};
@@ -636,7 +715,7 @@ slide({kicker:K5,title:'Las métricas: entrenamiento, OOB y prueba',build(c){
   return[T=>{fadeIn(T,[...hd,ln],.1,{st:.05,dy:0});fadeIn(T,filas,.4,{st:.25,dx:-14,dy:0});},T=>{fadeIn(T,oobF,0,{dx:-14,dy:0});},T=>{fadeIn(T,ver,0,{st:.15});}];
 }});
 
-/* ---------- 22 · Reto: qué significa una importancia ---------- */
+/* ---------- 23 · Reto: qué significa una importancia ---------- */
 slide({kicker:KC,title:'Reto: lea la importancia',build(c){
   const g=G(c.svg);c.root.addEventListener('click',e=>e.stopPropagation());
   const q=[tx(g,96,250,'Al desordenar el «ingreso por persona» en los datos de prueba, el AUC del bosque cae de 0,96 a 0,72.','txt',{style:`fill:${C.ink};font-size:23px`}),
@@ -658,7 +737,7 @@ slide({kicker:KC,title:'Reto: lea la importancia',build(c){
 function boton_prompt(c,id,junto){const b=document.createElement('a');b.href='2-2-prompts-ia.html#'+id;b.target='_blank';b.rel='noopener';b.textContent='Prompt para pedirle el modelo a una IA →';
   b.style.cssText=`position:absolute;left:${96+junto.offsetWidth+16}px;top:800px;padding:14px 26px;border-radius:99px;background:#ea7317;color:#fff;font:600 17px "Schibsted Grotesk",sans-serif;text-decoration:none;opacity:0`;
   b.addEventListener('click',e=>e.stopPropagation());c.root.appendChild(b);return b;}
-/* ---------- 23 · Síntesis ---------- */
+/* ---------- 24 · Síntesis ---------- */
 slide({kicker:KC,title:'En resumen',build(c){
   const g=G(c.svg);
   const R=[['La idea','un árbol es inestable; muchos árboles distintos que votan se equivocan menos',C.st],['Se construye','bootstrap (muestras con reemplazo) + variables al azar en cada corte',C.st],
