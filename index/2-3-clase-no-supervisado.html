@@ -513,7 +513,32 @@ slide({kicker:KA,title:'Tres preguntas sin una respuesta conocida',build(c){
     T=>{fadeIn(T,fin,0);}];
 }});
 
-/* ---------- 3 · Supervisado frente a no supervisado ---------- */
+/* ---------- 3 · Para qué sirve cada técnica ---------- */
+/* parte un texto en líneas de hasta n caracteres, sin cortar palabras */
+function envolver(t,n){const out=[];let l='';t.split(' ').forEach(w=>{if(l&&(l+' '+w).length>n){out.push(l);l=w;}else l=l?l+' '+w:w;});if(l)out.push(l);return out;}
+slide({kicker:KA,title:'Para qué sirve cada técnica',build(c){
+  const g=G(c.svg),X=[96,360,750,1180],N=[0,36,40,32];
+  const hd=G(g);['Técnica','¿Para qué sirve?','¿Cuándo usarla?','Ejemplo'].forEach((t,j)=>tx(hd,X[j]+(j?0:28),232,t,'hdr',{style:'font-size:16px'}));
+  const F=[[['K-means','(agrupamiento)'],'Forma k grupos de observaciones parecidas entre sí, sin etiquetas previas.',
+      'Cuando quiere descubrir segmentos o tipologías en los datos y las variables son numéricas y escaladas. Debe definir k (método del codo o silueta).',
+      'Agrupar fincas según rendimiento, uso de agua y fertilización para identificar tipos de productores.',C.st],
+    [['PCA','(reducción de','dimensionalidad)'],'Resume muchas variables correlacionadas en pocas componentes que conservan la mayor parte de la varianza.',
+      'Cuando tiene muchas variables, alta correlación entre ellas o necesita ver datos multivariados en 2D o 3D. También como paso previo a otros modelos.',
+      'Reducir 20 variables fisicoquímicas del suelo a 3 componentes que explican el 80 % de la variabilidad.',MORADO],
+    [['Detección de','anomalías','(Isolation Forest,','LOF…)'],'Identifica observaciones raras que se alejan del patrón normal.',
+      'Cuando busca errores de medición, fraudes, fallas o eventos extremos, y los casos anómalos son pocos o no están etiquetados.',
+      'Detectar lecturas atípicas de una estación meteorológica (un sensor dañado) o transacciones sospechosas de fraude.',C.ml]];
+  let y=252;
+  const filas=F.map(([t,a,b,e,col])=>{const cols=[a,b,e].map((s,j)=>envolver(s,N[j+1])),nl=Math.max(t.length,...cols.map(q=>q.length)),h=nl*28+40,gg=G(g);
+    S('rect',{x:96,y,width:1408,height:h-12,rx:16,fill:C.soft},gg);S('rect',{x:96,y,width:8,height:h-12,rx:4,fill:col},gg);
+    t.forEach((l,q)=>tx(gg,X[0]+28,y+38+q*28,l,q?'sm':'h3',{style:q?'':`fill:${col};font-size:21px`}));
+    cols.forEach((ls,j)=>txl(gg,X[j+1],y+38,ls,'txt',28,{style:`fill:${C.ink};font-size:18px`}));y+=h;return gg;});
+  const fin=tx(g,96,y+44,'Las tres trabajan con datos sin etiquetas. En esta clase se ven con los municipios de Colombia.','lab',{style:`fill:${C.ink}`});
+  hide(hd,filas,fin);
+  return[T=>{fadeIn(T,hd,.2,{dy:0});fadeIn(T,filas[0],.4,{dx:-16,dy:0});},...filas.slice(1).map(f=>T=>{fadeIn(T,f,0,{dx:-16,dy:0});}),T=>{fadeIn(T,fin,0);}];
+}});
+
+/* ---------- 4 · Supervisado frente a no supervisado ---------- */
 slide({kicker:KA,title:'Sin una respuesta que aprender',build(c){
   const g=G(c.svg),alto=MUNI.filter(d=>d.ipm>=50).length;
   const pan=[0,1].map(i=>{const gg=G(g),x=150+i*700,P=plano(gg,{L:x,R:x+560,T:340,B:680,xt:[20,60,100],yt:[0,50,100],xl:'Bajo logro (%)',yl:'Sin agua (%)'});
@@ -531,11 +556,11 @@ slide({kicker:KA,title:'Sin una respuesta que aprender',build(c){
    1 · AGRUPAR: K-MEANS
    ===================================================================== */
 
-/* ---------- 4 · Separador 1 ---------- */
+/* ---------- 5 · Separador 1 ---------- */
 SEP({n:1,k:K1,titulo:['Agrupar:','juntar lo parecido'],pregunta:'¿Cómo encuentra K-means los segmentos?',
   temas:['Qué quiere decir «parecido»','Asignar y mover, una y otra vez','La escala y el número de grupos','Leer los segmentos']});
 
-/* ---------- 5 · La distancia ---------- */
+/* ---------- 6 · La distancia ---------- */
 slide({kicker:K1,title:'¿Qué tan parecidos son dos municipios?',build(c){
   const g=G(c.svg),P=plano(g),A=busca('Montería'),B=busca('Mitú');
   const fondo=puntosM(g,P,MUNI,3.6);fondo.forEach(p=>p.setAttribute('opacity',.25));
@@ -557,7 +582,7 @@ slide({kicker:K1,title:'¿Qué tan parecidos son dos municipios?',build(c){
       pon(T,['La distancia: la','línea recta'],['Como medirla con una regla.','Más corta: más parecidos.','Así mide «parecido» K-means.'],.1);}];
 }});
 
-/* ---------- 6 · Los pasos ---------- */
+/* ---------- 7 · Los pasos ---------- */
 slide({kicker:K1,title:'Cuatro pasos que se repiten',build(c){
   const g=G(c.svg),B=[['Elegir k',['cuántos grupos','se buscan'],C.ink],['Sembrar',['k centros','iniciales'],C.st],['Asignar',['cada punto, al','centro más cercano'],C.st],
     ['Mover',['cada centro, al','promedio de su grupo'],C.st],['Parar',['cuando ningún punto','cambia de grupo'],C.ml]];
@@ -572,7 +597,7 @@ slide({kicker:K1,title:'Cuatro pasos que se repiten',build(c){
   return[T=>{fadeIn(T,cajas,.2,{st:.25,dx:-14,dy:0});},T=>{fadeIn(T,vuelta,0,{dy:-10});},T=>{fadeIn(T,ojo,0,{st:.15});}];
 }});
 
-/* ---------- 7 · Una corrida (ejemplo pequeño: 24 municipios, en %) ---------- */
+/* ---------- 8 · Una corrida (ejemplo pequeño: 24 municipios, en %) ---------- */
 /* 8 municipios de cada grupo, al azar entre el 40 % más cercano a su centroide: grupos nítidos para ver el algoritmo */
 const TOY=memo('toy',()=>{const r=rng(11),m=M3();return[0,1,2].flatMap(j=>{const id=MUNI.map((_,i)=>i).filter(i=>m.lab[i]===j).sort((a,b)=>d2(ZK[a],m.cen[j])-d2(ZK[b],m.cen[j]));
   return shuffle(id.slice(0,Math.round(id.length*.4)),r).slice(0,8).map(i=>MUNI[i]);});});
@@ -610,7 +635,7 @@ slide({kicker:K1,title:'Una corrida, paso por paso',build(c){
       pon(T,['Tres grupos'],[`Terminó tras ${n} movimientos.`,`Grupos de ${[0,1,2].map(j=>run.lab.filter(l=>l===j).length).join(', ')} municipios.`],.1);}];
 }});
 
-/* ---------- 8 · Las unidades cambian los grupos ---------- */
+/* ---------- 9 · Las unidades cambian los grupos ---------- */
 slide({kicker:K1,title:'Otras unidades, otros grupos',build(c){
   const g=G(c.svg),V=UNID();
   const cfg=[['Agua en proporción (0 a 1)','y bajo logro en % (0 a 100)'],['Las dos en %','pero el agua varía más'],['Las dos en la misma escala','escaladas: ninguna manda']];
@@ -623,7 +648,7 @@ slide({kicker:K1,title:'Otras unidades, otros grupos',build(c){
   return[T=>{fadeIn(T,pan[0],.2,{dy:10});},T=>{fadeIn(T,pan[1],0,{dy:10});},T=>{fadeIn(T,pan[2],0,{dy:10});},T=>{fadeIn(T,fin,0);}];
 }});
 
-/* ---------- 9 · El codo ---------- */
+/* ---------- 10 · El codo ---------- */
 slide({kicker:K1,title:'¿Cuántos grupos?',build(c){
   const g=G(c.svg),P=plano(g,{L:150,R:760,T:262,B:690,xt:[20,60,100],yt:[0,50,100],xl:'Bajo logro (%)',yl:'Sin agua (%)'});
   const ks=[1,2,3,4,5,6,7,8],I=ks.map(k=>KM(k).iner),pts=puntosM(g,P,MUNI,3.6);
@@ -643,7 +668,7 @@ slide({kicker:K1,title:'¿Cuántos grupos?',build(c){
     T=>{D.mostrar(T,0);T.call(()=>{D.inp.value=KG;},null,0);}];
 }});
 
-/* ---------- 10 · Cuándo falla (ejemplos de juguete) ---------- */
+/* ---------- 11 · Cuándo falla (ejemplos de juguete) ---------- */
 slide({kicker:K1,title:'Cuándo K-means se equivoca',build(c){
   const g=G(c.svg),r=rng(21);
   const anillos=Array.from({length:260},(_,i)=>{const ri=i<90?1:3,t=r()*2*Math.PI,q=ri+randn(r)*.18;return[q*Math.cos(t),q*Math.sin(t)];});
@@ -666,7 +691,7 @@ slide({kicker:K1,title:'Cuándo K-means se equivoca',build(c){
     T=>{fadeIn(T,pan[1].gg,0,{dy:10});fadeIn(T,pan[1].t1,.3);},T=>{pinta(T,pan[1]);},T=>{fadeIn(T,fin,0);}];
 }});
 
-/* ---------- 11 · Perfil de cada grupo ---------- */
+/* ---------- 12 · Perfil de cada grupo ---------- */
 slide({kicker:K1,title:'Leer los segmentos',build(c){
   const g=G(c.svg),m=M3(),P=plano(g,{L:150,R:880,T:262,B:680});
   const pts=puntosM(g,P,MUNI,3.8);
@@ -690,11 +715,75 @@ slide({kicker:K1,title:'Leer los segmentos',build(c){
    2 · RESUMIR: PCA
    ===================================================================== */
 
-/* ---------- 12 · Separador 2 ---------- */
+/* ---------- 13 · Separador 2 ---------- */
 SEP({n:2,k:K2,titulo:['Resumir: muchas','variables en pocas'],pregunta:'¿Cómo resumir 15 privaciones en uno o dos números?',
   temas:['Dos variables que dicen casi lo mismo','La sombra sobre una recta','La recta que gira','Ejes nuevos y el mapa de los municipios']});
 
-/* ---------- 13 · De la tabla al plano ---------- */
+/* ---------- 14 · De 3 dimensiones a 2, y de 2 a 1 ---------- */
+/* tres privaciones muy correlacionadas (y una cuarta para la tabla), escaladas, con su PCA */
+const V3=['analfabetismo','rezago_escolar','inasistencia_escolar'],V4=[...V3,'bajo_logro_educativo'];
+const colZ=vs=>escalar(vs.map(v=>MUNI.map(d=>d.p[PRIV.indexOf(v)]))).Z;
+const Z3=colZ(V3),P3=pca(Z3),P4=pca(colZ(V4));
+/* nube para dibujar: normal con la matriz de correlaciones real de las tres (Cholesky), sin los extremos que se saldrían del cuadro */
+const NUBE3=()=>memo('nube3',()=>{const R=P3.R,L=[[Math.sqrt(R[0][0]),0,0]];L[1]=[R[1][0]/L[0][0],0,0];L[1][1]=Math.sqrt(R[1][1]-L[1][0]**2);
+  L[2]=[R[2][0]/L[0][0],0,0];L[2][1]=(R[2][1]-L[2][0]*L[1][0])/L[1][1];L[2][2]=Math.sqrt(R[2][2]-L[2][0]**2-L[2][1]**2);
+  const r=rng(6),out=[];while(out.length<320){const n=[randn(r),randn(r),randn(r)],z=L.map(f=>f[0]*n[0]+f[1]*n[1]+f[2]*n[2]);if(z.every(v=>Math.abs(v)<3.2))out.push(z);}return out;});
+slide({kicker:K2,title:'De 3 dimensiones a 2, y de 2 a 1',build(c){
+  const g=G(c.svg),CX=520,CY=520,U=66,Q=NUBE3(),PQ=pca(Q),v1=PQ.vec[0],v2=PQ.vec[1],v3=PQ.vec[2];
+  const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const SC=Q.map(z=>[dot(z,v1),dot(z,v2),dot(z,v3)]);
+  const JT=(()=>{const r=rng(9);return SC.map(()=>(r()-.5)*16);})();   // en la recta, un poco de alto para ver la densidad
+  /* tabla con cuatro variables */
+  const TB=['Bogotá, D.C.','Leticia','Quibdó','Uribia'].map(n=>busca(n)).filter(Boolean),XC=[120,460,610,760,900];
+  const tabla=G(g);['Municipio','Analfabetismo','Rezago','Inasistencia','Bajo logro'].forEach((t,j)=>tx(tabla,XC[j],290,t,'hdr',j?{'text-anchor':'end'}:{}));
+  TB.forEach((d,i)=>{const y=344+i*52;tx(tabla,XC[0],y,d.m,'lab');V4.forEach((v,j)=>tx(tabla,XC[j+1],y,fc(d.p[PRIV.indexOf(v)],1),'cell',{'text-anchor':'end'}));});
+  tx(tabla,XC[0],580,'% de personas con cada privación (IPM 2018, DANE)','sm');
+  /* escena 3D: ejes, plano, recta de PC1, rayas de caída y puntos */
+  const st={th:.15,e:.42,drop:0,flat:0,col:0,giro:0,a3:0,pl:0,ry:0};
+  const proj=p=>{const ct=Math.cos(st.th),sn=Math.sin(st.th),x=p[0]*ct-p[1]*sn,dd=p[0]*sn+p[1]*ct,y=p[2]*Math.cos(st.e)+dd*Math.sin(st.e);return[CX+U*x,CY-U*y];};
+  const gEj=G(g),EJ=[[1,0,0],[0,1,0],[0,0,1]].map((u,k)=>({u,l:S('line',{stroke:C.frame,'stroke-width':2},gEj),t:tx(gEj,0,0,['Analfabetismo','Rezago escolar','Inasistencia'][k],'sm',{style:halo+`fill:${C.sub}`})}));
+  const A1=2.7*Math.sqrt(PQ.val[0]),A2=2.7*Math.sqrt(PQ.val[1]);
+  const plano=S('path',{fill:MORADO,'fill-opacity':.1,stroke:MORADO,'stroke-width':2},g),pc1=S('line',{stroke:C.ml,'stroke-width':3.5},g);
+  const gR=G(g),RAY=SC.slice(0,70).map(()=>S('line',{stroke:C.muted,'stroke-width':1},gR));
+  const pts=SC.map(()=>S('circle',{r:4,fill:C.dot,stroke:C.w,'stroke-width':.8},g));
+  /* ejes del plano visto de frente (2D) y de la recta (1D) */
+  const e2=G(g);S('line',{x1:CX-U*A1,x2:CX+U*A1,y1:CY,y2:CY,stroke:C.ml,'stroke-width':2.5},e2);S('line',{x1:CX,x2:CX,y1:CY-U*A2,y2:CY+U*A2,stroke:MORADO,'stroke-width':2.5},e2);
+  tx(e2,CX+U*A1,CY+28,'PC1 →','mono',{'text-anchor':'end',style:`fill:${C.ml};font-weight:700;font-size:18px`});
+  const lPC2=tx(e2,CX+10,CY-U*A2+18,'PC2 ↑','mono',{style:`fill:${MORADO};font-weight:700;font-size:18px`});
+  const rot1=[tx(e2,CX-U*A1,CY+52,'menos privación','tick'),tx(e2,CX+U*A1,CY+52,'más privación','tick',{'text-anchor':'end'})];
+  const dib=()=>{
+    if(st.giro&&!reduce)st.th+=.004;
+    EJ.forEach(({u,l,t})=>{const a=proj(u.map(v=>v*-2.6)),b=proj(u.map(v=>v*3.8));l.setAttribute('x1',a[0]);l.setAttribute('y1',a[1]);l.setAttribute('x2',b[0]);l.setAttribute('y2',b[1]);
+      t.setAttribute('x',b[0]+6);t.setAttribute('y',b[1]-6);});
+    const P=[[1,1],[1,-1],[-1,-1],[-1,1]].map(([a,b])=>proj([0,1,2].map(k=>a*A1*v1[k]+b*A2*v2[k])));
+    plano.setAttribute('d','M'+P.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join('L')+'Z');
+    const q0=proj(v1.map(v=>-A1*v)),q1=proj(v1.map(v=>A1*v));pc1.setAttribute('x1',q0[0]);pc1.setAttribute('y1',q0[1]);pc1.setAttribute('x2',q1[0]);pc1.setAttribute('y2',q1[1]);
+    SC.forEach((s,i)=>{const z=Q[i],zd=z.map((v,k)=>v-st.drop*s[2]*v3[k]),p3=proj(zd),x2=CX+U*s[0],y2=CY-U*s[1]*(1-st.col)+JT[i]*st.col;
+      const x=p3[0]+(x2-p3[0])*st.flat,y=p3[1]+(y2-p3[1])*st.flat;pts[i].setAttribute('cx',x.toFixed(1));pts[i].setAttribute('cy',y.toFixed(1));
+      if(i<RAY.length){const a=proj(z),b=proj(z.map((v,k)=>v-s[2]*v3[k]));RAY[i].setAttribute('x1',a[0]);RAY[i].setAttribute('y1',a[1]);RAY[i].setAttribute('x2',b[0]);RAY[i].setAttribute('y2',b[1]);}});};
+  const loop=()=>{if(!c.root.isConnected)return;dib();requestAnimationFrame(loop);};requestAnimationFrame(loop);dib();
+  const pon=panel(g,1040,262,4),cont=tx(g,1040,640,'','monoL',{style:'font-size:30px'});
+  const sub=tx(g,1040,684,'de la información se conserva (con los 1.122 municipios reales)','sm');
+  const nota=tx(g,CX,850,'Nube simulada de 320 puntos con las correlaciones reales de las tres variables','sm',{'text-anchor':'middle'});
+  const cuenta=(T,t,at)=>{T.call(()=>cont.textContent=t,null,at);T.fromTo([cont,sub],{opacity:0,y:8},{opacity:1,y:0,duration:.45},at);};
+  hide(tabla,gEj,plano,pc1,gR,pts,e2,rot1,cont,sub,nota);
+  return[T=>{fadeIn(T,tabla,.2,{dx:-14,dy:0});
+      pon(T,['Cuatro números por','municipio'],['Cada municipio es un punto en 4 dimensiones.','Cuatro dimensiones no se pueden dibujar;',`con 3 de ellas, sí. (Con las 4, dos componentes`,`guardan el ${pct(P4.prop[0]+P4.prop[1],0)}.)`],.3);},
+    T=>{T.to(tabla,{opacity:0,duration:.4},0);T.set(st,{giro:1},0);T.to(gEj,{opacity:1,duration:.5},.3);nube(T,pts,.5,.8);fadeIn(T,nota,.8);cuenta(T,'3 dimensiones · 100 %',.4);
+      pon(T,['3 dimensiones'],['Analfabetismo, rezago e inasistencia, en la','misma escala. La nube es alargada:','las tres se mueven juntas.'],.1);},
+    T=>{T.to([plano,pc1],{opacity:1,duration:.6},0);
+      pon(T,['El plano donde más','se reparten'],['La recta naranja (PC1) sigue el largo de','la nube; PC2, su ancho. Juntas forman','el plano morado.'],.1);},
+    T=>{T.to(gR,{opacity:1,duration:.4},0);T.to(st,{drop:1,duration:1.6,ease:'power2.inOut'},.6);T.to(gR,{opacity:0,duration:.4},2.3);
+      cuenta(T,`2 dimensiones · ${pct(P3.prop[0]+P3.prop[1],0)}`,1.2);
+      pon(T,['De 3 a 2: la sombra','sobre el plano'],['Cada municipio cae al punto más cercano','del plano. Se pierde solo la distancia','al plano: las rayas grises.'],.1);},
+    T=>{T.set(st,{giro:0},0);T.to(st,{flat:1,duration:1.8,ease:'power2.inOut'},0);T.to([gEj,plano,pc1],{opacity:0,duration:.6},.2);T.to(e2,{opacity:1,duration:.6},1.2);
+      pon(T,['El plano, de frente'],['Se gira el plano hasta mirarlo de frente:','ahora cada municipio tiene dos números,','sus puntajes en PC1 y PC2.'],.1);},
+    T=>{T.to(st,{col:1,duration:1.4,ease:'power2.inOut'},0);T.to(lPC2,{opacity:0,duration:.4},0);T.to(e2.children[1],{opacity:0,duration:.4},0);T.to(rot1,{opacity:1,duration:.4},1.2);
+      T.to(pts,{attr:{fill:C.ml},duration:.6},.8);cuenta(T,`1 dimensión · ${pct(P3.prop[0],0)}`,1);
+      pon(T,['De 2 a 1: la sombra','sobre PC1'],['Un solo número por municipio: su lugar','en la recta, de menos a más privación.',`(Con las 4 variables, PC1 guarda el ${pct(P4.prop[0],0)}.)`],.1);}];
+}});
+
+/* ---------- 15 · De la tabla al plano ---------- */
 slide({kicker:K2,title:'Dos privaciones que dicen casi lo mismo',build(c){
   const g=G(c.svg),TABLA=['Bogotá, D.C.','Medellín','Leticia','Quibdó','Mitú','Uribia'].map(n=>busca(n)).filter(Boolean);
   tx(g,96,212,'IPM (índice de pobreza multidimensional) 2018, DANE: % de personas en hogares con cada privación.','sm');
@@ -713,7 +802,7 @@ slide({kicker:K2,title:'Dos privaciones que dicen casi lo mismo',build(c){
     T=>{nube(T,resto,0,1);T.to(filas.map(f=>f.gg),{opacity:.35,duration:.5},.2);fadeIn(T,fin,1,{st:.15});}];
 }});
 
-/* ---------- 14 · Proyectar ---------- */
+/* ---------- 16 · Proyectar ---------- */
 slide({kicker:K2,title:'Proyectar: de dos números a uno',build(c){
   const g=G(c.svg),P=planoZ(g,{dom:[-2.5,5]}),pts=puntos(P.dentro,ZR,z=>P.sx(z[0]),z=>P.sy(z[1])),a=ANG*Math.PI/180,u=[Math.cos(a),Math.sin(a)];
   const ln=S('line',{...recta(P,ANG),stroke:C.ml,'stroke-width':3.5},P.dentro);
@@ -735,7 +824,7 @@ slide({kicker:K2,title:'Proyectar: de dos números a uno',build(c){
     T=>{fadeIn(T,ej,0,{dy:10});pon(T,['De dos números','a uno'],['La posición sobre la recta','resume las dos variables.','Se pierden solo las rayas grises.'],.1);}];
 }});
 
-/* ---------- 15 · La recta que gira ---------- */
+/* ---------- 17 · La recta que gira ---------- */
 slide({kicker:K2,title:'La recta que gira',build(c){
   const g=G(c.svg),P=planoZ(g,{dom:[-2.5,5]}),pts=puntos(P.dentro,ZR,z=>P.sx(z[0]),z=>P.sy(z[1]),3,C.dot);
   const vang=th=>{const a=th*Math.PI/180,u=[Math.cos(a),Math.sin(a)];return mean(ZR.map(z=>(z[0]*u[0]+z[1]*u[1])**2));};
@@ -758,7 +847,7 @@ slide({kicker:K2,title:'La recta que gira',build(c){
     T=>{D.mostrar(T,0);}];
 }});
 
-/* ---------- 16 · PC1 y PC2 ---------- */
+/* ---------- 18 · PC1 y PC2 ---------- */
 slide({kicker:K2,title:'PC1 y PC2: los ejes nuevos',build(c){
   const g=G(c.svg),P=planoZ(g,{dom:[-2.5,5]}),giro=G(P.dentro),pts=puntos(giro,ZR,z=>P.sx(z[0]),z=>P.sy(z[1]));
   const e1=S('line',{...recta(P,ANG),stroke:C.ml,'stroke-width':4},giro),e2=S('line',{...recta(P,ANG+90),stroke:C.st,'stroke-width':4},giro);
@@ -778,7 +867,7 @@ slide({kicker:K2,title:'PC1 y PC2: los ejes nuevos',build(c){
       pon(T,['Se giran los ejes'],['PC1 queda horizontal. Cada municipio','tiene coordenadas nuevas: sus','puntajes en PC1 y PC2.'],.1);}];
 }});
 
-/* ---------- 17 · El plano de los municipios ---------- */
+/* ---------- 19 · El plano de los municipios ---------- */
 slide({kicker:K2,title:'De 15 privaciones a 2 números',build(c){
   const g=G(c.svg),A=axes(g,{x:150,y:262,w:780,h:470,xd:[-7,19],yd:[-8,5],xt:[],yt:[],
     xl:`PC1: privación general (${pct(P15.prop[0],0)}) →`,yl:`PC2 (${pct(P15.prop[1],0)}): ↑ rezago educativo y laboral · ↓ aseguramiento y primera infancia`});
@@ -797,7 +886,7 @@ slide({kicker:K2,title:'De 15 privaciones a 2 números',build(c){
     T=>{fadeIn(T,m3,0,{st:.2});pon(T,['Arriba y abajo,','el tipo de privación'],[`Arriba, ${MUNI[p2max].m}: más rezago`,`educativo y laboral. Abajo, ${MUNI[p2min].m}:`,'más barreras de aseguramiento.'],.1);}];
 }});
 
-/* ---------- 18 · PCA y K-means ---------- */
+/* ---------- 20 · PCA y K-means ---------- */
 slide({kicker:K2,title:'Resumir y luego agrupar',build(c){
   const g=G(c.svg),R=GRUPOS(),m=R.m,k=R.k;
   const A=axes(g,{x:150,y:262,w:780,h:440,xd:[-7,19],yd:[-8,5],xt:[],yt:[],xl:'PC1: privación general →',yl:'PC2: el tipo de privación'});
@@ -817,11 +906,11 @@ slide({kicker:K2,title:'Resumir y luego agrupar',build(c){
    3 · LO RARO: DETECCIÓN DE ANOMALÍAS
    ===================================================================== */
 
-/* ---------- 19 · Separador 3 ---------- */
+/* ---------- 21 · Separador 3 ---------- */
 SEP({n:3,k:K3,titulo:['Lo raro: lo que','no se parece'],pregunta:'¿Qué municipios no se parecen a ningún otro, y por qué?',
   temas:['Raro no siempre es error','Lejos del promedio, raro por la combinación','Aislar con cortes al azar','Raro en su vecindario']});
 
-/* ---------- 20 · Tres tipos de anomalía ---------- */
+/* ---------- 22 · Tres tipos de anomalía ---------- */
 slide({kicker:K3,title:'Raro no siempre es error',build(c){
   const g=G(c.svg),Pa=busca('Pacoa'),SA=busca('San Andrés','San Andrés y');
   tx(g,96,212,'Una anomalía es un caso que no se parece a los demás. Con el IPM (índice de pobreza multidimensional), tres tipos:','txt');
@@ -833,7 +922,7 @@ slide({kicker:K3,title:'Raro no siempre es error',build(c){
   return[...cards.map(cd=>T=>{fadeIn(T,cd,0,{dy:12});}),T=>{fadeIn(T,fin,0);}];
 }});
 
-/* ---------- 21 · Una variable: lejos del promedio ---------- */
+/* ---------- 23 · Una variable: lejos del promedio ---------- */
 slide({kicker:K3,title:'Una variable: lejos del promedio',build(c){
   const g=G(c.svg),sx=lin(0,45,150,1450),Y=430,lim=muI+3*sdI,n3=INA.filter(v=>v>lim).length,med=INA.slice().sort((a,b)=>a-b)[Math.floor(INA.length/2)];
   const ax=G(g);S('line',{x1:150,x2:1450,y1:520,y2:520,stroke:C.frame,'stroke-width':1.5},ax);[0,10,20,30,40].forEach(v=>tx(ax,sx(v),546,v+' %','tick',{'text-anchor':'middle'}));
@@ -849,7 +938,7 @@ slide({kicker:K3,title:'Una variable: lejos del promedio',build(c){
       pon(T,[`${n3} municipios a más de 3 desviaciones`],['Una regla clásica para decir «raro». Pero mira una sola variable a la vez.'],.1);}];
 }});
 
-/* ---------- 22 · Raro por la combinación ---------- */
+/* ---------- 24 · Raro por la combinación ---------- */
 slide({kicker:K3,title:'Raro por la combinación',build(c){
   const g=G(c.svg),P=planoZ(g,{dom:[-2.5,6]}),pts=puntos(P.dentro,ZR,z=>P.sx(z[0]),z=>P.sy(z[1])),Y=busca('Yavaraté'),iy=MUNI.indexOf(Y),zy=ZR[iy];
   const par=MUNI.map((d,i)=>i).filter(i=>Math.abs(ZR[i][0]-zy[0])<1&&i!==iy),mI=mean(par.map(i=>MUNI[i].i));
@@ -861,7 +950,7 @@ slide({kicker:K3,title:'Raro por la combinación',build(c){
     T=>{T.to(marc,{opacity:1,duration:.4,stagger:.05},0);pon(T,['Lo raro es la mezcla'],[`Los ${par.length} municipios con un rezago parecido`,`tienen, en promedio, ${pct(mI/100,1)} de inasistencia.`,`${Y.m} va contra la tendencia.`],.1);}];
 }});
 
-/* ---------- 23 · Círculo frente a elipse (Mahalanobis) ---------- */
+/* ---------- 25 · Círculo frente a elipse (Mahalanobis) ---------- */
 slide({kicker:K3,title:'Círculo frente a elipse',build(c){
   const g=G(c.svg),P=planoZ(g,{dom:[-2.5,6]}),pts=puntos(P.dentro,ZR,z=>P.sx(z[0]),z=>P.sy(z[1]));
   const circ=S('circle',{cx:P.ox,cy:P.oy,r:3*P.u,fill:'none',stroke:C.muted,'stroke-width':2.5,'stroke-dasharray':'8 6'},P.dentro);
@@ -876,7 +965,7 @@ slide({kicker:K3,title:'Círculo frente a elipse',build(c){
       pon(T,[`${n3} municipios fuera`,'de la elipse grande'],[`${dentroC} de ellos estaban dentro del círculo:`,'raros solo por la combinación.',`Y ${fueraOK} fuera del círculo no son raros.`],.1);}];
 }});
 
-/* ---------- 24 · Un árbol que corta al azar (Isolation Forest) ---------- */
+/* ---------- 26 · Un árbol que corta al azar (Isolation Forest) ---------- */
 slide({kicker:K3,title:'Aislar con cortes al azar',build(c){
   const g=G(c.svg),P=planoZ(g,{dom:[-2.5,11],paso:2}),pts=puntos(P.dentro,ZR,z=>P.sx(z[0]),z=>P.sy(z[1]),3.2),{a,b}=CAMINOS();
   const dib=(cs,col)=>cs.map(k=>{const B=k.box;return k.v===0?S('line',{x1:P.sx(k.c),x2:P.sx(k.c),y1:P.sy(B.y0),y2:P.sy(B.y1),stroke:col,'stroke-width':2.5},P.dentro)
@@ -895,7 +984,7 @@ slide({kicker:K3,title:'Aislar con cortes al azar',build(c){
     T=>{fadeIn(T,fin,0,{st:.1});}];
 }});
 
-/* ---------- 25 · Vecinos y densidad (ejemplo de juguete) ---------- */
+/* ---------- 27 · Vecinos y densidad (ejemplo de juguete) ---------- */
 slide({kicker:K3,title:'Raro en su vecindario',build(c){
   const g=G(c.svg),J=JUG,sx=lin(0,7,150,650),sy=lin(0,7,750,250),u=500/7;
   const ax=G(g);S('rect',{x:150,y:250,width:500,height:500,fill:C.soft,rx:12},ax);tx(ax,150,232,'Ejemplo de juguete: un grupo apretado y otro disperso','sm');
@@ -911,7 +1000,7 @@ slide({kicker:K3,title:'Raro en su vecindario',build(c){
     T=>{pon(T,['Comparar con los vecinos,','no con todos'],['Esa es la idea de LOF (factor local','de anomalía). 1 = tan denso como sus',`vecinos. A: ${fc(J.L.lof[J.A],1)} · B: ${fc(J.L.lof[J.B],1)}.`],.1);}];
 }});
 
-/* ---------- 26 · Qué hacer con una anomalía ---------- */
+/* ---------- 28 · Qué hacer con una anomalía ---------- */
 slide({kicker:K3,title:'Qué hacer con una anomalía',build(c){
   const g=G(c.svg),B=[['Revisar','volver a la fuente: ¿el dato es cierto?',C.ink],['Si es un error','corregirlo o dejarlo como faltante',C.bad],
     ['Si es real y extremo','conservarlo; si pesa mucho, analizar con y sin',C.ml],['Si es interesante','estudiarlo: puede ser el hallazgo',C.st]];
@@ -927,7 +1016,7 @@ slide({kicker:K3,title:'Qué hacer con una anomalía',build(c){
    CIERRE
    ===================================================================== */
 
-/* ---------- 27 · Los tres, lado a lado ---------- */
+/* ---------- 29 · Los tres, lado a lado ---------- */
 slide({kicker:KC,title:'Los tres, lado a lado',build(c){
   const g=G(c.svg),Yv=busca('Yavaraté');
   const CF=[['Agrupar','K-MEANS',C.st,[['PREGUNTA',['¿Qué tipos de casos hay?']],['ENTREGA',['un segmento para cada caso','y el perfil de cada segmento']],
@@ -945,7 +1034,7 @@ slide({kicker:KC,title:'Los tres, lado a lado',build(c){
   return[...cards.map(cd=>T=>{fadeIn(T,cd,0,{dy:12});}),T=>{fadeIn(T,fin,0);}];
 }});
 
-/* ---------- 28 · Reto ---------- */
+/* ---------- 30 · Reto ---------- */
 laminaReto({kicker:KC,title:'Reto: ¿qué le recomienda?',
   pregunta:['Una gobernación tiene 15 indicadores sociales de cada municipio y quiere diseñar programas',
     'distintos para cada tipo de municipio. No hay una variable que predecir. ¿Qué le recomienda?'],
@@ -954,7 +1043,7 @@ laminaReto({kicker:KC,title:'Reto: ¿qué le recomienda?',
     ['Borrar primero los municipios raros para que los grupos queden limpios.',0,'Un caso raro se revisa; no se borra solo porque un método lo señaló.'],
     ['Ordenar los municipios por un solo indicador y partirlos en tres.',0,'Un solo indicador ignora los otros 14: se pierden los tipos que combinan privaciones.']]});
 
-/* ---------- 29 · Síntesis ---------- */
+/* ---------- 31 · Síntesis ---------- */
 slide({kicker:KC,title:'En resumen',build(c){
   const g=G(c.svg);
   const R=[['No supervisado','encuentra estructura en los datos, sin una Y que predecir',C.ink],
