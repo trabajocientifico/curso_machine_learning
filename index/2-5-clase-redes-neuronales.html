@@ -279,7 +279,9 @@ function laminaReto(o){slide({kicker:o.kicker,title:o.title||'Reto',build(c){
 function laminaResumen(o){slide({kicker:o.kicker,title:o.title||'En resumen',build(c){
   const g=G(c.svg),filas=o.filas.map(([a,b,col],i)=>{const gg=G(g),y=262+i*74;S('circle',{cx:112,cy:y-8,r:9,fill:col},gg);tx(gg,140,y,a,'h3');tx(gg,o.x||420,y,b,'txt',{style:`fill:${C.ink}`});return gg;});
   const a=o.enlace?botonEnlace(c,o.enlace[0],o.enlace[1]):null;hide(filas);
-  return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});if(a)T.to(a,{opacity:1,duration:.5},1.1);}];
+  const b=o.prompt?botonEnlace(c,'2-2-prompts-ia.html#'+o.prompt,'Prompt para pedirle el modelo a una IA →',a?96+a.offsetWidth+16:96):null;   // naranja, junto al de la práctica
+  if(b)b.style.background=C.ml;const bot=[a,b].filter(Boolean);
+  return[T=>{fadeIn(T,filas,.2,{st:.12,dx:-16,dy:0});if(bot.length)T.to(bot,{opacity:1,duration:.5,stagger:.15},1.1);}];
 }});}
 /* prompt ajustable: campos que se llenan y un texto que se arma solo, con botón «Copiar».
    o.campos = [{name, label, value, opciones?:[[valor, texto],…], ancho?:true}] · o.lineas(v) devuelve las líneas; v(name) lee un campo */
@@ -325,7 +327,7 @@ const SECS=['La idea','El perceptrón','Pesos y sesgo','La red','Cómo aprende']
 const K1='1 · LA IDEA',K2='2 · EL PERCEPTRÓN',K3='3 · PESOS Y SESGO',K4='4 · DE UNA NEURONA A UNA RED',K5='5 · CÓMO APRENDE';
 const KA='REDES NEURONALES',KC='CIERRE';
 const VOLVER='../index.html#4';        // regreso al módulo («La ruta»)
-const PRACTICA='';                     // aún no hay notebook de redes neuronales
+const PRACTICA='https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-5-red-neuronal-fincas-cafeteras.ipynb';
 
 /* =====================================================================
    Datos de la clase: siempre generados con semilla fija, para que las cifras salgan del cálculo
@@ -360,7 +362,25 @@ const err=(D,m)=>{const e=D.map(([x,y])=>y-(m.w*x+m.b));return{mae:mean(e.map(Ma
 const RED=memo('red',()=>{const r=rng(8),capas=[3,5,5,1],W=[],B=[];
   for(let l=0;l<3;l++){W.push(Array.from({length:capas[l+1]},()=>Array.from({length:capas[l]},()=>randn(r)*1.4)));B.push(Array.from({length:capas[l+1]},()=>randn(r)*.5));}
   const act=[[1,1,0]];for(let l=0;l<3;l++)act.push(W[l].map((fila,j)=>sig(fila.reduce((s,wij,i)=>s+wij*act[l][i],0)+B[l][j])));
-  return{capas,act,npesos:capas.slice(1).reduce((s,n,l)=>s+n*capas[l],0),nsesgos:capas.slice(1).reduce((s,n)=>s+n,0)};});
+  return{capas,W,B,act,npesos:capas.slice(1).reduce((s,n,l)=>s+n*capas[l],0),nsesgos:capas.slice(1).reduce((s,n)=>s+n,0)};});
+/* retropropagación de ese caso (error cuadrático, sigmoide): la culpa D de cada neurona y hacia dónde se mueve cada peso dW[l][j][i] */
+const RETRO=memo('retro',()=>{const W=RED.W,A=RED.act,t=A[3][0]>=.5?0:1,D=[];D[3]=[(A[3][0]-t)*A[3][0]*(1-A[3][0])];
+  for(let l=2;l>=1;l--)D[l]=A[l].map((a,j)=>W[l].reduce((s,f,k)=>s+f[j]*D[l+1][k],0)*a*(1-a));
+  return{t,D,dW:W.map((Wl,l)=>Wl.map((f,j)=>f.map((_,i)=>-D[l+1][j]*A[l][i])))};});
+/* el error de la neurona de °C → °F según w, con b fijo en 32 (un valle), y el descenso del gradiente simple con tasa lr */
+const ECW=w=>mean(CF.map(([x,y])=>(w*x+32-y)**2));
+const gd=(lr,n,w=W0.w)=>{const H=[w];for(let i=0;i<n;i++){w-=lr*mean(CF.map(([x,y])=>2*(w*x+32-y)*x));H.push(w);}return H;};
+const TASAS=[[2.5e-5,'Paso muy corto','tarda mucho'],[1.2e-4,'Paso adecuado','llega pronto'],[4.2e-4,'Paso muy largo','se pasa y rebota']];
+/* épocas y lotes: descenso del gradiente simple sobre los 80 de entrenamiento (°C escalados), con lotes de tamaño tam;
+   guarda [época, error] tras cada paso */
+function lotes(tam,E,lr){const X=PART.tr.map(d=>d[0]),mx=mean(X),sx=Math.sqrt(mean(X.map(x=>(x-mx)**2)));
+  const D=PART.tr.map(([x,y])=>[(x-mx)/sx,y]),r=rng(31),n=D.length/tam;let w=W0.w,b=W0.b;
+  const e=()=>Math.sqrt(mean(D.map(([z,y])=>(w*z+b-y)**2))),H=[[0,e()]];
+  for(let ep=0;ep<E;ep++){const idx=shuffle(D.map((_,i)=>i),r);
+    for(let k=0;k<n;k++){const L=idx.slice(k*tam,(k+1)*tam).map(i=>D[i]);let gw=0,gb=0;
+      L.forEach(([z,y])=>{const q=w*z+b-y;gw+=2*q*z/L.length;gb+=2*q/L.length;});w-=lr*gw;b-=lr*gb;H.push([ep+(k+1)/n,e()]);}}
+  return H;}
+const LOTES=memo('lotes',()=>({todo:lotes(80,30,.05),l16:lotes(16,30,.05)}));
 
 /* ---------- dibujo: una red en capas (nodos en columnas y todas las conexiones entre capas vecinas) ---------- */
 function red(g,capas,o={}){const x0=o.x0??150,x1=o.x1??930,yc=o.yc??500,dy=o.dy??90,r=o.r??22;
@@ -455,7 +475,7 @@ slide({kicker:KA,title:'Ficha técnica',build(c){
   const F=[['QUÉ ES',C.ink,['Un modelo hecho de neuronas','conectadas en capas']],
     ['LA IDEA EN UNA LÍNEA',C.st,['Cada neurona suma y decide','salida = f(Σ w·x + b)'],1],
     ['INGREDIENTES',C.st,['Entradas en números','y ejemplos con la respuesta']],
-    ['LO QUE SE AJUSTA',C.ml,['Pesos y sesgos al entrenar;','capas, neuronas y épocas']],
+    ['LO QUE SE AJUSTA',C.ml,['Pesos y sesgos al entrenar;','capas, neuronas, épocas y lotes']],
     ['CÓMO SE EVALÚA',C.ml,['Con datos que no vio:','validación y prueba']],
     ['CUÁNDO SÍ · CUÁNDO NO',C.ok,['✓ Imágenes, voz y texto','✓ Muchos datos, relaciones complejas','✗ Pocos datos en una tabla','✗ Si cada decisión debe explicarse'],2]];
   const cards=F.map(([k,col,ls,mono],i)=>{const x=96+(i%3)*476,y=230+Math.floor(i/3)*290,gg=G(g);
@@ -727,7 +747,7 @@ slide({kicker:K4,title:'Tipos de redes',build(c){
 
 /* ---------- 21 · Separador 5 ---------- */
 SEP({n:5,k:K5,titulo:['Cómo','aprende'],pregunta:'¿Cómo encuentra la red sus pesos?',
-  temas:['Aprender de ejemplos: Celsius → Fahrenheit','Entrenar época por época','Entrenamiento, validación y prueba','Cómo se mide el error']});
+  temas:['Aprender de ejemplos: Celsius → Fahrenheit','Entrenar: bajar la montaña del error','Retropropagación, épocas y lotes','Entrenamiento, validación y prueba','Cómo se mide el error']});
 
 /* ---------- 22 · Aprender de ejemplos ---------- */
 slide({kicker:K5,title:'Aprender de ejemplos',build(c){
@@ -773,7 +793,132 @@ slide({kicker:K5,title:'Entrenar una neurona',build(c){
       pon(T,['Pruebe usted'],['Mueva las épocas para ver cómo','la recta se acomoda a los puntos.'],.1);}];
 }});
 
-/* ---------- 24 · Entrenamiento, validación y prueba ---------- */
+/* ---------- 24 · Bajar la montaña: el descenso del gradiente ---------- */
+slide({kicker:K5,title:'Bajar la montaña: el descenso del gradiente',build(c){
+  const g=G(c.svg),pon=panel(g,1040,262,4),N=8,H=gd(TASAS[1][0],N),EM=8000,w0=H[0];
+  const A=axes(g,{x:150,y:270,w:780,h:440,xd:[0,3.6],yd:[0,EM],xt:[0,.9,1.8,2.7,3.6],fx:v=>fc(v,1).replace(/,0$/,''),xl:'Peso w (b queda fijo en 32)',yl:'Error de la neurona'});
+  const ws=range(0,3.6,121),P=w=>[A.sx(w),A.sy(ECW(w))];
+  const suelo=S('path',{d:pathD(ws.map(P))+`L${A.sx(3.6)},${A.sy(0)}L${A.sx(0)},${A.sy(0)}Z`,fill:C.stT},g);
+  const cur=S('path',{d:pathD(ws.map(P)),fill:'none',stroke:C.st,'stroke-width':4},g);prepDraw(cur);
+  const fondo=G(g);S('line',{x1:A.sx(1.8),x2:A.sx(1.8),y1:A.sy(0),y2:A.sy(EM*.5),stroke:C.ok,'stroke-width':2.5,'stroke-dasharray':'6 6'},fondo);
+  tx(fondo,A.sx(1.8),A.sy(EM*.5)-14,'el fondo: w = 1,8','sm',{'text-anchor':'middle',style:`fill:${C.ok};font-weight:600`});
+  /* la pendiente en el punto de partida y la flecha hacia donde baja */
+  const m=(ECW(w0+1e-4)-ECW(w0-1e-4))/2e-4,tp=w=>[A.sx(w),A.sy(ECW(w0)+m*(w-w0))-13];
+  const tan=G(g);S('path',{d:pathD([tp(w0-.28),tp(w0+.28)]),stroke:C.ink,'stroke-width':2.5,'stroke-dasharray':'8 6',fill:'none'},tan);
+  const [ax,ay]=tp(w0+.06),[bx,by]=tp(w0+.42);S('line',{x1:ax,y1:ay,x2:bx,y2:by,stroke:C.ml,'stroke-width':4},tan);
+  arrowHead(tan,bx,by,Math.atan2(by-ay,bx-ax)*180/Math.PI,C.ml,1.1);
+  tx(tan,bx+16,by+4,'por aquí baja','sm',{style:`fill:${C.ml};font-weight:600`});
+  /* la bolita salta de un w al siguiente; deja una huella en cada punto */
+  const huellas=H.map(w=>{const [x,y]=P(w);return S('circle',{cx:x,cy:y,r:5,fill:C.ml,opacity:.5},g);});
+  const bola=S('circle',{r:13,fill:C.ml,stroke:C.w,'stroke-width':3},g),st={v:0},cont=tx(g,1040,486,'','mono',{style:'font-size:20px'});
+  const dib=()=>{const i=Math.min(Math.floor(st.v),N),f=st.v-i,a=P(H[i]),b=P(H[Math.min(i+1,N)]);
+    bola.setAttribute('cx',a[0]+(b[0]-a[0])*f);bola.setAttribute('cy',a[1]+(b[1]-a[1])*f-13-Math.min(40,Math.abs(b[0]-a[0])*.35)*Math.sin(Math.PI*f));   // el salto, según el largo del paso
+    const k=Math.min(N,Math.floor(st.v+1e-6));cont.textContent=`paso ${k} de ${N} · w = ${fc(H[k],2)}`;};
+  dib();
+  /* el tamaño del paso: tres valles pequeños con la misma partida y distinta tasa de aprendizaje */
+  const minis=TASAS.map(([lr,t1,t2],j)=>{const gg=G(g),x=1040+j*160,y=570,w=130,h=130,sx=lin(0,3.6,x,x+w),sy=lin(0,EM,y+h,y),R=gd(lr,N);
+    S('path',{d:pathD(ws.map(v=>[sx(v),sy(ECW(v))])),fill:'none',stroke:C.st,'stroke-width':2.5},gg);
+    const cam=S('path',{d:pathD(R.map(v=>[sx(v),sy(ECW(v))])),fill:'none',stroke:C.ml,'stroke-width':2},gg);
+    const pts=R.map(v=>S('circle',{cx:sx(v),cy:sy(ECW(v)),r:4,fill:C.ml},gg));
+    tx(gg,x+w/2,y-26,t1,'sm',{'text-anchor':'middle',style:`fill:${C.ink};font-weight:600`});tx(gg,x+w/2,y+h+28,t2,'sm',{'text-anchor':'middle'});
+    return{gg,cam,pts};});
+  prepDraw(minis.map(o=>o.cam));
+  const nota=tx(g,150,820,'Adam, el método de la lámina anterior, decide solo el tamaño de cada paso.','lab');
+  hide(suelo,fondo,tan,huellas,bola,cont,minis.map(o=>o.gg),minis.map(o=>o.pts),nota);
+  return[T=>{T.from(A.g,{opacity:0,duration:.4},.1);T.to(suelo,{opacity:1,duration:.6},.3);drawIn(T,cur,.3,1.1);popIn(T,bola,1.3);fadeIn(T,cont,1.4);
+      pon(T,['Empieza arriba'],[`Con w = ${fc(w0,2)} el error es alto.`,'Es como bajar una montaña con niebla:','no se ve el fondo, solo se siente','la inclinación bajo los pies.'],.4);},
+    T=>{fadeIn(T,tan,.1);pon(T,['La pendiente dice','hacia dónde bajar'],['La inclinación del error en ese punto','se llama gradiente. Aquí baja hacia','la derecha: w debe crecer.','Descenso del gradiente: bajar por ella.'],.1);},
+    T=>{T.to(tan,{opacity:0,duration:.3},0);T.to(st,{v:N,duration:N*.6,ease:'none',onUpdate:dib},.3);
+      huellas.forEach((h,i)=>T.to(h,{opacity:.5,duration:.15},.3+i*.6));fadeIn(T,fondo,.3+N*.6);
+      pon(T,['Paso a paso','hasta el fondo'],[`En ${N} pasos w va de ${fc(H[0],2)} a ${fc(H[N],2)}.`,'Cerca del fondo la pendiente es suave','y los pasos se acortan solos.','La red hace lo mismo con w y b a la vez.'],.1);},
+    T=>{minis.forEach((o,j)=>{fadeIn(T,o.gg,.1+j*.5);drawIn(T,o.cam,.4+j*.5,1);T.to(o.pts,{opacity:1,duration:.2,stagger:.1},.4+j*.5);});fadeIn(T,nota,2);
+      pon(T,['¿De qué tamaño','es el paso?'],['Lo fija la tasa de aprendizaje.','Muy corto: tarda mucho. Muy largo:','se pasa del fondo y rebota de un','lado al otro.'],.1);}];
+}});
+
+/* ---------- 25 · El error viaja hacia atrás: retropropagación ---------- */
+slide({kicker:K5,title:'El error viaja hacia atrás: retropropagación',build(c){
+  const g=G(c.svg),pon=panel(g,1040,262,4),cap=RED.capas,act=RED.act,{t,D,dW}=RETRO,R=red(g,cap,{x0:250,x1:880,yc:510,dy:86,r:24});
+  ['Entrada','Oculta 1','Oculta 2','Salida'].forEach((s,i)=>tx(g,R.xs[i],262,s,'h3',{'text-anchor':'middle'}));
+  R.nod[0].forEach((n,i)=>tx(g,n.x-38,n.y+6,FACT[i],'sm',{'text-anchor':'end'}));
+  const o=R.nod[3][0],y0=act[3][0],dice=G(g);
+  tx(dice,o.x+40,o.y-10,`dice ${fc(y0,2)}`,'mono',{style:'font-size:19px'});
+  tx(dice,o.x+40,o.y+20,`debía decir ${t}`,'mono',{style:`font-size:19px;fill:${C.bad}`});
+  const rojo=a=>{const q=[220,59,49];return`rgb(${q.map(v=>Math.round(255+(v-255)*a)).join(',')})`;};   // del blanco al rojo, sin transparencia
+  const culpa=l=>{const M=Math.max(...D[l].map(Math.abs));return D[l].map(d=>Math.abs(d)/M);};         // relativa dentro de cada capa
+  const extremos=(l,k)=>[R.nod[l][Math.floor(k/cap[l+1])],R.nod[l+1][k%cap[l+1]]];
+  /* el ciclo de cada paso de entrenamiento */
+  const cx=1270,cy=690,rx=170,ry=90,ci=G(g);
+  S('ellipse',{cx,cy,rx,ry,fill:'none',stroke:C.frame,'stroke-width':3,'stroke-dasharray':'2 9','stroke-linecap':'round'},ci);
+  const bolita=S('circle',{r:9,fill:C.ml},ci),pr={a:-90},mover=()=>{const r=pr.a*Math.PI/180;bolita.setAttribute('cx',cx+rx*Math.cos(r));bolita.setAttribute('cy',cy+ry*Math.sin(r));};mover();
+  const chips=[['adelante',-90,C.ml],['error',0,C.bad],['atrás',90,C.bad],['ajustar',180,C.st]].map(([s,a,col])=>{
+    const r=a*Math.PI/180,x=cx+rx*Math.cos(r),y=cy+ry*Math.sin(r),gg=G(ci),w=s.length*12+36;
+    S('rect',{x:x-w/2,y:y-20,width:w,height:40,rx:20,fill:C.w,stroke:col,'stroke-width':2.5},gg);
+    tx(gg,x,y+7,s,'h3',{'text-anchor':'middle',style:`font-size:19px;fill:${col}`});return{gg,a};});
+  hide(dice,ci);
+  return[T=>{for(let l=0;l<3;l++)R.enl[l].forEach((_,k)=>{const [a,b]=extremos(l,k);pulso(T,g,a,b,.4+l*1.1,.7,C.ml,6);});
+      R.nod[0].forEach((n,i)=>T.to(n.el,{attr:{fill:VCOL(act[0][i])},duration:.3},.2));
+      for(let l=1;l<4;l++)R.nod[l].forEach((n,j)=>T.to(n.el,{attr:{fill:mezcla(.12+.88*act[l][j])},duration:.3},.2+l*1.1));
+      T.to(o.el,{attr:{stroke:C.bad,'stroke-width':5},duration:.3},3.6);fadeIn(T,dice,3.6);
+      pon(T,['1. Hacia adelante'],['Dinero sí, pareja sí, clima no:',`la red dice ${fc(y0,2)}, pero la respuesta`,`era ${t} (${t?'sí viajan':'no viajan'}): se equivoca`,`por ${fc(Math.abs(t-y0),2)}.`],.2);},
+    T=>{for(let l=2;l>=0;l--)R.enl[l].forEach((_,k)=>{const [a,b]=extremos(l,k);pulso(T,g,b,a,.2+(2-l)*1.1,.7,C.bad,6);});
+      for(let l=3;l>=1;l--){const q=culpa(l);R.nod[l].forEach((n,j)=>T.to(n.el,{attr:{fill:rojo(.06+.94*q[j])},duration:.3},.1+(3-l)*1.1));}
+      pon(T,['2. Hacia atrás:','repartir la culpa'],['El error vuelve por las mismas','conexiones. Cada neurona recibe su','parte de la culpa, según cuánto influyó','en la respuesta. Más rojo: más culpa.'],.1);},
+    T=>{for(let l=0;l<3;l++){const M=Math.max(...dW[l].flat().map(Math.abs));
+        R.enl[l].forEach((ln,k)=>{const i=Math.floor(k/cap[l+1]),j=k%cap[l+1],v=dW[l][j][i],q=Math.abs(v)/M;
+          if(q>.03)T.to(ln,{attr:{stroke:v>0?C.ml:C.st,'stroke-width':1.5+7*q},duration:.6},.2+l*.25);});}
+      [1,2,3].forEach(l=>R.nod[l].forEach(n=>T.to(n.el,{attr:{fill:C.w},duration:.4},0)));
+      pon(T,['3. Cada peso','se mueve un poco'],['Naranja: el peso sube; azul: baja.','Más grueso: cambia más. Los del clima','no cambian: esa entrada valía 0.','El paso lo da el descenso del gradiente.'],.1);},
+    T=>{fadeIn(T,ci,.1);T.to(pr,{a:630,duration:4.5,ease:'none',onUpdate:mover},.5);
+      chips.forEach(({gg,a})=>[0,360].forEach(v=>T.fromTo(gg,{scale:1},{scale:1.12,transformOrigin:'50% 50%',duration:.18,yoyo:true,repeat:1},.5+(a+90+v)/160)));
+      pon(T,['Y vuelve a empezar'],['Adelante, error, atrás, ajustar: eso','es un paso de entrenamiento. Se repite','miles de veces con muchos ejemplos.','Retropropagación: repartir la culpa.'],.1);}];
+}});
+
+/* ---------- 26 · Épocas y lotes ---------- */
+slide({kicker:K5,title:'Épocas y lotes',build(c){
+  const g=G(c.svg),pon=panel(g,1040,262,4),D=PART.tr,n=D.length,tam=16,nl=n/tam,X0=200,Y0=300,P=36,Q=42;
+  /* cada medición con el color de su temperatura (azul = fría, naranja = caliente): así se ve cuando se barajan */
+  const cs=D.map(d=>d[0]),c0=Math.min(...cs),c1=Math.max(...cs);
+  const tcol=v=>{const a=[47,91,234],b=[234,115,23],f=(v-c0)/(c1-c0);return`rgb(${a.map((x,i)=>Math.round(x+(b[i]-x)*f)).join(',')})`;};
+  const xy=p=>[X0+(p%tam)*P,Y0+Math.floor(p/tam)*Q];
+  const tit=tx(g,X0,276,`${n} mediciones de entrenamiento, de la más fría a la más caliente`,'lab');
+  const pos0=[];D.map((_,i)=>i).sort((a,b)=>cs[a]-cs[b]).forEach((i,k)=>pos0[i]=k);
+  const cajas=Array.from({length:nl},(_,r)=>S('rect',{x:X0-5,y:Y0+r*Q-4,width:tam*P+4,height:38,rx:9,fill:'none',stroke:C.ink,'stroke-width':2},g));
+  const cua=D.map((_,i)=>{const [x,y]=xy(pos0[i]);return S('rect',{x,y,width:30,height:30,rx:5,fill:tcol(cs[i])},g);});
+  const rot=Array.from({length:nl},(_,r)=>tx(g,X0-16,Y0+r*Q+21,'lote '+(r+1),'sm',{'text-anchor':'end',style:`fill:${C.ink};font-weight:600`}));
+  const NX=920,NY=Y0+(nl*Q-12)/2,neu=S('circle',{cx:NX,cy:NY,r:34,fill:C.w,stroke:C.ink,'stroke-width':3},g),nt=tx(g,NX,NY+66,'la red','sm',{'text-anchor':'middle'});
+  const epo=G(g);S('line',{x1:X0,x2:X0+tam*P-6,y1:Y0+nl*Q+8,y2:Y0+nl*Q+8,stroke:C.ink,'stroke-width':2},epo);
+  tx(epo,X0,Y0+nl*Q+44,`1 época = los ${n} datos una vez = ${nl} lotes = ${nl} pasos`,'lab');
+  const cont=tx(g,X0,610,'','monoL',{style:'font-size:30px'});
+  /* barajar: cada medición va a una posición nueva; la fila que le toca es su lote */
+  const orden=s=>{const p=shuffle(D.map((_,i)=>i),rng(s)),pos=[];p.forEach((i,k)=>pos[i]=k);return pos;};
+  const barajar=(T,pos,at)=>cua.forEach((r,i)=>{const [x,y]=xy(pos[i]);T.to(r,{attr:{x,y},opacity:1,duration:.7,ease:'power2.inOut'},at+(i%7)*.02);});
+  const vuelta=(T,pos,ep,at,d)=>{for(let r=0;r<nl;r++){const t0=at+r*d,fila=cua.filter((_,i)=>Math.floor(pos[i]/tam)===r);
+      pulso(T,g,{x:X0+tam*P,y:Y0+r*Q+15},{x:NX-34,y:NY},t0,d*.6,C.ml,8);
+      T.to(neu,{attr:{fill:C.ml},duration:.15},t0+d*.6);T.to(neu,{attr:{fill:C.w},duration:.25},t0+d*.6+.2);T.to(fila,{opacity:.35,duration:.3},t0+d*.6);
+      T.call(()=>{cont.textContent=`época ${ep} · paso ${(ep-1)*nl+r+1}`;},null,t0+d*.6);}};
+  /* error por época: todos juntos (1 paso por época) frente a lotes de 16 (5 pasos por época) */
+  const L=LOTES,B=axes(g,{x:1040,y:570,w:440,h:180,xd:[0,30],yd:[0,70],xt:[0,10,20,30],yt:[0,35,70],xl:'Épocas',yl:'Error (°F)'});
+  const curva=(H,col)=>S('path',{d:pathD(H.map(([e,v])=>[B.sx(e),B.sy(Math.min(v,70))])),fill:'none',stroke:col,'stroke-width':3},g);
+  const cT=curva(L.todo,C.st),cL=curva(L.l16,C.ml);prepDraw(cT,cL);
+  const t8=L.todo[8][1],l8=L.l16[8*nl][1],lab=G(g);
+  tx(lab,B.sx(17),B.sy(L.todo[17][1])-16,'todos juntos','sm',{style:`fill:${C.st};font-weight:600`});
+  tx(lab,B.sx(9),B.sy(L.l16[9*nl][1])-12,'lotes de 16','sm',{style:`fill:${C.ml};font-weight:600`});
+  [[t8,C.st],[l8,C.ml]].forEach(([v,col])=>S('circle',{cx:B.sx(8),cy:B.sy(v),r:6,fill:col,stroke:C.w,'stroke-width':2},lab));
+  const nota=tx(g,X0,820,'En la práctica los lotes suelen ser de 32, 64 o 128 datos.','lab');
+  hide(cajas,rot,neu,nt,epo,cont,B.g,lab,nota);
+  return[T=>{fadeIn(T,tit,.2);popIn(T,cua,.3,{st:.008,s0:.5});
+      pon(T,['Los datos','de entrenamiento'],[`Son ${n} mediciones (°C, °F).`,'La red no las mira todas de golpe','ni una por una: las mira por lotes.'],.3);},
+    T=>{const p=orden(41);barajar(T,p,.1);T.call(()=>{tit.textContent=`${n} mediciones de entrenamiento, barajadas`;},null,.1);fadeIn(T,[...cajas,...rot],.9,{st:.06,dx:-10,dy:0});popIn(T,neu,.6);fadeIn(T,nt,.7);
+      T.call(()=>{cont.textContent='época 1 · paso 0';},null,.9);fadeIn(T,cont,.9);vuelta(T,p,1,1.4,.9);
+      pon(T,['Un lote, un paso'],[`Se barajan y se parten en ${nl} lotes de ${tam}.`,'Con cada lote la red mira su error','y corrige w y b una vez: un paso.'],.1);},
+    T=>{const d=.45,p2=orden(42),p3=orden(43),t2=.8,t3=t2+.9+nl*d+.2;fadeIn(T,epo,0);
+      barajar(T,p2,t2);vuelta(T,p2,2,t2+.9,d);barajar(T,p3,t3);vuelta(T,p3,3,t3+.9,d);
+      pon(T,['Una época'],[`Cuando la red vio los ${n} una vez,`,`termina una época: ${nl} lotes, ${nl} pasos.`,'Se vuelven a barajar y empieza otra.'],.1);},
+    T=>{T.to(cua,{opacity:1,duration:.4},0);fadeIn(T,B.g,0);drawIn(T,cT,.3,1.4);drawIn(T,cL,.3,1.4);fadeIn(T,lab,1.6);fadeIn(T,nota,2);
+      pon(T,['Todos juntos','o por lotes'],['Todos juntos: 1 paso por época.',`Lotes de ${tam}: ${nl} pasos por época.`,`Tras 8 épocas: ${fc(t8,1)} °F frente a ${fc(l8,1)} °F.`,'Por lotes aprende más rápido.'],.1);}];
+}});
+
+/* ---------- 27 · Entrenamiento, validación y prueba ---------- */
 slide({kicker:K5,title:'Entrenamiento, validación y prueba',build(c){
   const g=G(c.svg),pon=panel(g,1040,262,4),N=20,Wb=40,gap=3,X0=96;
   const fila=(y,n=N,h=46)=>Array.from({length:n},(_,i)=>S('rect',{x:X0+i*(Wb+gap),y,width:Wb,height:h,rx:6,fill:C.dot},g));
@@ -793,7 +938,7 @@ slide({kicker:K5,title:'Entrenamiento, validación y prueba',build(c){
     T=>{fadeIn(T,cv,0,{st:.15,dx:-10,dy:0});pon(T,['Validación cruzada'],['El entrenamiento se parte en 5:','cada parte valida una vez y se','promedia. La prueba sigue aparte.'],.1);}];
 }});
 
-/* ---------- 25 · ¿Cómo se mide? ---------- */
+/* ---------- 28 · ¿Cómo se mide? ---------- */
 slide({kicker:K5,title:'¿Cómo se mide el error?',build(c){
   const g=G(c.svg),m=NEU,eTr=err(PART.tr,m),ePr=err(PART.pr,m);
   const L=G(g),A=axes(L,{x:150,y:300,w:560,h:300,xd:[-10,40],yd:[0,110],xt:[-10,0,10,20,30,40],yt:[0,50,100],xl:'°C (20 mediciones de prueba)',yl:'°F'});
@@ -818,20 +963,20 @@ slide({kicker:K5,title:'¿Cómo se mide el error?',build(c){
     T=>{popIn(T,[...mk.children],0,{st:.1});fadeIn(T,[...lt.children],.4,{st:.12});}];
 }});
 
-/* ---------- 26 · Reto ---------- */
+/* ---------- 29 · Reto ---------- */
 laminaReto({kicker:KC,title:'Reto: decida como la neurona',pregunta:['Pesos: dinero 2, pareja 1, clima 1. Umbral: 3.','Usted no tiene dinero, su pareja quiere ir y el clima es agradable. ¿Viaja?'],
   opciones:[['Sí: hay dos «sí» de tres, y con dos basta.',0,'Eso valía sin pesos y con umbral 2. Con pesos: 2·0 + 1·1 + 1·1 = 2, menor que 3.'],
     ['No: la suma ponderada da 2 y no alcanza el umbral de 3.',1,`2·0 + 1·1 + 1·1 = ${suma([0,1,1],[2,1,1])}; con el sesgo, z = ${num(suma([0,1,1],[2,1,1])-3)} < 0. La neurona dice 0: no viaja.`],
     ['Sí: el sesgo b = −3 suma 3 a la cuenta.',0,'El sesgo resta: z = 2 − 3 = −1, menor que 0.'],
     ['No, porque el dinero tiene el peso más alto y siempre decide.',0,`El peso alto no decide solo: con dinero y nada más, la suma es ${suma([1,0,0],[2,1,1])} y tampoco viaja.`]]});
 
-/* ---------- 27 · Resumen ---------- */
-laminaResumen({kicker:KC,enlace:PRACTICA?[PRACTICA,'Práctica de la clase →']:null,
+/* ---------- 30 · Resumen ---------- */
+laminaResumen({kicker:KC,enlace:PRACTICA?[PRACTICA,'Práctica: notebook de la red neuronal →']:null,prompt:'red-neuronal',
   filas:[['Red neuronal','neuronas conectadas en capas que aprenden de ejemplos',C.st],
     ['Perceptrón','suma las entradas, compara con un umbral y dice 1 o 0',C.st],
     ['Pesos y sesgo','cuánto importa cada entrada y qué tan fácil es decir «sí»',C.ml],
     ['Activación','el escalón decide de golpe; la curva S deja aprender poco a poco',C.ml],
-    ['Entrenar','corregir w y b época por época hasta que baje el error',C.ok],
+    ['Entrenar','el error viaja hacia atrás y cada peso baja un paso, lote a lote',C.ok],
     ['Evaluar','con datos que la red no vio: validación y prueba',C.ok],
     ['Sus límites','pide muchos datos y es difícil explicar cada decisión',C.bad]]});
 

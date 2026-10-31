@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base target="_top">
+  <title>Machine Learning · Evaluación conceptual</title>
+  <style>
+    :root{--ink:#18324f;--blue:#285caa;--orange:#c55b2b;--muted:#657286;--line:#dce3eb;--paper:#f5f7fa;--good:#157354;--bad:#a03c31}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+    button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:wait;opacity:.55}button,input,a{touch-action:manipulation}
+    :focus-visible{outline:3px solid #d67636;outline-offset:4px}button{border:0}a{color:var(--blue)}[hidden]{display:none!important}
+    .topbar{border-bottom:1px solid var(--line);background:white}.topbar-inner{max-width:1100px;margin:auto;min-height:82px;display:flex;align-items:center;justify-content:space-between;padding:16px 28px;gap:20px}
+    .brand{display:flex;align-items:center;gap:13px}.brand-mark{background:var(--ink);color:white;border-radius:12px;width:43px;height:43px;display:grid;place-items:center;font-weight:800;font-size:15px}.brand strong{display:block;font-size:15px}.brand small{font-size:12px;color:var(--muted)}.edition{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+    main{max-width:1100px;margin:48px auto;padding:0 28px}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-weight:750;margin:0 0 16px}
+    h1,h2,h3,p{margin-top:0}h1{font-size:clamp(36px,5vw,56px);line-height:1.1;letter-spacing:-.045em;font-weight:750;max-width:660px;margin-bottom:24px}h1 span{color:var(--blue)}h2{font-size:28px;line-height:1.3;letter-spacing:-.025em}h3{font-size:18px;line-height:1.4}.lead{font-size:18px;color:var(--muted);max-width:580px;line-height:1.7}.welcome-grid{display:grid;grid-template-columns:1.25fr .85fr;gap:44px;align-items:start}.welcome-copy{padding-top:28px}
+    .facts{display:flex;gap:32px;margin:32px 0;border-top:1px solid var(--line);padding-top:24px}.fact strong{display:block;font-size:24px;line-height:1.1}.fact span{display:block;font-size:12px;color:var(--muted);margin-top:7px}.concept-art{width:100%;height:155px;margin:10px 0 0}
+    .card{border:1px solid var(--line);background:white;border-radius:22px;padding:34px;box-shadow:0 12px 30px #18324f05}.card h2{font-size:24px}.field-label{display:block;font-weight:650;font-size:14px;margin-bottom:8px}input[type=text]{width:100%;border:1px solid #aebdcc;border-radius:10px;padding:13px 14px;color:var(--ink);background:white;font-size:16px}.hint{font-size:12px;color:var(--muted);margin:9px 0 24px}.info{border-top:1px solid var(--line);padding-top:22px;margin-top:24px;font-size:13px;color:var(--muted)}.info strong{color:var(--ink)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:13px 23px;border-radius:10px;font-weight:650;text-decoration:none;min-height:49px;background:var(--blue);color:white}.btn:hover{background:#204f96}.btn-secondary{background:#eaf0f7;color:var(--ink)}.btn-secondary:hover{background:#dce6f2}.btn-wide{width:100%}.text-btn{background:none;color:var(--blue);padding:9px 0;font-weight:650}.text-btn:hover{text-decoration:underline}.error{background:#fff0ed;color:#8b3229;border:1px solid #f0c6be;padding:13px 16px;border-radius:10px;font-size:14px;margin:16px 0}.status{color:var(--muted);font-size:14px}.preview-banner{background:#fff1d8;color:#71500b;padding:10px;text-align:center;font-size:13px}
+    .quiz-layout{display:grid;grid-template-columns:220px 1fr;gap:32px}.sidebar{padding-top:6px}.participant{font-size:15px;overflow-wrap:anywhere}.sidebar .eyebrow{margin-bottom:8px}.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:22px 0}.step{height:36px;min-width:34px;border:1px solid var(--line);border-radius:9px;background:white;color:var(--muted);font-size:13px}.step.answered{background:#e8f1fe;color:var(--blue);border-color:#acc5e9}.step.active{background:var(--ink);color:white;border-color:var(--ink)}.progress-track{height:5px;border-radius:10px;background:#e1e7ef;overflow:hidden;margin:16px 0 10px}.progress-fill{height:100%;background:var(--blue);width:0;transition:width .2s}.progress-label{font-size:12px;color:var(--muted)}
+    .question-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.question-meta .eyebrow{margin:0}.badge{font-size:12px;color:var(--orange);background:#fff1e9;padding:4px 10px;border-radius:50px;font-weight:700;white-space:nowrap}fieldset{border:0;padding:0;margin:0;min-width:0}legend{font-size:26px;line-height:1.4;letter-spacing:-.02em;font-weight:700;margin-bottom:24px;padding:0;width:100%}.options{display:grid;gap:12px}.option{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-size:15px;line-height:1.5;transition:background .15s,border-color .15s}.option:hover{border-color:#9cb8db;background:#f8fbff}.option:has(input:checked){border-color:var(--blue);background:#eef4ff;box-shadow:inset 0 0 0 1px var(--blue)}.option input{width:18px;height:18px;accent-color:var(--blue);flex:none;margin:0}.letter{color:var(--muted);font-weight:700;font-size:12px;margin-right:5px}.question-nav{display:flex;justify-content:space-between;align-items:center;margin-top:32px;padding-top:24px;border-top:1px solid var(--line);gap:12px}.small-note{font-size:12px;color:var(--muted);margin-bottom:0}
+    .review-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}.review-list{list-style:none;padding:0;margin:26px 0}.review-item{padding:18px 0;border-bottom:1px solid var(--line)}.review-item-top{display:flex;align-items:start;gap:16px;justify-content:space-between}.review-item p{font-size:14px;margin:8px 0 0;color:var(--muted)}.review-item strong{font-size:15px}.review-item button{flex:none;font-size:12px;padding:0}.result-head{display:flex;gap:32px;align-items:center;margin-bottom:32px}.score-ring{width:150px;height:150px;flex:none;background:conic-gradient(var(--blue) var(--pct,0%),#e8edf4 0);padding:9px;border-radius:50%}.score-core{height:100%;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column}.score-core strong{font-size:40px;letter-spacing:-.04em;line-height:1.2}.score-core span{font-size:12px;color:var(--muted)}.result-head h1{font-size:34px;margin-bottom:12px}.result-head p{margin:0;color:var(--muted)}.result-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:28px 0}.metric{padding:18px 20px;background:var(--paper);border-radius:12px}.metric strong{font-size:25px;display:block}.metric span{font-size:12px;color:var(--muted)}.receipt{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.feedback{border-top:1px solid var(--line);padding:20px 0}.feedback h3{font-size:16px;margin-bottom:10px}.feedback p{font-size:14px;color:var(--muted);margin-bottom:7px}.score-tag{display:inline-block;font-weight:700;font-size:12px;border-radius:30px;padding:3px 9px;margin-bottom:10px;background:#e8f5ee;color:var(--good)}.score-tag.wrong{background:#fff0ed;color:var(--bad)}.feedback .explanation{color:var(--ink);background:var(--paper);padding:12px 14px;border-radius:8px;margin-top:12px}
+    footer{max-width:1100px;margin:42px auto 24px;padding:0 28px;display:flex;justify-content:space-between;gap:15px;color:var(--muted);font-size:11px}.loading{padding:60px 20px;text-align:center}.spinner{display:inline-block;border:3px solid #dbe3ee;border-top-color:var(--blue);border-radius:50%;width:27px;height:27px;animation:spin .7s linear infinite;margin-bottom:15px}@keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:780px){main{margin:28px auto;padding:0 18px}.topbar-inner{padding:14px 18px}.edition{display:none}.welcome-grid,.quiz-layout{grid-template-columns:1fr;gap:22px}.welcome-copy{padding-top:0}.concept-art{display:none}.facts{gap:28px;margin:24px 0 8px}.card{padding:24px 20px;border-radius:17px}.sidebar{padding:0}.sidebar .steps{grid-template-columns:repeat(10,1fr);gap:5px;margin:12px 0}.step{min-width:0;height:34px}.sidebar .small-note{display:none}.participant{margin-bottom:0}.sidebar .progress-track{margin-top:12px}legend{font-size:23px}.option{padding:14px 12px}.result-head{gap:19px;align-items:center}.score-ring{width:115px;height:115px}.score-core strong{font-size:32px}.result-head h1{font-size:27px}.result-metrics{gap:8px}.metric{padding:13px 10px}.metric strong{font-size:22px}footer{padding:0 18px;flex-direction:column;gap:3px}.review-header{display:block}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+    @media print{.topbar,footer,.btn,.text-btn,#quiz-screen,#welcome-screen{display:none!important}main{margin:0;padding:0}.card{border:0;padding:0;box-shadow:none}.feedback{break-inside:avoid}body{background:white}.score-ring{background:none;border:3px solid var(--ink)}}
+  </style>
+</head>
+<body>
+  <div id="preview-banner" class="preview-banner" hidden>VISTA PREVIA LOCAL · Las respuestas de esta demostración no se guardan en Google Sheets.</div>
+  <header class="topbar"><div class="topbar-inner"><div class="brand"><div class="brand-mark" aria-hidden="true">ML</div><div><strong>Machine Learning</strong><small>para la Investigación · Módulo 2</small></div></div><span class="edition">Evaluación conceptual</span></div></header>
+  <main>
+    <section id="loading-screen" class="loading" aria-live="polite"><span class="spinner" aria-hidden="true"></span><p>Preparando su cuestionario…</p></section>
+    <div id="global-error" class="error" role="alert" hidden></div>
+    <button id="retry-load" class="btn" type="button" hidden>Volver a cargar</button>
+    <section id="welcome-screen" class="welcome-grid" hidden>
+      <div class="welcome-copy"><p class="eyebrow">De los datos a las ideas</p><h1>Lo esencial de<br><span>machine learning.</span></h1><p class="lead">Un recorrido por los conceptos que vimos en clase. Sin fórmulas ni programación: ponga a prueba lo que comprendió.</p>
+        <div class="facts"><div class="fact"><strong>10</strong><span>preguntas</span></div><div class="fact"><strong>50</strong><span>puntos en total</span></div><div class="fact"><strong>A su ritmo</strong><span>sin cronómetro</span></div></div>
+        <svg class="concept-art" viewBox="0 0 520 150" role="img" aria-label="Los datos se transforman en un modelo para comprender nuevos casos"><g fill="none" stroke="#c3d2e5" stroke-width="2"><path d="M85 40L230 75M85 75L230 75M85 110L230 75M300 75L430 40M300 75L430 110"/></g><g fill="#7e9fce"><circle cx="85" cy="40" r="7"/><circle cx="85" cy="75" r="7"/><circle cx="85" cy="110" r="7"/></g><rect x="215" y="45" width="100" height="60" rx="16" fill="#e4edf9"/><text x="265" y="81" text-anchor="middle" fill="#285caa" font-size="14" font-family="system-ui">Modelo</text><circle cx="430" cy="40" r="11" fill="#285caa"/><circle cx="430" cy="110" r="11" fill="#c55b2b"/><g fill="#657286" font-size="11" text-anchor="middle" font-family="system-ui"><text x="85" y="143">DATOS</text><text x="430" y="143">NUEVOS CASOS</text></g></svg>
+      </div>
+      <form id="start-form" class="card"><p class="eyebrow">Antes de comenzar</p><h2>Identifique su participación</h2><label class="field-label" for="full-name">Nombre completo</label><input id="full-name" name="name" type="text" autocomplete="name" placeholder="Escriba su nombre y apellidos" minlength="5" maxlength="150" required aria-describedby="name-hint"><p id="name-hint" class="hint">Este nombre aparecerá junto a su resultado.</p><div id="name-error" class="error" role="alert" hidden></div><button class="btn btn-wide" type="submit">Comenzar evaluación <span aria-hidden="true">→</span></button><div class="info"><p><strong>Una respuesta por pregunta.</strong> Puede revisar y cambiar sus opciones antes de enviar.</p><p><strong>¿Cómo se califica?</strong> Respuesta correcta: 5 puntos. Incorrecta: 0 puntos. Al terminar verá el total y su nota de 0 a 5.</p><p style="margin-bottom:0">Al enviar, su nombre, respuestas y calificación se guardarán para la revisión del docente. Sus resultados no serán visibles para otros participantes.</p></div></form>
+    </section>
+    <section id="quiz-screen" class="quiz-layout" hidden>
+      <aside class="sidebar"><p class="eyebrow">Su recorrido</p><p class="participant" id="participant-name"></p><nav id="steps" class="steps" aria-label="Ir a una pregunta"></nav><div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div><p class="progress-label" id="progress-label" aria-live="polite"></p><p class="small-note">Puede volver a cualquier pregunta antes de enviar.</p></aside>
+      <div class="card"><div class="question-meta"><p class="eyebrow" id="question-topic"></p><span class="badge">5 puntos</span></div><fieldset><legend id="question-text" tabindex="-1"></legend><div id="options" class="options"></div></fieldset><p id="question-error" class="error" role="alert" hidden></p><div class="question-nav"><button type="button" id="previous" class="btn btn-secondary">← Anterior</button><button type="button" id="next" class="btn">Siguiente →</button></div></div>
+    </section>
+    <section id="review-screen" class="card" hidden><div class="review-header"><div><p class="eyebrow">Última mirada</p><h2 id="review-title" tabindex="-1">Revise sus respuestas</h2><p class="status">Se guardarán al pulsar «Enviar y ver resultado».</p></div><span class="badge">10 de 10 respondidas</span></div><ol id="review-list" class="review-list"></ol><div id="submit-error" class="error" role="alert" hidden></div><p id="submit-status" class="status" aria-live="polite"></p><div class="question-nav"><button id="back-to-quiz" type="button" class="btn btn-secondary">← Volver</button><button id="submit" type="button" class="btn">Enviar y ver resultado →</button></div></section>
+    <section id="result-screen" class="card" hidden><div class="result-head"><div id="score-ring" class="score-ring"><div class="score-core"><strong id="total-score"></strong><span>de 50 puntos</span></div></div><div><p class="eyebrow" id="saved-label">Resultado guardado</p><h1 id="result-title" tabindex="-1">Evaluación completada.</h1><p id="result-name"></p></div></div><div class="result-metrics"><div class="metric"><strong id="grade"></strong><span>nota sobre 5</span></div><div class="metric"><strong id="correct-count"></strong><span>respuestas correctas</span></div><div class="metric"><strong id="percentage"></strong><span>de acierto</span></div></div><p id="result-message" class="status"></p><p id="receipt" class="receipt"></p><button class="btn btn-secondary" type="button" id="download-receipt">Descargar mi resultado ↓</button><h2 style="margin:34px 0 16px;font-size:24px">Repase los conceptos</h2><div id="feedback"></div></section>
+  </main>
+  <footer><span>Diplomado en Inteligencia Artificial para la Investigación</span><span>Conceptos claros · decisiones informadas</span></footer>
+  <noscript>Active JavaScript en su navegador para responder el cuestionario.</noscript>
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+    let quiz, answers, current = 0, fullName = '', busy = false, pendingPayload = null, receipt = null;
+    function rpc(method, value) {
+      if (window.QUIZ_PREVIEW) return window.QUIZ_PREVIEW(method, value);
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('No se pudo confirmar la respuesta del servidor. Vuelva a enviar; el mismo intento no se duplicará.')), 45000);
+        const success = result => { clearTimeout(timer); resolve(result); };
+        const failure = error => { clearTimeout(timer); reject(error); };
+        if (!window.google || !google.script || !google.script.run) { failure(new Error('Abra el enlace del formulario publicado por el docente. Este archivo necesita Google Apps Script.')); return; }
+        const run = google.script.run.withSuccessHandler(success).withFailureHandler(failure);
+        if (method === 'getQuiz') run.getQuiz(); else run.submitQuiz(value);
+      });
+    }
+    function screen(id) { ['loading-screen','welcome-screen','quiz-screen','review-screen','result-screen'].forEach(x => $(x).hidden = x !== id); }
+    function errorAt(id, message) { $(id).textContent = message || ''; $(id).hidden = !message; }
+    function el(tag, text, className) { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
+    function goTop() { window.scrollTo({ top: 0, behavior: 'instant' }); }
+    async function loadQuiz() {
+      screen('loading-screen'); errorAt('global-error', ''); $('retry-load').hidden = true;
+      try { quiz = await rpc('getQuiz'); answers = Array(quiz.questions.length).fill(null); screen('welcome-screen'); }
+      catch (error) { $('loading-screen').hidden = true; errorAt('global-error', error.message || 'No se pudo cargar el formulario.'); $('retry-load').hidden = false; }
+    }
+    $('retry-load').onclick = loadQuiz;
+    $('start-form').onsubmit = event => {
+      event.preventDefault(); fullName = $('full-name').value.normalize('NFC').trim().replace(/\s+/g, ' ');
+      if (fullName.length < 5 || fullName.length > 150 || fullName.split(' ').length < 2 || !/[A-Za-zÀ-ÿ]/.test(fullName) || /[\x00-\x1f\x7f]/.test(fullName)) {
+        errorAt('name-error', 'Escriba su nombre completo, con nombre y apellido.'); $('full-name').focus(); return;
+      }
+      errorAt('name-error', ''); $('participant-name').textContent = fullName; showQuestion(0);
+    };
+    function showQuestion(index) {
+      if (pendingPayload) return;
+      current = index; const q = quiz.questions[index]; screen('quiz-screen');
+      $('question-topic').textContent = String(index + 1).padStart(2, '0') + ' / 10 · ' + q.topic;
+      $('question-text').textContent = q.text; $('options').replaceChildren(); errorAt('question-error', '');
+      q.options.forEach((text, i) => {
+        const label = el('label', undefined, 'option'); const input = document.createElement('input'); input.type = 'radio'; input.name = 'answer'; input.value = i; input.checked = answers[index] === i;
+        const copy = el('span'); copy.append(el('span', 'ABCD'[i] + '.', 'letter'), document.createTextNode(text));
+        input.onchange = () => { answers[index] = i; updateProgress(); errorAt('question-error', ''); };
+        label.append(input, copy); $('options').append(label);
+      });
+      $('previous').hidden = index === 0; $('next').textContent = index === 9 ? 'Revisar respuestas →' : 'Siguiente →'; updateProgress(); goTop(); $('question-text').focus({ preventScroll: true });
+    }
+    function updateProgress() {
+      $('steps').replaceChildren(); answers.forEach((answer, i) => { const b = el('button', String(i + 1), 'step' + (answer !== null ? ' answered' : '') + (i === current ? ' active' : '')); b.type = 'button'; b.setAttribute('aria-label', 'Pregunta ' + (i + 1) + (answer !== null ? ', respondida' : ', pendiente')); if (i === current) b.setAttribute('aria-current','step'); b.onclick = () => showQuestion(i); $('steps').append(b); });
+      const count = answers.filter(a => a !== null).length; $('progress-fill').style.width = count * 10 + '%'; $('progress-label').textContent = count + ' de 10 respondidas';
+    }
+    $('previous').onclick = () => showQuestion(current - 1);
+    $('next').onclick = () => {
+      if (answers[current] === null) { errorAt('question-error', 'Seleccione una respuesta para continuar.'); return; }
+      if (current < 9) { showQuestion(current + 1); return; }
+      const missing = answers.indexOf(null); if (missing >= 0) { showQuestion(missing); errorAt('question-error', 'Falta responder esta pregunta antes de enviar.'); return; }
+      showReview();
+    };
+    function showReview() {
+      screen('review-screen'); $('review-list').replaceChildren();
+      quiz.questions.forEach((q, i) => { const row = el('li', undefined, 'review-item'); const top = el('div', undefined, 'review-item-top'); const edit = el('button', 'Cambiar', 'text-btn'); edit.type = 'button'; edit.setAttribute('aria-label', 'Cambiar respuesta ' + (i + 1)); edit.onclick = () => showQuestion(i); top.append(el('strong', (i + 1) + '. ' + q.text), edit); row.append(top, el('p', 'ABCD'[answers[i]] + '. ' + q.options[answers[i]])); $('review-list').append(row); });
+      goTop(); $('review-title').focus({ preventScroll: true });
+    }
+    $('back-to-quiz').onclick = () => showQuestion(9);
+    $('submit').onclick = async () => {
+      if (busy) return; busy = true; errorAt('submit-error', '');
+      if (!pendingPayload) pendingPayload = { name: fullName, answers: answers.slice(), token: quiz.token };
+      $('submit').disabled = true; $('back-to-quiz').disabled = true; document.querySelectorAll('#review-list button').forEach(b => b.disabled = true);
+      $('submit').textContent = 'Guardando…'; $('submit-status').textContent = 'Espere la confirmación antes de cerrar esta página.';
+      try { receipt = await rpc('submitQuiz', pendingPayload); showResult(receipt); }
+      catch (error) { errorAt('submit-error', error.message || 'No se pudo confirmar el guardado. Reintente el envío.'); $('submit-status').textContent = 'Se conservan sus respuestas. Reintentar este envío no crea un segundo registro.'; $('submit').textContent = 'Reintentar envío →'; }
+      finally { busy = false; $('submit').disabled = false; }
+    };
+    function showResult(result) {
+      screen('result-screen'); const num = n => n.toLocaleString('es-CO', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+      $('total-score').textContent = result.total; $('grade').textContent = num(result.grade) + ' / 5'; $('correct-count').textContent = result.correctCount + ' / 10'; $('percentage').textContent = Math.round(result.total / result.max * 100) + '%'; $('score-ring').style.setProperty('--pct', result.total / result.max * 100 + '%'); $('result-name').textContent = result.name;
+      $('result-message').textContent = result.correctCount === 10 ? 'Reconoció todos los conceptos de esta evaluación. Puede consultar las explicaciones a continuación.' : 'Revise las explicaciones para afianzar los conceptos y reconocer qué temas conviene repasar.';
+      $('receipt').textContent = 'Comprobante: ' + result.id + ' · ' + new Date(result.submittedAt).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) + ' (Bogotá)';
+      if (window.QUIZ_PREVIEW) $('saved-label').textContent = 'Demostración · resultado no guardado';
+      $('feedback').replaceChildren(); result.review.forEach((q, i) => { const block = el('article', undefined, 'feedback'); block.append(el('span', (q.points ? 'Correcta' : 'Para repasar') + ' · ' + q.points + ' / 5', 'score-tag' + (q.points ? '' : ' wrong')), el('h3', (i + 1) + '. ' + q.text), el('p', 'Su respuesta: ' + q.options[q.selected])); if (!q.points) block.append(el('p', 'Respuesta correcta: ' + q.options[q.correct])); block.append(el('p', q.explanation, 'explanation')); $('feedback').append(block); });
+      pendingPayload = null; fullName = ''; answers = []; $('full-name').value = ''; goTop(); $('result-title').focus({ preventScroll: true });
+    }
+    $('download-receipt').onclick = () => {
+      if (!receipt) return;
+      const lines = [window.QUIZ_PREVIEW ? 'DEMOSTRACIÓN LOCAL · SIN REGISTRO EN GOOGLE' : 'EVALUACIÓN CONCEPTUAL · MACHINE LEARNING', receipt.name, 'Total: ' + receipt.total + ' / ' + receipt.max, 'Nota: ' + receipt.grade.toLocaleString('es-CO') + ' / 5', 'Comprobante: ' + receipt.id, 'Fecha: ' + receipt.submittedAt, ''];
+      receipt.review.forEach((q, i) => lines.push((i + 1) + '. ' + q.text, 'Su respuesta: ' + q.options[q.selected], 'Puntos: ' + q.points + ' / 5', 'Respuesta correcta: ' + q.options[q.correct], q.explanation, ''));
+      const url = URL.createObjectURL(new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/plain;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = 'resultado-machine-learning.txt'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    if (window.QUIZ_PREVIEW) $('preview-banner').hidden = false;
+    loadQuiz();
+  </script>
+</body>
+</html>

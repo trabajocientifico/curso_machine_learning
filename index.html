@@ -231,14 +231,7 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
 .mod-card.soon .mod-n{ color:var(--muted); }
 .mod-card.soon h3{ color:#3a404c; }
 .mod-card.soon:hover{ transform:none; border-color:var(--line); box-shadow:none; }
-/* ejercicios prácticos: notebooks, no mazos */
-.mod-card.lab::before{ background:var(--ml); }
-.mod-card.lab .mod-n, .mod-card.lab .mod-tema b{ color:var(--ml); }
-.mod-card.lab:hover{ border-color:rgba(234,115,23,.4); }
-.mod-card.lab .mod-tema i{ color:var(--ml); }
-.mod-card.lab a.mod-tema:hover{ border-color:var(--ml); background:var(--ml-soft); }
-.mod-card.lab .mod-temas{ display:grid; grid-template-columns:1fr 1fr; }
-.mod-card.dos .mod-temas{ display:grid; grid-template-columns:1fr 1fr; }   /* tema 2.2: seis clases en dos columnas; cada práctica se abre desde su clase */   /* tema 2.2: clase y práctica de cada técnica, lado a lado */   /* cuatro ejercicios en 2 × 2: la lámina cabe en pantallas bajas */
+.mod-card.dos .mod-temas{ display:grid; grid-template-columns:1fr 1fr; }   /* tema 2.2: seis clases en dos columnas; cada práctica se abre desde su clase */
 /* herramientas de trabajo: franja de ancho completo bajo la rejilla, para no dejar una tarjeta suelta */
 .mod-tools{ flex-direction:row; align-items:center; gap:24px; margin-top:12px; padding:9px 14px 9px 24px; }
 .mod-tools::before{ background:var(--ink); }
@@ -499,7 +492,7 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
 </section>
 
 <!-- 04 · LOS TEMAS DEL MÓDULO -->
-<section class="slide ruta" data-block="Contenidos" data-title="La ruta" data-sub="Los cinco temas y los ejercicios prácticos">
+<section class="slide ruta" data-block="Contenidos" data-title="La ruta" data-sub="Los cinco temas del módulo">
   <div class="slide-scroll wrapA">
     <div class="slide-head">
       <h2>De los <span class="hl">fundamentos</span> a las <span class="hl2">redes neuronales</span></h2>
@@ -539,11 +532,14 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
           <a class="mod-tema" href="index/2-3-clase-anomalias.html"><b>CLASE</b><span>Detección de anomalías</span><i>&rarr;</i></a>
         </div>
       </div>
-      <div class="mod-card soon">
+      <div class="mod-card">
         <div class="mod-n">Tema 2.4</div>
         <h3>Series de tiempo y datos panel</h3>
         <p>Modelos ARIMA, datos panel con efectos fijos y aleatorios, cambios estructurales y pronóstico de variables macroeconómicas, sociales o ambientales.</p>
-        <span class="mod-go">Próximamente</span>
+        <div class="mod-temas">
+          <a class="mod-tema" href="index/2-4-clase-series-de-tiempo.html"><b>CLASE</b><span>Series de tiempo: conceptos</span><i>&rarr;</i></a>
+          <a class="mod-tema" href="index/2-4-clase-arima.html"><b>CLASE</b><span>Modelo ARIMA</span><i>&rarr;</i></a>
+        </div>
       </div>
       <div class="mod-card">
         <div class="mod-n">Tema 2.5</div>
@@ -551,19 +547,7 @@ a.mod-tema:hover i{ opacity:1; transform:translateX(3px); }
         <p>Perceptrón y redes artificiales, redes convolucionales y recurrentes, y cuándo conviene el deep learning frente al ML clásico.</p>
         <div class="mod-temas">
           <a class="mod-tema" href="index/2-5-clase-redes-neuronales.html"><b>CLASE</b><span>Redes neuronales: del perceptrón a la red</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="index/2-5-clase-redes-convolucionales.html"><b>CLASE</b><span>Redes convolucionales</span><i>&rarr;</i></a>
-        </div>
-      </div>
-      <div class="mod-card lab">
-        <div class="mod-n">Ejercicios prácticos</div>
-        <h3>Cuatro notebooks con datos</h3>
-        <p>Resultados en GitHub · carpeta <code>ejercicios_ml_colombia</code></p>
-        <div class="mod-temas">
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/2-1-ingenieria-caracteristicas.ipynb" target="_blank" rel="noopener"><b>2.1</b><span>Ingeniería de características</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/01_random_forest_pobreza_municipal.ipynb" target="_blank" rel="noopener"><b>01</b><span>Random Forest · pobreza</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/02_kmeans_pca_tipologias_municipales.ipynb" target="_blank" rel="noopener"><b>02</b><span>PCA y K-Means · municipios</span><i>&rarr;</i></a>
-          <a class="mod-tema" href="https://github.com/trabajocientifico/curso_machine_learning/blob/main/ejercicios_ml_colombia/03_arima_vs_gradient_boosting_trm.ipynb" target="_blank" rel="noopener"><b>03</b><span>ARIMA y Boosting · TRM</span><i>&rarr;</i></a>
-        </div>
+          <a class="mod-tema" href="index/2-5-clase-redes-convolucionales.html"><b>CLASE</b><span>Redes convolucionales</span><i>&rarr;</i></a>        </div>
       </div>
     </div>
     <div class="mod-card mod-tools">

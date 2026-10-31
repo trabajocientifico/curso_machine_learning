@@ -58,6 +58,7 @@ main{padding:48px 0 120px;min-width:0}
 .pr input[type=text],.pr select{font:500 16px var(--disp);color:var(--ink);padding:8px 12px;border:1.5px solid var(--frame);border-radius:10px;background:var(--w);width:100%;min-width:0}
 .pr input[type=text]:focus,.pr select:focus{outline:none;border-color:var(--st)}
 .pr .mets{display:flex;flex-wrap:wrap;gap:6px 18px;padding-top:4px}
+.pr .mets[hidden]{display:none}
 .pr .mets label{flex-direction:row;align-items:center;gap:7px;font-size:16px;color:var(--ink);font-weight:500}
 .pr .nota{grid-column:1/-1;font-size:14px;color:var(--muted);line-height:1.4}
 .pr .out{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -83,7 +84,7 @@ main{padding:48px 0 120px;min-width:0}
   <aside>
     <a class="volver" href="../index.html#4">← Volver al módulo</a>
     <div>
-      <p class="kick">Módulo 2 · Temas 2.2 y 2.3</p>
+      <p class="kick">Módulo 2 · Temas 2.2 a 2.5</p>
       <h1>Prompts para pedirle el modelo a una IA</h1>
     </div>
     <nav aria-label="Tabla de contenido"><ol class="toc" id="toc"></ol></nav>
@@ -377,6 +378,86 @@ const P_ANOM={
       ...CIERRE_PROY];
     return L.join('\n');}};
 
+/* ---------- ARIMA (series de tiempo: la partición va en el tiempo) ---------- */
+const P_ARIMA={
+  campos:`<label class="w">Archivo de datos<input type="text" name="arch" value="2-4-serie-arima.xlsx"></label>
+    <label>Hoja o formato<input type="text" name="hoja" value="hoja «serie»"></label>
+    <label>Nombre del script<input type="text" name="script" value="modelo_arima.py"></label>
+    <label>Columna de la fecha<input type="text" name="fecha" value="fecha"></label>
+    <label>Serie a pronosticar<input type="text" name="y" value="precio_canasta"></label>
+    <label>Frecuencia<select name="frec"><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="diaria">Diaria</option></select></label>
+    <label>Períodos de prueba<select name="test"><option>12</option><option selected>24</option><option>36</option></select></label>
+    <label>Orden del modelo<select name="ord"><option value="aic">Elegir p y q (0 a 3) con el AIC</option><option value="fijo">Fijo: ARIMA(2, 1, 1)</option></select></label>
+    <label>Temporada<select name="est"><option value="no">No tiene (ARIMA)</option><option value="si">Sí se repite (SARIMA)</option></select></label>
+    <label>Horizonte hacia adelante<select name="hor"><option>6</option><option selected>12</option><option>24</option></select></label>
+    <label class="w">Métricas<span class="mets"><label><input type="checkbox" name="met" value="mae" checked>MAE</label><label><input type="checkbox" name="met" value="rmse" checked>RMSE</label><label><input type="checkbox" name="met" value="mape" checked>MAPE</label></span></label>`,
+  armar:({box,$,q,lista})=>{
+    const Y=$('y').value.trim()||'y',f=$('fecha').value.trim()||'fecha',n=+$('test').value,h=+$('hor').value,aic=$('ord').value==='aic',est=$('est').value==='si';
+    const frec=$('frec').value,per={mensual:['meses','MS',12],trimestral:['trimestres','QS',4],diaria:['días','D',7]}[frec],[u,cod,s]=per;
+    const ms=[...box.querySelectorAll('[name=met]:checked')].map(i=>({mae:'el MAE (error absoluto medio, en las unidades de la serie)',rmse:'el RMSE (que castiga más los errores grandes)',mape:'el MAPE (error porcentual medio)'}[i.value]));
+    const script=$('script').value.trim()||'modelo_arima.py',arch=$('arch').value.trim()||'datos.xlsx',hoja=$('hoja').value.trim()||'sin hoja';
+    const mod=est?'SARIMA':'ARIMA',base=est?`el pronóstico ingenuo (el último valor conocido) y el ingenuo estacional (el valor de hace ${s} ${u})`:'el pronóstico ingenuo (el último valor conocido) y el ingenuo con deriva (el último valor más el cambio promedio)';
+    const L=[`Actúe como un profesor de series de tiempo. Estoy aprendiendo modelos ARIMA por primera vez: explique cada paso con lenguaje sencillo.`,'',
+      `Quiero un modelo ${mod} en Python para pronosticar la serie ${frec} ${q(Y)}, con la fecha en la columna ${q(f)}. Los datos están en ${q(arch)} (${hoja}).`,'',
+      ...cabeceraProy(script,arch,'pandas, numpy, statsmodels, matplotlib y openpyxl','arima'),
+      `1. Cargue los datos con pandas, convierta ${q(f)} en fecha, úsela como índice y fije la frecuencia (asfreq('${cod}')). Revise cuántos ${u} hay, de cuándo a cuándo y si faltan datos, guárdelo en la hoja «descripcion» y grafique la serie → visualizaciones/01_serie.png. Dígame si ve tendencia${est?', temporada':''} o cambios bruscos.`,
+      `2. Revise si la serie es estacionaria: grafique su media y su desviación móviles de ${s} ${u}, en niveles y en la primera diferencia → visualizaciones/02_estacionariedad.png, y haga la prueba de Dickey-Fuller aumentada (ADF) en los dos casos; guárdela en la hoja «adf». Explique qué es una serie estacionaria, qué dice el valor p y cuántas veces hay que diferenciar (d).`,
+      `3. Grafique la ACF y la PACF de la serie diferenciada (hasta 24 rezagos) → visualizaciones/03_acf_pacf.png y explique qué pistas dan sobre p (los términos AR) y q (los términos MA).`,
+      `4. Aparte los últimos ${n} ${u} como prueba. La partición va en el tiempo, nunca al azar: explique por qué el modelo solo puede usar el pasado.`,
+      aic?`5. Con el entrenamiento, ajuste todos los ARIMA(p, 1, q) con p y q de 0 a 3 y con deriva (trend='t' en statsmodels: lo que sube la serie en promedio cada período)${est?`, cada uno con seasonal_order (P, 1, Q, ${s}) y P y Q de 0 a 1`:''}. Guarde el AIC de cada uno en la hoja «aic», dibújelo como mapa de calor → visualizaciones/04_aic.png y elija el de menor AIC. Explique qué premia y qué castiga el AIC, y dígame si otros modelos quedan muy cerca.`
+        :`5. Con el entrenamiento, ajuste un ${est?'SARIMA':'ARIMA'}(2, 1, 1) con deriva (trend='t' en statsmodels)${est?` y seasonal_order (1, 1, 1, ${s})`:''}. Para comparar, calcule el AIC de los órdenes (1, 1, 0), (0, 1, 1) y (2, 1, 1), guárdelo en la hoja «aic» y grafíquelo en barras → visualizaciones/04_aic.png. Explique qué premia y qué castiga el AIC.`,
+      `   Guarde los coeficientes del modelo elegido con su error estándar y su valor p en la hoja «coeficientes», escriba la ecuación estimada y explique qué significa cada término (deriva, φ de los AR, θ de los MA).`,
+      `6. Revise los residuos: grafique los residuos en el tiempo, su histograma y su ACF → visualizaciones/05_residuos.png, y haga la prueba de Ljung-Box (rezagos 6, 12 y 24) en la hoja «ljung_box». Explique por qué los residuos deben parecer ruido (media cero y sin autocorrelación) y qué hacer si no lo parecen.`,
+      `7. Pronostique de una sola vez los ${n} ${u} de prueba con su intervalo del 95 % y compárelo con ${base}. Grafique el final del entrenamiento, la prueba, los pronósticos y el intervalo → visualizaciones/06_pronostico_prueba.png. Calcule ${ms.length?lista(ms):'el MAE, el RMSE y el MAPE'} de cada uno, guárdelos en la hoja «metricas» y dígame cuántos valores reales caen dentro del intervalo.`,
+      `8. Haga una evaluación con origen móvil a un paso: mantenga los coeficientes estimados, pronostique solo el período siguiente, agregue el dato real (results.append sin reestimar) y repita en toda la prueba. Compare ${ms.length?lista(ms.map(m=>m.split(' (')[0])):'el MAE'} con los de las líneas base, guárdelo en la hoja «origen_movil» y explique por qué pronosticar un paso es más fácil que ${n} de una vez.`,
+      `9. Reestime el modelo con toda la serie y pronostique los próximos ${h} ${u} con su intervalo del 95 % → visualizaciones/07_pronostico.png y hoja «pronostico». Explique por qué el intervalo se abre con el horizonte.`,
+      `10. Recuérdeme los límites: ${mod} es lineal, usa una sola serie, supone que el pasado se repite y no anticipa giros bruscos. Si no le gana a la línea base, dígamelo con claridad: también es un resultado.`,
+      ...CIERRE_PROY];
+    return L.join('\n');}};
+
+/* ---------- red neuronal artificial (regresión o clasificación) ---------- */
+const OBJ_RED={reg:{y:'rendimiento_kg_ha',fuera:'id_finca, cafe_especial'},clf:{y:'cafe_especial',fuera:'id_finca, rendimiento_kg_ha'}};
+const P_RED={
+  campos:`<label class="w">Archivo de datos<input type="text" name="arch" value="2-5-fincas-cafeteras.xlsx"></label>
+    <label>Hoja o formato<input type="text" name="hoja" value="hoja «fincas»"></label>
+    <label>Nombre del script<input type="text" name="script" value="modelo_red_neuronal.py"></label>
+    <label>Tarea<select name="tarea"><option value="reg">Regresión (predecir un número)</option><option value="clf">Clasificación (predecir una clase)</option></select></label>
+    <label>Variable Y · lo que quiere predecir<input type="text" name="y" value="rendimiento_kg_ha"></label>
+    <label>Clase positiva · solo en clasificación<input type="text" name="pos" value="1"></label>
+    <label>Columnas que no entran · separadas por comas<input type="text" name="fuera" value="id_finca, cafe_especial"></label>
+    <label>Librería<select name="lib"><option value="sk">scikit-learn (como el notebook)</option><option value="keras">Keras (TensorFlow)</option></select></label>
+    <label>Arquitectura<select name="arq"><option value="una">Una red 64 → 32</option><option value="tres" selected>Comparar tres: 8, 64 → 32 y 128 → 64 → 32</option></select></label>
+    <label>Partición<select name="part"><option value="70">70 / 15 / 15</option><option value="60">60 / 20 / 20</option><option value="80">80 / 10 / 10</option></select></label>
+    <label class="w">Métricas<span class="mets" data-t="reg"><label><input type="checkbox" name="mr" value="mae" checked>MAE</label><label><input type="checkbox" name="mr" value="rmse" checked>RMSE</label><label><input type="checkbox" name="mr" value="r2" checked>R²</label></span><span class="mets" data-t="clf" hidden><label><input type="checkbox" name="mc" value="exac" checked>Exactitud</label><label><input type="checkbox" name="mc" value="prec">Precisión</label><label><input type="checkbox" name="mc" value="sens">Sensibilidad</label><label><input type="checkbox" name="mc" value="f1" checked>F1</label><label><input type="checkbox" name="mc" value="auc" checked>AUC</label></span></label>`,
+  init:({box,$})=>{const pos=$('pos').closest('label');
+    const vista=()=>{const t=$('tarea').value;box.querySelectorAll('.mets[data-t]').forEach(s=>s.hidden=s.dataset.t!==t);pos.style.opacity=t==='clf'?1:.45;};
+    $('tarea').addEventListener('change',()=>{const t=$('tarea').value,o=OBJ_RED[t==='clf'?'reg':'clf'];   // cambia los valores por defecto solo si no se tocaron
+      if($('y').value.trim()===o.y)$('y').value=OBJ_RED[t].y;if($('fuera').value.trim()===o.fuera)$('fuera').value=OBJ_RED[t].fuera;vista();});vista();},
+  armar:({box,$,q,lista})=>{
+    const clf=$('tarea').value==='clf',Y=$('y').value.trim()||'Y',pos=$('pos').value.trim()||'1',keras=$('lib').value==='keras',tres=$('arq').value==='tres';
+    const fuera=$('fuera').value.split(',').map(s=>s.trim()).filter(Boolean),pt=+$('part').value,pv=(100-pt)/2;
+    const ms=[...box.querySelectorAll(`[name=${clf?'mc':'mr'}]:checked`)].map(i=>clf?MET[i.value]:{mae:'el MAE (error absoluto medio, en las unidades de Y)',rmse:'el RMSE (que castiga más los errores grandes)',r2:'el R² (qué porcentaje de la variación explica)'}[i.value]);
+    const script=$('script').value.trim()||'modelo_red_neuronal.py',arch=$('arch').value.trim()||'datos.xlsx',hoja=$('hoja').value.trim()||'sin hoja';
+    const libs=keras?'pandas, numpy, scikit-learn, tensorflow, matplotlib y openpyxl':'pandas, numpy, scikit-learn, matplotlib y openpyxl';
+    const base=clf?'una regresión logística':'una regresión lineal',red=keras?'una red con Keras (Sequential con capas Dense)':`una red con ${clf?'MLPClassifier':'MLPRegressor'} de scikit-learn`;
+    const L=[`Actúe como un profesor de análisis de datos. Estoy aprendiendo redes neuronales artificiales por primera vez: explique cada paso con lenguaje sencillo.`,'',
+      `Quiero una red neuronal multicapa en Python para ${clf?`clasificar la variable ${q(Y)} (la clase positiva es ${q(pos)})`:`predecir la variable numérica ${q(Y)}`} a partir de las demás columnas${fuera.length?`, sin usar ${lista(fuera.map(q))}`:''}. Los datos están en ${q(arch)} (${hoja}).`,'',
+      ...cabeceraProy(script,arch,libs,'red_neuronal'),
+      `1. Cargue los datos con pandas, revise filas, columnas, tipos y datos faltantes, separe las variables numéricas de las categóricas y guarde la descripción en la hoja «descripcion». ${clf?`Calcule qué porcentaje de casos es ${q(pos)}.`:`Describa ${q(Y)} (media, mínimo y máximo).`}`,
+      `2. Grafique ${q(Y)} frente a las cuatro variables numéricas más relacionadas con ella${clf?' (el porcentaje de positivos por tramos de cada variable)':''} → visualizaciones/01_exploracion.png y dígame si ve relaciones que no son rectas (curvas con un óptimo, saturación, interacciones): es la razón para usar una red.`,
+      `3. Parta los datos en entrenamiento (${pt} %), validación (${pv} %) y prueba (${pv} %)${clf?', de forma estratificada':''}. Codifique las categóricas con one-hot y escale las numéricas con StandardScaler, ajustados solo con el entrenamiento (con un ColumnTransformer). ${clf?'':`Escale también ${q(Y)} para entrenar la red y vuelva a las unidades originales para medir: sin eso, la red aprende muy despacio. `}Explique para qué sirve cada parte.`,
+      `4. Entrene ${base} como línea base, con las mismas variables preparadas.`,
+      `5. Entrene ${red} con dos capas ocultas de 64 y 32 neuronas, activación ReLU${clf?' y una neurona de salida con sigmoide':' y una neurona de salida lineal'}, optimizador Adam y lotes de 64 casos. Entrénela época por época (${keras?'fit con validation_data':'partial_fit'}) y mida en cada época ${clf?'la pérdida logarítmica (log loss)':'el error'} en entrenamiento y en validación; use parada temprana (paciencia de 30 épocas) y quédese con los pesos de la mejor época de validación. Grafique las dos curvas de pérdida → visualizaciones/02_perdida.png, guárdelas en la hoja «epocas» y explique qué es una época y por qué la validación avisa del sobreajuste.`,
+      tres?`6. Compare en la validación tres arquitecturas: una capa de 8 neuronas, 64 → 32 y 128 → 64 → 32. Guarde en la hoja «arquitecturas» el número de pesos, las épocas y ${clf?'el AUC':'el R²'} de cada una, y elija la más sencilla que no pierda mucho. La prueba sigue guardada hasta el final.`
+        :`6. Cuente cuántos pesos tiene la red (pesos y sesgos de cada capa), guárdelo en la hoja «arquitectura» y explique de dónde sale ese número.`,
+      `7. Calcule ${ms.length?lista(ms):clf?'la exactitud, el F1 y el AUC':'el MAE, el RMSE y el R²'} de la red y de la línea base en entrenamiento, validación y prueba${clf?', y compárelas también con decir siempre la clase más común':''}. Guárdelas en la hoja «metricas» y dígame si la red gana y si hay sobreajuste.`,
+      clf?`8. Con el umbral 0,5, dibuje la matriz de confusión de la red con las celdas rotuladas VP, FN, FP y VN → visualizaciones/03_matriz_confusion.png y explique cada celda. Grafique las curvas ROC de la red y de la logística con su AUC → visualizaciones/04_curva_roc.png.`
+        :`8. Grafique los valores reales frente a los predichos de la línea base y de la red, con la línea de 45°, y los residuos de la red → visualizaciones/03_ajuste.png. Dígame dónde se equivoca cada modelo.`,
+      `9. Para ver qué aprendió la red, calcule la importancia por permutación en la prueba (cuánto empeora ${clf?'el AUC':'el RMSE'} al barajar cada variable) → visualizaciones/${clf?'05':'04'}_importancia.png y hoja «importancia», y dibuje la dependencia parcial de las tres variables más importantes → visualizaciones/${clf?'06':'05'}_dependencia_parcial.png. Explique en qué dirección actúa cada una.`,
+      `10. Guarde las predicciones de prueba (valor real${clf?', probabilidad y clase predicha':', predicho y residuo'}) en la hoja «predicciones». Recuérdeme que una red no da coeficientes que se lean directamente, que pide muchos datos y que la importancia de una variable no prueba que sea una causa.`,
+      ...CIERRE_PROY];
+    return L.join('\n');}};
+
 /* =====================================================================
    Página: una sección por técnica y la tabla de contenido
    ===================================================================== */
@@ -390,7 +471,9 @@ const TEC=[
   {id:'svm',n:'Máquinas de soporte vectorial (SVM)',tipo:'Clasificación',datos:'1.200 hogares simulados · Y = hogar pobre',clase:'2-2-clase-svm.html',nb:'2-2-svm.ipynb',P:P_SVM},
   {id:'k-means',n:'K-means',tipo:'No supervisado',datos:'1.122 municipios reales · privaciones del IPM 2018',clase:'2-3-clase-k-means.html',nb:'2-3-k-means.ipynb',P:P_KMEANS},
   {id:'pca',n:'Componentes principales (PCA)',tipo:'No supervisado',datos:'1.122 municipios reales · 15 privaciones del IPM 2018',clase:'2-3-clase-pca.html',nb:'2-3-pca.ipynb',P:P_PCA},
-  {id:'anomalias',n:'Detección de anomalías',tipo:'No supervisado',datos:'1.122 municipios reales · 15 privaciones del IPM 2018',clase:'2-3-clase-anomalias.html',nb:'2-3-anomalias.ipynb',P:P_ANOM}];
+  {id:'anomalias',n:'Detección de anomalías',tipo:'No supervisado',datos:'1.122 municipios reales · 15 privaciones del IPM 2018',clase:'2-3-clase-anomalias.html',nb:'2-3-anomalias.ipynb',P:P_ANOM},
+  {id:'arima',n:'Modelo ARIMA',tipo:'Series de tiempo',datos:'240 meses simulados · índice del precio de una canasta',clase:'2-4-clase-arima.html',nb:'2-4-arima-serie.ipynb',P:P_ARIMA},
+  {id:'red-neuronal',n:'Red neuronal artificial',tipo:'Redes neuronales',datos:'4.000 fincas cafeteras simuladas · rendimiento o café especial',clase:'2-5-clase-redes-neuronales.html',nb:'2-5-red-neuronal-fincas-cafeteras.ipynb',P:P_RED}];
 const q=s=>`«${s}»`,lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' y '+a[a.length-1];
 const NOTA='La IA puede equivocarse: ejecute el código paso a paso, compare las cifras con lo visto en clase y pregúntele lo que no entienda.';
 const main=document.getElementById('main'),toc=document.getElementById('toc');
